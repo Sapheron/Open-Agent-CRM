@@ -314,8 +314,6 @@ This project is licensed under the **MIT License**.
 
 ## 👥 Contributors
 
-![Contributors](https://img.shields.io/github/contributors/Sapheron/Open-Agent-CRM)
-
 - **ASHIK K I** — Creator & Lead Developer  
 - **SANWEER K T** — Contributor  
 
@@ -325,4 +323,4 @@ This project is licensed under the **MIT License**.
 ![Stars](https://img.shields.io/github/stars/Sapheron/Open-Agent-CRM)
 ![Forks](https://img.shields.io/github/forks/Sapheron/Open-Agent-CRM)
 ![Issues](https://img.shields.io/github/issues/Sapheron/Open-Agent-CRM)
-![Contributors](https://img.shields.io/github/contributors/Sapheron/Open-Agent-CRM)
+![Contributors](https://img.shields.io/github/contributors/Sapheron/Open-Agent-CRM?cacheSeconds=60)
