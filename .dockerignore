@@ -1,0 +1,9 @@
+node_modules
+.turbo
+dist
+.next
+coverage
+.git
+.env
+*.log
+apps/whatsapp/sessions

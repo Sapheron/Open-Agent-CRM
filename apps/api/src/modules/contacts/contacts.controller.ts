@@ -1,0 +1,59 @@
+import {
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ContactsService, CreateContactDto } from './contacts.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { User } from '@wacrm/database';
+
+@ApiTags('contacts')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@Controller('contacts')
+export class ContactsController {
+  constructor(private readonly svc: ContactsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List contacts with search + tag filter' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'tag', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  list(
+    @CurrentUser() user: User,
+    @Query('search') search?: string,
+    @Query('tag') tag?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.svc.list(user.companyId, { search, tag, page, limit });
+  }
+
+  @Get(':id')
+  get(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.svc.get(user.companyId, id);
+  }
+
+  @Post()
+  create(@CurrentUser() user: User, @Body() body: CreateContactDto) {
+    return this.svc.create(user.companyId, body);
+  }
+
+  @Patch(':id')
+  update(@CurrentUser() user: User, @Param('id') id: string, @Body() body: Partial<CreateContactDto>) {
+    return this.svc.update(user.companyId, id, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.svc.softDelete(user.companyId, id);
+  }
+
+  @Post(':id/opt-out')
+  @ApiOperation({ summary: 'GDPR opt-out — stop all AI messages to this contact' })
+  optOut(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.svc.optOut(user.companyId, id);
+  }
+}

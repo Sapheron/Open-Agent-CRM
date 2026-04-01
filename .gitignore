@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+!.next/static
+!.next/server
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Turbo
+.turbo/
+
+# Prisma
+packages/database/prisma/generated/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# WhatsApp session files (managed by Docker volume)
+apps/whatsapp/sessions/
+
+# Docker
+deploy/.env

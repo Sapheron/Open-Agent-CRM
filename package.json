@@ -1,0 +1,26 @@
+{
+  "name": "whatsapp-ai-crm",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "dev:api": "turbo dev --filter=api",
+    "dev:whatsapp": "turbo dev --filter=whatsapp",
+    "dev:worker": "turbo dev --filter=worker",
+    "dev:dashboard": "turbo dev --filter=dashboard",
+    "db:migrate": "turbo db:migrate --filter=database",
+    "db:seed": "turbo db:seed --filter=database",
+    "db:studio": "turbo db:studio --filter=database",
+    "db:generate": "turbo db:generate --filter=database"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.5.0"
+  }
+}

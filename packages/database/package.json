@@ -1,0 +1,27 @@
+{
+  "name": "@wacrm/database",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0",
+    "bcryptjs": "^2.4.3",
+    "@types/bcryptjs": "^2.4.6"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

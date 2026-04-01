@@ -1,0 +1,591 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+enum ConversationStatus {
+  OPEN
+  AI_HANDLING
+  WAITING_HUMAN
+  HUMAN_HANDLING
+  RESOLVED
+  CLOSED
+  SPAM
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  LOCATION
+  CONTACT
+  TEMPLATE
+  INTERACTIVE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATING
+  WON
+  LOST
+  DISQUALIFIED
+}
+
+enum DealStage {
+  LEAD_IN
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+enum AiProvider {
+  GEMINI
+  OPENAI
+  ANTHROPIC
+  GROQ
+  OLLAMA
+  OPENROUTER
+  CUSTOM
+}
+
+enum PaymentProvider {
+  RAZORPAY
+  STRIPE
+  CASHFREE
+  PHONEPE
+  PAYU
+  NONE
+}
+
+enum WaAccountStatus {
+  DISCONNECTED
+  QR_PENDING
+  CONNECTING
+  CONNECTED
+  BANNED
+  ERROR
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  AI_TOOL_CALL
+  AI_REPLY
+  PAYMENT_CREATED
+  PAYMENT_RECEIVED
+  WA_SESSION_START
+  WA_SESSION_END
+  USER_LOGIN
+  USER_LOGOUT
+  SETTINGS_CHANGE
+}
+
+// ─── COMPANY ──────────────────────────────────────────────────────────────────
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  email     String?
+  phone     String?
+  website   String?
+  logoUrl   String?
+  timezone  String   @default("UTC")
+  isActive  Boolean  @default(true)
+  setupDone Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  whatsappAccounts WhatsAppAccount[]
+  contacts         Contact[]
+  conversations    Conversation[]
+  leads            Lead[]
+  deals            Deal[]
+  tasks            Task[]
+  payments         Payment[]
+  broadcasts       Broadcast[]
+  auditLogs        AuditLog[]
+  aiConfig         AiConfig?
+  paymentConfig    PaymentConfig?
+  webhookEndpoints WebhookEndpoint[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+// ─── USER ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  companyId        String
+  email            String
+  passwordHash     String
+  firstName        String
+  lastName         String
+  avatarUrl        String?
+  role             UserRole  @default(AGENT)
+  isActive         Boolean   @default(true)
+  refreshTokenHash String?
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedConvs Conversation[] @relation("AssignedAgent")
+  assignedLeads Lead[]         @relation("AssignedAgent")
+  assignedDeals Deal[]         @relation("AssignedAgent")
+  assignedTasks Task[]         @relation("AssignedAgent")
+  createdTasks  Task[]         @relation("CreatedBy")
+  auditLogs     AuditLog[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([email])
+}
+
+// ─── WHATSAPP ACCOUNT ─────────────────────────────────────────────────────────
+
+model WhatsAppAccount {
+  id                String          @id @default(cuid())
+  companyId         String
+  phoneNumber       String
+  displayName       String?
+  status            WaAccountStatus @default(DISCONNECTED)
+  provider          String          @default("baileys")
+  accessTokenEnc    String?
+  phoneNumberId     String?
+  sessionDataEnc    Bytes?
+  qrCode            String?
+  warmupStage       Int             @default(0)
+  warmupStartedAt   DateTime?
+  dailyMessageLimit Int             @default(50)
+  messagesSentToday Int             @default(0)
+  lastResetAt       DateTime?
+  consecutiveErrors Int             @default(0)
+  lastErrorAt       DateTime?
+  lastConnectedAt   DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  messages      Message[]
+
+  @@unique([companyId, phoneNumber])
+  @@index([companyId])
+  @@index([status])
+}
+
+// ─── CONTACT ──────────────────────────────────────────────────────────────────
+
+model Contact {
+  id           String    @id @default(cuid())
+  companyId    String
+  phoneNumber  String
+  displayName  String?
+  firstName    String?
+  lastName     String?
+  email        String?
+  avatarUrl    String?
+  tags         String[]
+  customFields Json      @default("{}")
+  notes        String?
+  isBlocked    Boolean   @default(false)
+  optedOut     Boolean   @default(false)
+  optedOutAt   DateTime?
+  lastSeenAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  leads         Lead[]
+  deals         Deal[]
+  tasks         Task[]
+  payments      Payment[]
+
+  @@unique([companyId, phoneNumber])
+  @@index([companyId])
+  @@index([phoneNumber])
+  @@index([companyId, deletedAt])
+  @@index([tags])
+}
+
+// ─── CONVERSATION ─────────────────────────────────────────────────────────────
+
+model Conversation {
+  id                String             @id @default(cuid())
+  companyId         String
+  contactId         String
+  whatsappAccountId String
+  assignedAgentId   String?
+  status            ConversationStatus @default(OPEN)
+  aiEnabled         Boolean            @default(true)
+  unreadCount       Int                @default(0)
+  lastMessageAt     DateTime?
+  lastMessageText   String?
+  resolvedAt        DateTime?
+  metadata          Json               @default("{}")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact         Contact         @relation(fields: [contactId], references: [id])
+  whatsappAccount WhatsAppAccount @relation(fields: [whatsappAccountId], references: [id])
+  assignedAgent   User?           @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  messages        Message[]
+  aiContextCache  AiContextCache?
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([status])
+  @@index([companyId, status])
+  @@index([lastMessageAt])
+}
+
+// ─── MESSAGE ──────────────────────────────────────────────────────────────────
+
+model Message {
+  id                String           @id @default(cuid())
+  companyId         String
+  conversationId    String
+  whatsappAccountId String
+  whatsappMessageId String?
+  idempotencyKey    String?          @unique
+  direction         MessageDirection
+  type              MessageType      @default(TEXT)
+  status            MessageStatus    @default(PENDING)
+  body              String?
+  mediaUrl          String?
+  mediaType         String?
+  mediaSizeBytes    Int?
+  mediaCaption      String?
+  latitude          Float?
+  longitude         Float?
+  replyToMessageId  String?
+  isAiGenerated     Boolean          @default(false)
+  aiProvider        String?
+  aiModel           String?
+  aiTokensUsed      Int?
+  aiLatencyMs       Int?
+  errorMessage      String?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime         @default(now())
+
+  conversation    Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  whatsappAccount WhatsAppAccount @relation(fields: [whatsappAccountId], references: [id])
+  replyTo         Message?        @relation("ReplyThread", fields: [replyToMessageId], references: [id])
+  replies         Message[]       @relation("ReplyThread")
+
+  @@index([conversationId])
+  @@index([whatsappMessageId])
+  @@index([idempotencyKey])
+  @@index([companyId, createdAt])
+  @@index([direction, status])
+}
+
+// ─── LEAD ─────────────────────────────────────────────────────────────────────
+
+model Lead {
+  id              String     @id @default(cuid())
+  companyId       String
+  contactId       String
+  assignedAgentId String?
+  title           String
+  status          LeadStatus @default(NEW)
+  source          String?
+  score           Int        @default(0)
+  estimatedValue  Float?
+  currency        String     @default("INR")
+  notes           String?
+  customFields    Json       @default("{}")
+  lostReason      String?
+  wonAt           DateTime?
+  lostAt          DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+
+  company       Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact       Contact @relation(fields: [contactId], references: [id])
+  assignedAgent User?   @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  deals         Deal[]
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([status])
+  @@index([companyId, status])
+}
+
+// ─── DEAL ─────────────────────────────────────────────────────────────────────
+
+model Deal {
+  id              String    @id @default(cuid())
+  companyId       String
+  contactId       String
+  leadId          String?
+  assignedAgentId String?
+  title           String
+  stage           DealStage @default(LEAD_IN)
+  value           Float
+  currency        String    @default("INR")
+  probability     Int       @default(20)
+  expectedCloseAt DateTime?
+  wonAt           DateTime?
+  lostAt          DateTime?
+  lostReason      String?
+  notes           String?
+  customFields    Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact       Contact   @relation(fields: [contactId], references: [id])
+  lead          Lead?     @relation(fields: [leadId], references: [id])
+  assignedAgent User?     @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  payments      Payment[]
+  tasks         Task[]
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([stage])
+  @@index([companyId, stage])
+}
+
+// ─── TASK ─────────────────────────────────────────────────────────────────────
+
+model Task {
+  id              String       @id @default(cuid())
+  companyId       String
+  contactId       String?
+  dealId          String?
+  assignedAgentId String?
+  createdById     String?
+  title           String
+  description     String?
+  status          TaskStatus   @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+  dueAt           DateTime?
+  completedAt     DateTime?
+  reminderSentAt  DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact       Contact? @relation(fields: [contactId], references: [id])
+  deal          Deal?    @relation(fields: [dealId], references: [id])
+  assignedAgent User?    @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  createdBy     User?    @relation("CreatedBy", fields: [createdById], references: [id])
+
+  @@index([companyId])
+  @@index([assignedAgentId])
+  @@index([dueAt])
+  @@index([status])
+}
+
+// ─── AI CONFIG ────────────────────────────────────────────────────────────────
+
+model AiConfig {
+  id                 String     @id @default(cuid())
+  companyId          String     @unique
+  provider           AiProvider @default(GEMINI)
+  model              String     @default("gemini-2.0-flash")
+  apiKeyEncrypted    String?
+  baseUrl            String?
+  systemPrompt       String     @default("You are a helpful sales assistant. Help the customer and capture their information.")
+  tone               String     @default("professional")
+  maxTokens          Int        @default(1024)
+  temperature        Float      @default(0.7)
+  autoReplyEnabled   Boolean    @default(true)
+  toolCallingEnabled Boolean    @default(true)
+  testStatus         String?
+  testError          String?
+  updatedAt          DateTime   @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model AiContextCache {
+  id             String   @id @default(cuid())
+  conversationId String   @unique
+  messages       Json
+  tokenCount     Int
+  pruneCount     Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+// ─── PAYMENT ──────────────────────────────────────────────────────────────────
+
+model PaymentConfig {
+  id              String          @id @default(cuid())
+  companyId       String          @unique
+  provider        PaymentProvider @default(NONE)
+  keyEncrypted    String?
+  secretEncrypted String?
+  webhookSecret   String?
+  currency        String          @default("INR")
+  testMode        Boolean         @default(true)
+  updatedAt       DateTime        @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  companyId      String
+  contactId      String?
+  dealId         String?
+  provider       PaymentProvider
+  externalId     String?
+  linkUrl        String?
+  amount         Int
+  currency       String          @default("INR")
+  description    String?
+  status         PaymentStatus   @default(PENDING)
+  paidAt         DateTime?
+  refundedAt     DateTime?
+  webhookPayload Json?
+  idempotencyKey String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id])
+  deal    Deal?    @relation(fields: [dealId], references: [id])
+
+  @@index([companyId])
+  @@index([externalId])
+  @@index([status])
+  @@index([idempotencyKey])
+}
+
+// ─── BROADCAST ────────────────────────────────────────────────────────────────
+
+model Broadcast {
+  id               String    @id @default(cuid())
+  companyId        String
+  name             String
+  message          String
+  mediaUrl         String?
+  targetTags       String[]
+  targetContactIds String[]
+  scheduledAt      DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  totalCount       Int       @default(0)
+  sentCount        Int       @default(0)
+  failedCount      Int       @default(0)
+  createdAt        DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([scheduledAt])
+}
+
+// ─── AUDIT LOG ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  companyId  String
+  userId     String?
+  action     AuditAction
+  entityType String?
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  createdAt  DateTime    @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// ─── WEBHOOK ENDPOINT ─────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  companyId String
+  url       String
+  secret    String
+  events    String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
