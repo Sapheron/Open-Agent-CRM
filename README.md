@@ -447,7 +447,8 @@ This project is licensed under the **[MIT License](LICENSE)**.
 <br/>
 <b>ASHIK K I</b><br/>
 <sub>Creator & Lead Developer</sub><br/>
-<a href="https://github.com/ashikki">@ashikki</a>
+<a href="https://github.com/ashikki">@ashik-k-i</a>
+<br/>
 </td>
 </tr>
 </table>
