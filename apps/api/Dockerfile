@@ -7,7 +7,7 @@ FROM base AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY . .
-RUN pnpm dlx turbo@latest prune --scope=@wacrm/api --out=out
+RUN pnpm dlx turbo@latest prune --scope=@wacrm/api --docker
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat
