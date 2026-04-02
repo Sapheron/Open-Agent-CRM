@@ -12,6 +12,9 @@
     "lint": {
       "outputs": []
     },
+    "type-check": {
+      "outputs": []
+    },
     "test": {
       "outputs": ["coverage/**"],
       "dependsOn": ["^build"]
@@ -28,6 +31,9 @@
     },
     "db:generate": {
       "outputs": ["node_modules/.prisma/**"]
+    },
+    "db:push": {
+      "cache": false
     }
   }
 }

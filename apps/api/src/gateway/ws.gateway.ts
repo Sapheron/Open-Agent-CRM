@@ -5,9 +5,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   ConnectedSocket,
-  MessageBody,
 } from '@nestjs/websockets';
-import { UseGuards, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { WS_EVENTS } from './ws.events';

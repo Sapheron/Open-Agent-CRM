@@ -60,8 +60,8 @@ export class DealsService {
 
   async moveStage(companyId: string, id: string, stage: DealStage) {
     const deal = await this.get(companyId, id);
-    const currentIdx = DEAL_STAGE_ORDER.indexOf(deal.stage);
-    const targetIdx = DEAL_STAGE_ORDER.indexOf(stage);
+    const _currentIdx = DEAL_STAGE_ORDER.indexOf(deal.stage);
+    const _targetIdx = DEAL_STAGE_ORDER.indexOf(stage);
 
     // Allow moving to any stage except jumping backwards from WON/LOST
     if (deal.stage === 'WON' || deal.stage === 'LOST') {

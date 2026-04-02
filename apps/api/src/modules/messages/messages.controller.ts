@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { prisma } from '@wacrm/database';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import type { User } from '@wacrm/database';
 import Redis from 'ioredis';
 

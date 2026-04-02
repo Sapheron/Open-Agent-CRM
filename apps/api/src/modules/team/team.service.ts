@@ -93,7 +93,7 @@ export class TeamService {
     if (targetUserId === requestingUserId) {
       throw new ForbiddenException('Cannot change your own role');
     }
-    const user = await this.get(companyId, targetUserId);
+    await this.get(companyId, targetUserId); // throws NotFoundException if not found
     return prisma.user.update({
       where: { id: targetUserId },
       data: { role },

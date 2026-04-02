@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { prisma } from '@wacrm/database';
 import type { PaymentProvider } from '@wacrm/database';
 import { encrypt } from '@wacrm/shared';
@@ -46,7 +46,7 @@ export class PaymentSettingsService {
     });
   }
 
-  async getWebhookUrl(companyId: string): Promise<string> {
+  async getWebhookUrl(_companyId: string): Promise<string> {
     const domain = process.env.DOMAIN ?? 'localhost:3001';
     return `https://${domain}/api/webhooks/payment`;
   }

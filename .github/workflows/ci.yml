@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo lint
@@ -51,18 +51,19 @@ jobs:
           - 6379:6379
     env:
       DATABASE_URL: postgresql://crm:crm@localhost:5432/wacrm_test?schema=public
+      DIRECT_DATABASE_URL: postgresql://crm:crm@localhost:5432/wacrm_test?schema=public
       REDIS_URL: redis://localhost:6379
-      JWT_SECRET: ci-test-secret
-      REFRESH_TOKEN_SECRET: ci-test-refresh-secret
+      JWT_SECRET: ci-test-secret-32chars-padding-xx
+      REFRESH_TOKEN_SECRET: ci-test-refresh-secret-32chars-xx
       ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000001
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
@@ -75,12 +76,12 @@ jobs:
     needs: [lint-and-type-check]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build
@@ -99,7 +100,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push API
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api/Dockerfile
@@ -108,7 +109,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push Worker
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/worker/Dockerfile
@@ -117,7 +118,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push WhatsApp
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/whatsapp/Dockerfile
@@ -126,7 +127,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push Dashboard
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/dashboard/Dockerfile

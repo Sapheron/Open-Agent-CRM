@@ -2,7 +2,7 @@ import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, IsEnum } from 'class-validator';
+import { IsEnum } from 'class-validator';
 import { LeadsService, CreateLeadDto } from './leads.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';

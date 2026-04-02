@@ -63,7 +63,7 @@ export class PhonePeGateway implements PaymentGateway {
     };
   }
 
-  verifyWebhook(payload: Buffer, _signature: string, secret: string): WebhookVerifyResult {
+  verifyWebhook(payload: Buffer, _signature: string, _secret: string): WebhookVerifyResult {
     const body = JSON.parse(payload.toString()) as {
       response: string;
     };

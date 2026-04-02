@@ -1,4 +1,3 @@
-import { createHmac } from 'crypto';
 import type { PaymentGateway, CreatePaymentLinkOptions, PaymentLinkResult, WebhookVerifyResult } from './gateway.interface';
 
 export class CashfreeGateway implements PaymentGateway {
@@ -51,7 +50,7 @@ export class CashfreeGateway implements PaymentGateway {
     };
   }
 
-  verifyWebhook(payload: Buffer, signature: string, secret: string): WebhookVerifyResult {
+  verifyWebhook(payload: Buffer, _signature: string, _secret: string): WebhookVerifyResult {
     const body = JSON.parse(payload.toString()) as {
       data: { payment?: { payment_status: string; cf_payment_id: string; payment_amount: number; payment_currency: string; payment_time?: string }; link?: { link_id: string } };
       type: string;

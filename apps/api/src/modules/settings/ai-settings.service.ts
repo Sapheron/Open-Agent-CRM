@@ -16,14 +16,46 @@ export interface UpsertAiConfigDto {
   toolCallingEnabled?: boolean;
 }
 
-// Models available per provider
+// Models available per provider — updated April 2026
 export const PROVIDER_MODELS: Record<AiProvider, string[]> = {
-  GEMINI: ['gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'],
-  OPENAI: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o3'],
-  ANTHROPIC: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5-20251001'],
-  GROQ: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
-  OLLAMA: ['llama3', 'mistral', 'phi3', 'gemma2'],
-  OPENROUTER: ['auto'],
+  GEMINI: [
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+  ],
+  OPENAI: [
+    'gpt-4.1',
+    'gpt-4.1-mini',
+    'gpt-4.1-nano',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o4-mini',
+    'o3',
+  ],
+  ANTHROPIC: [
+    'claude-opus-4-6',
+    'claude-sonnet-4-6',
+    'claude-haiku-4-5-20251001',
+  ],
+  GROQ: [
+    'llama-3.3-70b-versatile',
+    'deepseek-r1-distill-llama-70b',
+    'qwen-qwq-32b',
+    'llama-3.1-70b-versatile',
+    'llama-3.1-8b-instant',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
+  ],
+  OLLAMA: ['llama3.3', 'llama3.1', 'mistral', 'phi4', 'gemma3', 'deepseek-r1', 'qwen2.5'],
+  OPENROUTER: [
+    'google/gemini-2.5-pro',
+    'openai/gpt-4.1',
+    'anthropic/claude-sonnet-4-6',
+    'deepseek/deepseek-r1',
+    'meta-llama/llama-3.3-70b-instruct',
+    'auto',
+  ],
   CUSTOM: ['custom'],
 };
 

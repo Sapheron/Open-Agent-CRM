@@ -19,7 +19,8 @@
     "db:migrate": "turbo db:migrate --filter=database",
     "db:seed": "turbo db:seed --filter=database",
     "db:studio": "turbo db:studio --filter=database",
-    "db:generate": "turbo db:generate --filter=database"
+    "db:generate": "turbo db:generate --filter=database",
+    "db:push": "turbo db:push --filter=database"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

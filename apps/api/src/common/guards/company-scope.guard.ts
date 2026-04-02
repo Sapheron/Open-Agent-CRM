@@ -4,8 +4,6 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { prisma } from '@wacrm/database';
-
 /**
  * Ensures the requested resource belongs to the authenticated user's company.
  *

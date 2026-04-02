@@ -12,7 +12,7 @@ export class OpenAiProvider implements AiProvider {
 
   constructor(
     apiKey: string,
-    model = 'gpt-4o-mini',
+    model = 'gpt-4.1-mini',
     providerName = 'OPENAI',
     baseUrl?: string,
   ) {
