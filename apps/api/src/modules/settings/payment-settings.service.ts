@@ -46,7 +46,7 @@ export class PaymentSettingsService {
     });
   }
 
-  async getWebhookUrl(_companyId: string): Promise<string> {
+  getWebhookUrl(_companyId: string): string {
     const domain = process.env.DOMAIN ?? 'localhost:3001';
     return `https://${domain}/api/webhooks/payment`;
   }

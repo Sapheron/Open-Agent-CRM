@@ -65,6 +65,7 @@ export class ContactsService {
         lastName: dto.lastName,
         email: dto.email,
         tags: dto.tags ?? [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         customFields: (dto.customFields ?? {}) as any,
         notes: dto.notes,
       },
@@ -82,6 +83,7 @@ export class ContactsService {
     await this.get(companyId, id); // throws if not found
     return prisma.contact.update({
       where: { id },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: { ...(dto as any), updatedAt: new Date() },
     });
   }

@@ -31,11 +31,14 @@ export function useSocket() {
       setTyping(conversationId, false);
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.on('conversation.updated', ({ conversationId, changes }: { conversationId: string; changes: any }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const typedChanges = changes as any;
       // Update conversation in store
       useInboxStore.getState().upsertConversation({
         ...useInboxStore.getState().conversations.find((c) => c.id === conversationId)!,
-        ...changes,
+        ...typedChanges,
       });
     });
 
@@ -50,7 +53,7 @@ export function useSocket() {
       socket = null;
       initialized.current = false;
     };
-  }, [accessToken]);
+  }, [accessToken, addMessage, setTyping]);
 
   return socket;
 }

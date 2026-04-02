@@ -48,9 +48,10 @@ export function ChatWindow({ conversation }: { conversation: Conversation }) {
     }
   }, [messagesData, conversation.id, setMessages]);
 
+  const messagesLength = storeMessages[conversation.id]?.length;
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [storeMessages[conversation.id]?.length, isTyping]);
+  }, [messagesLength, isTyping]);
 
   const sendMutation = useMutation({
     mutationFn: async (text: string) => {

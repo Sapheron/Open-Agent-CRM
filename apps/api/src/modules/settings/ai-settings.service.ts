@@ -126,7 +126,7 @@ export class AiSettingsService {
     }
   }
 
-  async getProviderModels(provider: AiProvider): Promise<string[]> {
+  getProviderModels(provider: AiProvider): string[] {
     return PROVIDER_MODELS[provider] ?? [];
   }
 

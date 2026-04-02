@@ -45,6 +45,7 @@ export class InboundMonitor {
     logger.info({ accountId: this.accountId }, 'Inbound monitor started');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async handleMessage(msg: any) {
     const normalized = normalizeMessage(msg as Parameters<typeof normalizeMessage>[0]);
     if (!normalized) return;
@@ -109,9 +110,11 @@ export class InboundMonitor {
 
     // Upload media to MinIO if present
     let mediaUrl: string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (normalized.mediaData && (normalized.mediaData as any).buffer && normalized.mediaData.mimetype) {
       try {
         const ext = mimeToExtension(normalized.mediaData.mimetype);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mediaUrl = await uploadMedia((normalized.mediaData as any).buffer, normalized.mediaData.mimetype, ext);
         logger.info({ mediaUrl }, 'Media uploaded to MinIO');
       } catch (err: unknown) {

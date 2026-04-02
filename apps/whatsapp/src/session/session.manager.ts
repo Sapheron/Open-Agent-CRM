@@ -87,6 +87,7 @@ export async function startSession(accountId: string): Promise<void> {
       if (connection === 'close') {
         activeSockets.delete(accountId);
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const reason = (DisconnectReason as any)[statusCode] ?? 'unknown';
 
         logger.warn({ accountId, statusCode, reason }, 'WhatsApp disconnected');

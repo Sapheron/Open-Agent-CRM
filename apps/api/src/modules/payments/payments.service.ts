@@ -127,7 +127,7 @@ export class PaymentsService {
     return payment;
   }
 
-  async getWebhookUrl(companyId: string, domain: string) {
+  getWebhookUrl(companyId: string, domain: string) {
     return `https://${domain}/api/webhooks/payment/${companyId}`;
   }
 }

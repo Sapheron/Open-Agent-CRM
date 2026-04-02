@@ -74,6 +74,7 @@ export class LeadsService {
         estimatedValue: dto.estimatedValue,
         currency: dto.currency ?? 'INR',
         notes: dto.notes,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         customFields: (dto.customFields ?? {}) as any,
         assignedAgentId: dto.assignedAgentId,
       },
@@ -82,6 +83,7 @@ export class LeadsService {
 
   async update(companyId: string, id: string, dto: Partial<CreateLeadDto>) {
     await this.get(companyId, id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return prisma.lead.update({ where: { id }, data: dto as any });
   }
 
@@ -90,6 +92,7 @@ export class LeadsService {
     const data: Record<string, unknown> = { status };
     if (status === 'WON') data.wonAt = new Date();
     if (status === 'LOST') data.lostAt = new Date();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return prisma.lead.update({ where: { id }, data: data as any });
   }
 

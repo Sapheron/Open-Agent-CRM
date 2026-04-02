@@ -49,12 +49,14 @@ export class DealsService {
 
   async create(companyId: string, dto: CreateDealDto) {
     return prisma.deal.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: { companyId, ...(dto as any), stage: 'LEAD_IN' },
     });
   }
 
   async update(companyId: string, id: string, dto: Partial<CreateDealDto>) {
     await this.get(companyId, id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return prisma.deal.update({ where: { id }, data: dto as any });
   }
 

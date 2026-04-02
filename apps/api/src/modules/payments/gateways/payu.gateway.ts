@@ -20,7 +20,7 @@ export class PayUGateway implements PaymentGateway {
     return createHash('sha512').update(data).digest('hex');
   }
 
-  async createPaymentLink(opts: CreatePaymentLinkOptions): Promise<PaymentLinkResult> {
+  createPaymentLink(opts: CreatePaymentLinkOptions): Promise<PaymentLinkResult> {
     // PayU payment link API
     const txnId = opts.idempotencyKey.slice(0, 25);
     const amountInRupees = (opts.amount / 100).toFixed(2);
@@ -46,11 +46,11 @@ export class PayUGateway implements PaymentGateway {
     // it generates a payment page URL by posting form data. We return the action URL + params as the link.
     const linkUrl = `${this.baseUrl}/_payment?${params.toString()}`;
 
-    return {
+    return Promise.resolve({
       externalId: txnId,
       linkUrl,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    };
+    });
   }
 
   verifyWebhook(payload: Buffer, _signature: string, salt: string): WebhookVerifyResult {
