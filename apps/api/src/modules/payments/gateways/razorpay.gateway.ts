@@ -13,7 +13,7 @@ export class RazorpayGateway implements PaymentGateway {
     return `Basic ${Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64')}`;
   }
 
-  async createPaymentLink(opts: CreateCreatePaymentLinkOptions): Promise<PaymentLinkResult> {
+  async createPaymentLink(opts: CreatePaymentLinkOptions): Promise<PaymentLinkResult> {
     const response = await fetch('https://api.razorpay.com/v1/payment_links', {
       method: 'POST',
       headers: {
@@ -32,7 +32,7 @@ export class RazorpayGateway implements PaymentGateway {
         },
         callback_url: opts.callbackUrl,
         callback_method: 'get',
-        expire_by: Math.floor(Date.now() / 1000) + 86400 * 7, // 7 days
+        expire_by: Math.floor(Date.now() / 1000) + 86400 * 7,
       }),
     });
 
@@ -55,7 +55,7 @@ export class RazorpayGateway implements PaymentGateway {
 
     const body = JSON.parse(payload.toString()) as {
       event: string;
-      payload: { payment_link: { entity: { id: string; amount: number; currency: string } }; payment?: { entity?: { created_at?: number } } };
+      payload: { payment_link: { entity: { id: string; amount: number; currency: string } } };
     };
 
     const entity = body.payload.payment_link.entity;
@@ -84,6 +84,3 @@ export class RazorpayGateway implements PaymentGateway {
     }
   }
 }
-
-// Fix typo in createPaymentLink param type
-type CreateCreatePaymentLinkOptions = CreatePaymentLinkOptions;
