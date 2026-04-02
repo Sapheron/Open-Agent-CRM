@@ -1,22 +1,34 @@
 FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+FROM base AS builder
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY . .
+RUN npx turbo prune --scope=@wacrm/worker --out=out
+
+FROM base AS installer
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-FROM base AS deps
-COPY package.json turbo.json ./
-COPY apps/worker/package.json ./apps/worker/
-COPY packages/database/package.json ./packages/database/
-COPY packages/shared/package.json ./packages/shared/
-RUN npm install --workspaces --legacy-peer-deps
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
 
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npx turbo build --filter=@wacrm/worker
+COPY --from=builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN pnpm turbo build --filter=@wacrm/worker
 
-FROM base AS runner
-ENV NODE_ENV=production
-COPY --from=builder /app/apps/worker/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+FROM node:20-alpine AS runner
+WORKDIR /app
 
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+COPY --from=installer --chown=nestjs:nodejs /app/apps/worker/dist ./dist
+COPY --from=installer --chown=nestjs:nodejs /app/node_modules ./node_modules
+
+USER nestjs
 CMD ["node", "dist/main.js"]

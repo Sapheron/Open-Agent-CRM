@@ -1,27 +1,38 @@
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat curl
-WORKDIR /app
-
-FROM base AS deps
-COPY package.json turbo.json ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/database/package.json ./packages/database/
-COPY packages/shared/package.json ./packages/shared/
-RUN npm install --workspaces --legacy-peer-deps
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 COPY . .
-RUN npx turbo build --filter=@wacrm/api
+RUN npx turbo prune --scope=api --out=out
 
-FROM base AS runner
-ENV NODE_ENV=production
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/database/prisma ./prisma
+FROM base AS installer
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 
+# Copy pruned workspace
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# Copy pruned source and build
+COPY --from=builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN pnpm turbo build --filter=api
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+COPY --from=installer --chown=nestjs:nodejs /app/apps/api/dist ./dist
+COPY --from=installer --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=installer --chown=nestjs:nodejs /app/packages/database/prisma ./prisma
+
+USER nestjs
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
-
 CMD ["node", "dist/main.js"]
