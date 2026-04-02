@@ -19,6 +19,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
+COPY tsconfig.base.json tsconfig.base.json
 RUN pnpm turbo build --filter=@wacrm/whatsapp
 
 FROM node:20-alpine AS runner

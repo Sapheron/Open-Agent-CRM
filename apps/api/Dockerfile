@@ -21,6 +21,8 @@ RUN pnpm install --frozen-lockfile
 # Copy pruned source and build
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
+COPY tsconfig.base.json tsconfig.base.json
+RUN pnpm db:generate
 RUN pnpm turbo build --filter=@wacrm/api
 
 FROM node:20-alpine AS runner

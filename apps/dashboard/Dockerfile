@@ -19,6 +19,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
+COPY tsconfig.base.json tsconfig.base.json
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm turbo build --filter=@wacrm/dashboard
 
