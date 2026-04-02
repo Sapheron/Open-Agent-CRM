@@ -7,7 +7,7 @@ FROM base AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY . .
-RUN npx turbo prune --scope=api --out=out
+RUN pnpm dlx turbo@latest prune --scope=@wacrm/api --out=out
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat
@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 # Copy pruned source and build
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN pnpm turbo build --filter=api
+RUN pnpm turbo build --filter=@wacrm/api
 
 FROM node:20-alpine AS runner
 WORKDIR /app

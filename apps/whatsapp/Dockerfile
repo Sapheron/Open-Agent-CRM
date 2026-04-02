@@ -7,7 +7,7 @@ FROM base AS builder
 RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY . .
-RUN npx turbo prune --scope=@wacrm/whatsapp --out=out
+RUN pnpm dlx turbo@latest prune --scope=@wacrm/whatsapp --out=out
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat python3 make g++

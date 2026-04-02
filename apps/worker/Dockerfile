@@ -7,7 +7,7 @@ FROM base AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY . .
-RUN npx turbo prune --scope=@wacrm/worker --out=out
+RUN pnpm dlx turbo@latest prune --scope=@wacrm/worker --out=out
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat
