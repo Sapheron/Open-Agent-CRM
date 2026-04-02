@@ -1,4 +1,4 @@
-import type { DealStage } from '@prisma/client';
+import type { DealStage } from '@wacrm/database';
 
 export const DEAL_STAGE_ORDER: DealStage[] = [
   'LEAD_IN',

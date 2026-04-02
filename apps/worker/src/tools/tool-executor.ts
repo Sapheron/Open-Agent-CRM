@@ -83,7 +83,7 @@ export async function executeTool(
 
       if (!contacts.length) return { result: 'No contacts found matching that query.' };
       const summary = contacts
-        .map((c) => `${c.displayName ?? 'Unknown'} (${c.phoneNumber}) [ID: ${c.id}]`)
+        .map((c: any) => `${c.displayName ?? 'Unknown'} (${c.phoneNumber}) [ID: ${c.id}]`)
         .join('\n');
       return { result: `Found ${contacts.length} contact(s):\n${summary}` };
     }
@@ -130,7 +130,7 @@ export async function executeTool(
 
       const summary = messages
         .reverse()
-        .map((m) => `[${m.direction}] ${m.body?.slice(0, 200) ?? '(media)'}`)
+        .map((m: any) => `[${m.direction}] ${m.body?.slice(0, 200) ?? '(media)'}`)
         .join('\n');
       return { result: `Recent ${messages.length} messages:\n${summary}` };
     }

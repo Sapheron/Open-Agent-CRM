@@ -382,9 +382,9 @@ importers:
 
   packages/shared:
     dependencies:
-      '@prisma/client':
-        specifier: ^6.6.0
-        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@wacrm/database':
+        specifier: workspace:*
+        version: link:../database
       zod:
         specifier: ^3.23.0
         version: 3.25.76

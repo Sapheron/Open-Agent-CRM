@@ -3,7 +3,7 @@ import type {
   MessageStatus,
   Conversation,
   WaAccountStatus,
-} from '@prisma/client';
+} from '@wacrm/database';
 
 export interface WsMessageNew {
   conversationId: string;

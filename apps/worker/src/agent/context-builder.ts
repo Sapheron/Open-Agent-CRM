@@ -39,10 +39,10 @@ export async function buildContext(
         contact.tags.length ? `Tags: ${contact.tags.join(', ')}` : null,
         contact.notes ? `Notes: ${contact.notes}` : null,
         contact.leads.length
-          ? `Leads: ${contact.leads.map((l) => `${l.title} [${l.status}]`).join('; ')}`
+          ? `Leads: ${contact.leads.map((l: any) => `${l.title} [${l.status}]`).join('; ')}`
           : null,
         contact.deals.length
-          ? `Deals: ${contact.deals.map((d) => `${d.title} [${d.stage}] ₹${d.value}`).join('; ')}`
+          ? `Deals: ${contact.deals.map((d: any) => `${d.title} [${d.stage}] ₹${d.value}`).join('; ')}`
           : null,
       ]
         .filter(Boolean)
@@ -70,8 +70,8 @@ export async function buildContext(
     { role: 'system', content: fullSystemPrompt },
     ...recentMessages
       .reverse()
-      .filter((m) => m.body || m.mediaType)
-      .map((m): ChatMessage => ({
+      .filter((m: any) => m.body || m.mediaType)
+      .map((m: any): ChatMessage => ({
         role: m.direction === 'INBOUND' ? 'user' : 'assistant',
         content: m.body ?? `[${m.mediaType ?? 'media'} received]`,
       })),
