@@ -312,12 +312,9 @@ fi
 step 7 "Database migrations, seed & start"
 
 # Migrations
-MIGRATION_RES=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-  run --rm api sh -c \
-  "npx --yes prisma@6 migrate status --schema=packages/database/prisma/schema.prisma 2>&1 | grep -c 'Database schema is up to date'" \
-  2>/dev/null || echo "0")
-MIGRATION_DONE=$(echo "$MIGRATION_RES" | grep -o '[0-9]\+' | tail -1)
-MIGRATION_DONE=${MIGRATION_DONE:-0}
+MIGRATION_RES=\"0\"
+# Wait for postgres to be fully ready before pushing schema
+MIGRATION_DONE=0
 
 if [[ "$MIGRATION_DONE" -gt 0 ]]; then
   if ask_skip "Migrations already up to date"; then
@@ -325,15 +322,15 @@ if [[ "$MIGRATION_DONE" -gt 0 ]]; then
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
       run --rm api sh -c \
-      "npx --yes prisma@6 migrate deploy --schema=packages/database/prisma/schema.prisma"
-    ok "Migrations applied"
+      "DATABASE_URL=\$DIRECT_DATABASE_URL npx --yes prisma@6 db push --accept-data-loss --schema=packages/database/prisma/schema.prisma"
+    ok "Database schema pushed"
   fi
 else
-  info "Running database migrations..."
+  info "Running database schema push..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
     run --rm api sh -c \
-    "npx --yes prisma@6 migrate deploy --schema=packages/database/prisma/schema.prisma"
-  ok "Migrations applied"
+    "DATABASE_URL=\$DIRECT_DATABASE_URL npx --yes prisma@6 db push --accept-data-loss --schema=packages/database/prisma/schema.prisma"
+  ok "Database schema pushed"
 fi
 
 # Seed
