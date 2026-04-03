@@ -349,13 +349,13 @@ if [[ "${USER_COUNT:-0}" -gt 0 ]]; then
     ok "Skipping seed"
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-      run --rm api sh -c "npx --ignore-existing --yes tsx@4 prisma/seed.ts"
+      run --rm api sh -c "rm -f node_modules/.bin/tsx && npx --yes tsx@4 prisma/seed.ts"
     ok "Database re-seeded"
   fi
 else
   info "Seeding admin user..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-    run --rm api sh -c "npx --ignore-existing --yes tsx@4 prisma/seed.ts"
+    run --rm api sh -c "rm -f node_modules/.bin/tsx && npx --yes tsx@4 prisma/seed.ts"
   ok "Admin user created"
 fi
 
