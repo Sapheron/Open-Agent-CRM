@@ -91,15 +91,11 @@ services:
     image: postgres:16-alpine
     env_file:
       - ../.env
-    environment:
-      - POSTGRES_USER=${DB_USER:-crm}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME:-wacrm}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-crm}"]
+      test: ["CMD-SHELL", "pg_isready -U crm"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -110,7 +106,6 @@ services:
     env_file:
       - ../.env
     environment:
-      - DATABASE_URL=postgres://${DB_USER:-crm}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-wacrm}
       - POOL_MODE=transaction
       - MAX_CLIENT_CONN=200
       - DEFAULT_POOL_SIZE=20
@@ -142,9 +137,6 @@ services:
       - "127.0.0.1:9001:9001"   # MinIO Console UI
     env_file:
       - ../.env
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
     restart: unless-stopped
@@ -172,7 +164,6 @@ services:
     env_file:
       - ../.env
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     volumes:
@@ -190,13 +181,11 @@ services:
       sh -c "
         while true; do
           sleep 86400
-          pg_dump -U ${DB_USER:-crm} -h postgres ${DB_NAME:-wacrm} | gzip > /backups/wacrm-\$(date +%Y%m%d).sql.gz
-          find /backups -name '*.sql.gz' -mtime +${BACKUP_RETENTION_DAYS:-30} -delete
+          pg_dump -h postgres | gzip > /backups/wacrm-\$(date +%Y%m%d).sql.gz
+          find /backups -name '*.sql.gz' -mtime +30 -delete
           echo \"Backup done: \$(date)\"
         done
       "
-    environment:
-      - PGPASSWORD=${DB_PASSWORD}
     volumes:
       - backup_data:/backups
     depends_on:

@@ -21,9 +21,16 @@ class SendMessageBody {
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
 @Controller('messages')
 export class MessagesController {
-  private readonly redis = new Redis(process.env.REDIS_URL!);
+  private readonly redis: Redis;
 
-  constructor(private readonly svc: MessagesService) {}
+  constructor(private readonly svc: MessagesService) {
+    const redisUrl = (process.env.REDIS_URL || '').trim();
+    console.log(`[MessagesController] Initializing Redis with URL: "${redisUrl || 'MISSING'}"`);
+    if (!redisUrl) {
+      throw new Error('REDIS_URL is missing from environment! Cannot connect to background worker.');
+    }
+    this.redis = new Redis(redisUrl);
+  }
 
   @Post('send')
   @ApiOperation({ summary: 'Send an outbound message from the agent (manual reply)' })

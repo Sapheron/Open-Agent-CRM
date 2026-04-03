@@ -238,7 +238,27 @@ ENVEOF
 
 if [[ -f "$INSTALL_DIR/.env" ]]; then
   if ask_skip ".env already configured"; then
-    ok "Using existing .env"
+    # Auto-migration: Check for and append missing keys to existing .env
+    check_and_append() {
+      local key=$1
+      local value=$2
+      if ! grep -q "^$key=" "$INSTALL_DIR/.env"; then
+        echo "$key=$value" >> "$INSTALL_DIR/.env"
+        info "Added missing key $key to .env"
+      fi
+    }
+
+    # Ensure all required keys exist
+    check_and_append "DATABASE_URL" "postgresql://${DB_USER:-crm}:${DB_PASSWORD:-crm_pass}@pgbouncer:6432/${DB_NAME:-wacrm}?schema=public"
+    check_and_append "DIRECT_DATABASE_URL" "postgresql://${DB_USER:-crm}:${DB_PASSWORD:-crm_pass}@postgres:5432/${DB_NAME:-wacrm}?schema=public"
+    check_and_append "REDIS_URL" "redis://redis:6379"
+    check_and_append "JWT_SECRET" "$(openssl rand -hex 32)"
+    check_and_append "REFRESH_TOKEN_SECRET" "$(openssl rand -hex 32)"
+    check_and_append "ENCRYPTION_KEY" "$(openssl rand -hex 32)"
+    check_and_append "MINIO_ACCESS_KEY" "minioadmin"
+    check_and_append "MINIO_SECRET_KEY" "$(openssl rand -hex 32)"
+    check_and_append "API_PUBLIC_URL" "http://localhost:3000"
+    check_and_append "LOG_LEVEL" "info"
   else
     write_env
   fi
