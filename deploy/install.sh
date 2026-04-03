@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║          OpenAgent CRM — One-Command Installer                             ║
+# ║          Open Agent CRM — One-Command Installer                            ║
 # ║          https://openagentcrm.sapheron.com                                  ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
@@ -13,22 +13,21 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 INSTALL_DIR="${INSTALL_DIR:-/opt/openagentcrm}"
 REPO_URL="${REPO_URL:-https://github.com/Sapheron/Open-Agent-CRM.git}"
 COMPOSE_FILE="$INSTALL_DIR/deploy/docker-compose.yml"
-TOTAL_STEPS=8
+TOTAL_STEPS=7
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-step()  { echo -e "\n${BOLD}${CYAN}┌─[${NC}${BOLD} STEP $1/$TOTAL_STEPS — $2 ${CYAN}]${NC}"; }
-ok()    { echo -e "  ${GREEN}✔  $1${NC}"; }
-warn()  { echo -e "  ${YELLOW}⚠  $1${NC}"; }
-fail()  { echo -e "\n  ${RED}✖  ERROR: $1${NC}\n"; exit 1; }
-info()  { echo -e "  ${BLUE}→  $1${NC}"; }
+step()     { echo -e "\n${BOLD}${CYAN}┌─[${NC}${BOLD} STEP $1/$TOTAL_STEPS — $2 ${CYAN}]${NC}"; }
+ok()       { echo -e "  ${GREEN}✔  $1${NC}"; }
+warn()     { echo -e "  ${YELLOW}⚠  $1${NC}"; }
+fail()     { echo -e "\n  ${RED}✖  ERROR: $1${NC}\n"; exit 1; }
+info()     { echo -e "  ${BLUE}→  $1${NC}"; }
 rand_hex() { openssl rand -hex "${1:-32}"; }
 
-# Idempotency helper — shows what's done and asks to skip or redo
 ask_skip() {
   local msg="$1"
   ok "Already done: $msg"
   if [[ "${CI:-false}" == "true" ]] || [[ "${FORCE:-false}" == "true" ]]; then
-    return 0  # auto-skip in CI / force mode
+    return 0
   fi
   while true; do
     read -rp "  $(echo -e "${YELLOW}Skip this step?${NC}") [Y/n]: " choice
@@ -44,12 +43,16 @@ ask_skip() {
 echo ""
 echo -e "${CYAN}${BOLD}"
 echo "  ╔═══════════════════════════════════════════════════╗"
-echo "  ║        OpenAgent CRM — Installer v1.0            ║"
+echo "  ║       Open Agent CRM — Installer v1.0            ║"
 echo "  ║    WhatsApp AI CRM • Self-hosted • Open Source    ║"
+echo "  ║         A Sapheron Project                        ║"
 echo "  ╚═══════════════════════════════════════════════════╝"
 echo -e "${NC}"
-echo -e "  Install dir: ${BLUE}$INSTALL_DIR${NC}"
-echo -e "  Repo:        ${BLUE}$REPO_URL${NC}"
+echo -e "  Install dir : ${BLUE}$INSTALL_DIR${NC}"
+echo -e "  Repo        : ${BLUE}$REPO_URL${NC}"
+echo ""
+echo -e "  ${YELLOW}Note: SSL and reverse proxy are NOT set up automatically.${NC}"
+echo -e "  ${YELLOW}Instructions will be printed at the end.${NC}"
 echo ""
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -89,8 +92,6 @@ if command -v docker &>/dev/null; then
   DOCKER_VER=$(docker --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
   if ask_skip "Docker $DOCKER_VER is installed"; then
     ok "Using Docker $DOCKER_VER"
-  else
-    info "Reinstall skipped — remove manually if needed"
   fi
 else
   info "Docker not found — installing..."
@@ -98,7 +99,6 @@ else
     curl -fsSL https://get.docker.com | sh
     if command -v systemctl &>/dev/null; then
       systemctl enable --now docker
-      # Add current user to docker group
       usermod -aG docker "${SUDO_USER:-$USER}" 2>/dev/null || true
     fi
     ok "Docker installed"
@@ -111,7 +111,7 @@ if ! docker compose version &>/dev/null 2>&1; then
   info "Installing Docker Compose plugin..."
   if [[ "$OS" == "Linux" ]]; then
     apt-get install -y docker-compose-plugin 2>/dev/null || \
-      fail "Could not install docker-compose-plugin. Install manually: https://docs.docker.com/compose/install/"
+      fail "Could not install docker-compose-plugin. See: https://docs.docker.com/compose/install/"
   else
     fail "Update Docker Desktop to get the Compose plugin"
   fi
@@ -121,7 +121,7 @@ COMPOSE_VER=$(docker compose version --short 2>/dev/null || echo "unknown")
 ok "Docker Compose $COMPOSE_VER ready"
 
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 3 — CODE
+# STEP 3 — DOWNLOAD CODE
 # ════════════════════════════════════════════════════════════════════════════
 step 3 "Download / update code"
 
@@ -146,23 +146,10 @@ cd "$INSTALL_DIR"
 # ════════════════════════════════════════════════════════════════════════════
 step 4 "Environment configuration"
 
-if [[ -f "$INSTALL_DIR/.env" ]]; then
-  if ask_skip ".env already configured"; then
-    ok "Using existing .env"
-  else
-    write_env
-  fi
-else
-  write_env
-fi
-
 write_env() {
   echo ""
   echo -e "  ${BOLD}Configure your installation:${NC}"
   echo ""
-
-  read -rp "  $(echo -e "${CYAN}Domain${NC}") (e.g. crm.company.com): " DOMAIN
-  [[ -z "$DOMAIN" ]] && fail "Domain is required"
 
   read -rp "  $(echo -e "${CYAN}Admin email${NC}"): " ADMIN_EMAIL
   [[ -z "$ADMIN_EMAIL" ]] && fail "Admin email is required"
@@ -174,27 +161,34 @@ write_env() {
     warn "Password must be at least 8 characters"
   done
 
-  read -rsp "  $(echo -e "${CYAN}Database password${NC}"): " DB_PASSWORD
+  read -rsp "  $(echo -e "${CYAN}Database password${NC}") (press Enter to auto-generate): " DB_PASSWORD
   echo ""
-  [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(rand_hex 16)
+  [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(rand_hex 16) && info "Database password auto-generated"
 
   MINIO_SECRET=$(rand_hex 16)
   JWT_SECRET=$(rand_hex 32)
   REFRESH_TOKEN_SECRET=$(rand_hex 32)
   ENCRYPTION_KEY=$(rand_hex 32)
   GRAFANA_PASSWORD=$(rand_hex 12)
-  ACME_EMAIL="${ADMIN_EMAIL}"
 
   cat > "$INSTALL_DIR/.env" << ENVEOF
-# ── OpenAgent CRM — Environment ──────────────────────────────────────────────
+# ── Open Agent CRM — Environment ─────────────────────────────────────────────
 # Generated by installer on $(date -u '+%Y-%m-%d %H:%M UTC')
-# DO NOT add AI/payment keys here — configure those from the dashboard.
+#
+# AI provider keys and payment gateway keys are configured from the dashboard.
+# Do NOT add them here.
+#
+# Set DOMAIN and API_PUBLIC_URL after you configure your reverse proxy.
 
 # ── App ──────────────────────────────────────────────────────────────────────
 NODE_ENV=production
-DOMAIN=${DOMAIN}
+DOMAIN=localhost
 ADMIN_EMAIL=${ADMIN_EMAIL}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
+
+# ── Update these after setting up your reverse proxy ─────────────────────────
+# DOMAIN=crm.yourcompany.com
+# API_PUBLIC_URL=https://crm.yourcompany.com
 
 # ── Database ─────────────────────────────────────────────────────────────────
 DATABASE_URL=postgresql://crm:${DB_PASSWORD}@pgbouncer:5432/wacrm
@@ -212,7 +206,7 @@ REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 
-# ── Encryption (AES-256-GCM for API keys stored in DB) ───────────────────────
+# ── Encryption (AES-256-GCM — encrypts AI + payment keys in DB) ──────────────
 ENCRYPTION_KEY=${ENCRYPTION_KEY}
 
 # ── MinIO ────────────────────────────────────────────────────────────────────
@@ -222,30 +216,40 @@ MINIO_USE_SSL=false
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=${MINIO_SECRET}
 MINIO_BUCKET=wacrm-media
-MINIO_PUBLIC_URL=https://${DOMAIN}/media
 
 # ── Observability ────────────────────────────────────────────────────────────
 GRAFANA_PASSWORD=${GRAFANA_PASSWORD}
 LOG_LEVEL=info
 
-# ── Traefik ──────────────────────────────────────────────────────────────────
-ACME_EMAIL=${ACME_EMAIL}
-
-# ── Ports (internal) ─────────────────────────────────────────────────────────
+# ── Ports ────────────────────────────────────────────────────────────────────
 API_PORT=3000
 DASHBOARD_PORT=3001
 ENVEOF
 
   ok ".env written to $INSTALL_DIR/.env"
-  info "Grafana password: ${GRAFANA_PASSWORD} (save this!)"
+  echo ""
+  echo -e "  ${YELLOW}${BOLD}Save these — you will need them:${NC}"
+  echo -e "  Admin email    : ${CYAN}${ADMIN_EMAIL}${NC}"
+  echo -e "  Admin password : ${CYAN}${ADMIN_PASSWORD}${NC}"
+  echo -e "  Grafana        : ${CYAN}${GRAFANA_PASSWORD}${NC}"
 }
 
+if [[ -f "$INSTALL_DIR/.env" ]]; then
+  if ask_skip ".env already configured"; then
+    ok "Using existing .env"
+  else
+    write_env
+  fi
+else
+  write_env
+fi
+
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 5 — PULL / BUILD IMAGES
+# STEP 5 — DOCKER IMAGES
 # ════════════════════════════════════════════════════════════════════════════
 step 5 "Docker images"
 
-IMAGES_EXIST=$(docker images --format "{{.Repository}}" 2>/dev/null | grep -c "openagentcrm" || true)
+IMAGES_EXIST=$(docker images --format "{{.Repository}}" 2>/dev/null | grep -c "open-agent-crm" || true)
 
 if [[ "$IMAGES_EXIST" -gt 0 ]]; then
   if ask_skip "Images already built/pulled ($IMAGES_EXIST found)"; then
@@ -256,8 +260,9 @@ if [[ "$IMAGES_EXIST" -gt 0 ]]; then
     ok "Images rebuilt"
   fi
 else
-  info "Pulling pre-built images (or building locally)..."
+  info "Pulling pre-built images..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" pull --quiet 2>/dev/null || true
+  info "Building any missing images..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" build --quiet
   ok "Images ready"
 fi
@@ -265,13 +270,13 @@ fi
 # ════════════════════════════════════════════════════════════════════════════
 # STEP 6 — START INFRASTRUCTURE
 # ════════════════════════════════════════════════════════════════════════════
-step 6 "Infrastructure services (postgres, redis, minio)"
+step 6 "Infrastructure (postgres, redis, minio, pgbouncer)"
 
 INFRA_RUNNING=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   ps -q postgres redis minio pgbouncer 2>/dev/null | wc -l | tr -d ' ')
 
 if [[ "$INFRA_RUNNING" -ge 4 ]]; then
-  if ask_skip "Infrastructure services already running ($INFRA_RUNNING containers)"; then
+  if ask_skip "Infrastructure already running ($INFRA_RUNNING containers)"; then
     ok "Using running infrastructure"
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
@@ -279,7 +284,7 @@ if [[ "$INFRA_RUNNING" -ge 4 ]]; then
     ok "Infrastructure restarted"
   fi
 else
-  info "Starting infrastructure services..."
+  info "Starting postgres, redis, minio, pgbouncer..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
     up -d postgres redis minio pgbouncer
 
@@ -287,23 +292,24 @@ else
   for svc in postgres redis; do
     for i in $(seq 1 20); do
       HEALTH=$(docker inspect \
-        "$(docker compose -f "$COMPOSE_FILE" ps -q "$svc" 2>/dev/null)" \
+        "$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" ps -q "$svc" 2>/dev/null)" \
         --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
       if [[ "$HEALTH" == "healthy" ]]; then
         ok "$svc is healthy"
         break
       fi
-      [[ $i -eq 20 ]] && warn "$svc health check timed out (may still be starting)"
+      [[ $i -eq 20 ]] && warn "$svc health check timed out — may still be starting"
       sleep 3
     done
   done
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 7 — DATABASE MIGRATIONS & SEED
+# STEP 7 — DATABASE + START APP
 # ════════════════════════════════════════════════════════════════════════════
-step 7 "Database migrations & seed"
+step 7 "Database migrations, seed & start"
 
+# Migrations
 MIGRATION_DONE=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
   "npx prisma migrate status --schema=packages/database/prisma/schema.prisma 2>&1 | grep -c 'Database schema is up to date'" \
@@ -313,7 +319,6 @@ if [[ "$MIGRATION_DONE" -gt 0 ]]; then
   if ask_skip "Migrations already up to date"; then
     ok "Migrations current"
   else
-    info "Re-running migrations..."
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
       run --rm api sh -c \
       "npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma"
@@ -327,6 +332,7 @@ else
   ok "Migrations applied"
 fi
 
+# Seed
 USER_COUNT=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
   "node -e \"const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.user.count().then(n=>{console.log(n);p.\$disconnect()})\"" \
@@ -336,63 +342,155 @@ if [[ "${USER_COUNT:-0}" -gt 0 ]]; then
   if ask_skip "Admin user already seeded ($USER_COUNT users found)"; then
     ok "Skipping seed"
   else
-    info "Re-seeding..."
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
       run --rm api sh -c "npx tsx packages/database/prisma/seed.ts"
     ok "Database re-seeded"
   fi
 else
-  info "Seeding database with admin user..."
+  info "Seeding admin user..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
     run --rm api sh -c "npx tsx packages/database/prisma/seed.ts"
-  ok "Database seeded"
+  ok "Admin user created"
 fi
 
-# ════════════════════════════════════════════════════════════════════════════
-# STEP 8 — START APPLICATION
-# ════════════════════════════════════════════════════════════════════════════
-step 8 "Start application"
-
+# Start all services
 info "Starting all services..."
 docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" up -d
 
-info "Waiting for application to be ready (up to 30s)..."
+info "Waiting for API to be ready (up to 30s)..."
 for i in $(seq 1 10); do
   HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
     "http://localhost:3000/api/health" 2>/dev/null || echo "000")
   if [[ "$HTTP_CODE" == "200" ]]; then
-    ok "API is healthy"
+    ok "API is healthy (http://localhost:3000)"
     break
   fi
-  [[ $i -eq 10 ]] && warn "API health check timed out — check logs with: docker compose logs api"
+  [[ $i -eq 10 ]] && warn "API not responding yet — check: docker compose logs api"
   sleep 3
 done
-
-DOMAIN_VAL=$(grep -E "^DOMAIN=" "$INSTALL_DIR/.env" | cut -d= -f2 2>/dev/null || echo "localhost")
 
 # ════════════════════════════════════════════════════════════════════════════
 # DONE
 # ════════════════════════════════════════════════════════════════════════════
 echo ""
-echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}${BOLD}║   ✅  OpenAgent CRM is ready!                       ║${NC}"
-echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════╝${NC}"
+echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}${BOLD}║   ✅  Open Agent CRM is running!                            ║${NC}"
+echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "  ${BOLD}Dashboard:${NC}   ${BLUE}https://${DOMAIN_VAL}${NC}"
-echo -e "  ${BOLD}API Docs:${NC}    ${BLUE}https://${DOMAIN_VAL}/api/docs${NC}"
-echo -e "  ${BOLD}Grafana:${NC}     ${BLUE}https://${DOMAIN_VAL}/grafana${NC}"
-echo ""
-echo -e "  ${YELLOW}${BOLD}Next step:${NC} Open the dashboard and complete the 6-step setup wizard"
-echo -e "  ${YELLOW}(configure WhatsApp, AI provider, and payment gateway from the UI)${NC}"
+echo -e "  ${BOLD}Services are running on localhost:${NC}"
+echo -e "  ${CYAN}Dashboard  →  http://localhost:3001${NC}"
+echo -e "  ${CYAN}API        →  http://localhost:3000/api${NC}"
+echo -e "  ${CYAN}API Docs   →  http://localhost:3000/api/docs${NC}"
+echo -e "  ${CYAN}Grafana    →  http://localhost:3002${NC}"
+echo -e "  ${CYAN}MinIO UI   →  http://localhost:9001${NC}"
 echo ""
 echo -e "  ${BOLD}Useful commands:${NC}"
-echo -e "  ${CYAN}docker compose -f $COMPOSE_FILE logs -f api${NC}"
+echo -e "  ${CYAN}docker compose -f $COMPOSE_FILE logs -f${NC}"
 echo -e "  ${CYAN}docker compose -f $COMPOSE_FILE ps${NC}"
 echo -e "  ${CYAN}docker compose -f $COMPOSE_FILE restart${NC}"
 echo -e "  ${CYAN}docker compose -f $COMPOSE_FILE down${NC}"
 echo ""
-echo -e "  ${BOLD}Reinstall / update anytime:${NC}"
-echo -e "  ${CYAN}curl -fsSL https://openagentcrm.sapheron.com/install.sh | bash${NC}"
+
+# ════════════════════════════════════════════════════════════════════════════
+# PROXY SETUP INSTRUCTIONS
+# ════════════════════════════════════════════════════════════════════════════
+echo -e "${YELLOW}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}${BOLD}║   ⚙  NEXT STEP: Set up your reverse proxy + SSL            ║${NC}"
+echo -e "${YELLOW}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════${NC}"
+echo -e "  All services are on ${BOLD}localhost only${NC} (127.0.0.1)."
+echo -e "  You need a reverse proxy to expose them to the internet."
+echo -e "  Choose the one you already have — or install nginx:"
+echo ""
+
+echo -e "${BOLD}  ── Option 1: nginx ─────────────────────────────────────────────${NC}"
+echo ""
+echo -e "  ${BLUE}# Install nginx (if not already installed)${NC}"
+echo -e "  ${CYAN}sudo apt install nginx -y${NC}"
+echo ""
+echo -e "  ${BLUE}# Create site config${NC}"
+echo -e "  ${CYAN}sudo nano /etc/nginx/sites-available/openagentcrm${NC}"
+echo ""
+cat << 'NGINX_BLOCK'
+  Paste this config:
+  ─────────────────────────────────────────────────────────────
+  server {
+      listen 80;
+      server_name YOUR_DOMAIN;
+
+      # Dashboard
+      location / {
+          proxy_pass http://127.0.0.1:3001;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      # API + WebSocket
+      location /api {
+          proxy_pass http://127.0.0.1:3000;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      # Grafana
+      location /grafana {
+          proxy_pass http://127.0.0.1:3002;
+          proxy_set_header Host $host;
+      }
+
+      # MinIO media
+      location /media {
+          proxy_pass http://127.0.0.1:9000;
+          proxy_set_header Host $host;
+      }
+  }
+  ─────────────────────────────────────────────────────────────
+NGINX_BLOCK
+echo ""
+echo -e "  ${BLUE}# Enable site and reload nginx${NC}"
+echo -e "  ${CYAN}sudo ln -s /etc/nginx/sites-available/openagentcrm /etc/nginx/sites-enabled/${NC}"
+echo -e "  ${CYAN}sudo nginx -t && sudo systemctl reload nginx${NC}"
+echo ""
+echo -e "  ${BLUE}# Add SSL with certbot (Let's Encrypt — free)${NC}"
+echo -e "  ${CYAN}sudo apt install certbot python3-certbot-nginx -y${NC}"
+echo -e "  ${CYAN}sudo certbot --nginx -d YOUR_DOMAIN${NC}"
+echo ""
+
+echo -e "${BOLD}  ── Option 2: Caddy ─────────────────────────────────────────────${NC}"
+echo ""
+echo -e "  ${BLUE}# Add to /etc/caddy/Caddyfile${NC}"
+cat << 'CADDY_BLOCK'
+  ─────────────────────────────────────────────────────────────
+  YOUR_DOMAIN {
+      reverse_proxy /api* localhost:3000
+      reverse_proxy /grafana* localhost:3002
+      reverse_proxy /media* localhost:9000
+      reverse_proxy * localhost:3001
+  }
+  ─────────────────────────────────────────────────────────────
+CADDY_BLOCK
+echo ""
+echo -e "  ${CYAN}sudo systemctl reload caddy${NC}"
+echo -e "  ${BLUE}# Caddy handles SSL automatically — no certbot needed${NC}"
+echo ""
+
+echo -e "${BOLD}  ── After proxy setup ────────────────────────────────────────────${NC}"
+echo ""
+echo -e "  1. Edit ${CYAN}$INSTALL_DIR/.env${NC}"
+echo -e "     Uncomment and set:"
+echo -e "     ${CYAN}DOMAIN=YOUR_DOMAIN${NC}"
+echo -e "     ${CYAN}API_PUBLIC_URL=https://YOUR_DOMAIN${NC}"
+echo ""
+echo -e "  2. Restart the dashboard to pick up the new API URL:"
+echo -e "     ${CYAN}docker compose -f $COMPOSE_FILE restart dashboard${NC}"
+echo ""
+echo -e "  3. Open ${CYAN}https://YOUR_DOMAIN${NC} — log in and complete the setup wizard."
+echo ""
+echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════${NC}"
 echo ""

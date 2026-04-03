@@ -56,6 +56,8 @@ The installer is **fully idempotent** — re-run it anytime to update or repair.
 
 > **Requirements:** Docker, 2GB RAM, any Linux VPS or local machine
 
+> **SSL & reverse proxy are NOT set up automatically.** The installer prints nginx and Caddy config snippets at the end so you can use whatever you already have.
+
 ---
 
 ## Features
@@ -333,12 +335,13 @@ curl -fsSL https://openagentcrm.sapheron.com/install.sh | bash
 The installer will:
 1. Detect your OS and install Docker if needed
 2. Clone the repo to `/opt/openagentcrm`
-3. Interactively generate your `.env` (domain, admin email, password)
+3. Interactively generate your `.env` (admin email, password, auto-generated secrets)
 4. Pull and build Docker images
 5. Start infrastructure (postgres, redis, minio, pgbouncer)
-6. Run database migrations
-7. Seed the admin user
-8. Start all services with Traefik SSL
+6. Run database migrations + seed admin user
+7. Start all services on localhost ports
+
+Then **print nginx and Caddy config** so you set up your own reverse proxy + SSL.
 
 ### Manual deployment
 
