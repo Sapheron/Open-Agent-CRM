@@ -32,7 +32,7 @@ ask_skip() {
     return 0
   fi
   while true; do
-    read -rp "  $(echo -e "${YELLOW}Skip this step?${NC}") [Y/n]: " choice
+    read -rp "  $(echo -e "${YELLOW}Skip this step?${NC}") [Y/n]: " choice < /dev/tty
     case "${choice:-Y}" in
       [Yy]*) return 0 ;;
       [Nn]*) return 1 ;;
@@ -153,17 +153,17 @@ write_env() {
   echo -e "  ${BOLD}Configure your installation:${NC}"
   echo ""
 
-  read -rp "  $(echo -e "${CYAN}Admin email${NC}"): " ADMIN_EMAIL
+  read -rp "  $(echo -e "${CYAN}Admin email${NC}"): " ADMIN_EMAIL < /dev/tty
   [[ -z "$ADMIN_EMAIL" ]] && fail "Admin email is required"
 
   while true; do
-    read -rsp "  $(echo -e "${CYAN}Admin password${NC}") (min 8 chars): " ADMIN_PASSWORD
+    read -rsp "  $(echo -e "${CYAN}Admin password${NC}") (min 8 chars): " ADMIN_PASSWORD < /dev/tty
     echo ""
     [[ ${#ADMIN_PASSWORD} -ge 8 ]] && break
     warn "Password must be at least 8 characters"
   done
 
-  read -rsp "  $(echo -e "${CYAN}Database password${NC}") (press Enter to auto-generate): " DB_PASSWORD
+  read -rsp "  $(echo -e "${CYAN}Database password${NC}") (press Enter to auto-generate): " DB_PASSWORD < /dev/tty
   echo ""
   [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(rand_hex 16) && info "Database password auto-generated"
 
