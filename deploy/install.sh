@@ -249,14 +249,14 @@ if [[ -f "$INSTALL_DIR/.env" ]]; then
     }
 
     # Ensure all required keys exist
-    check_and_append "DATABASE_URL" "postgresql://${DB_USER:-crm}:${DB_PASSWORD:-crm_pass}@pgbouncer:6432/${DB_NAME:-wacrm}?schema=public"
+    check_and_append "DATABASE_URL" "postgresql://${DB_USER:-crm}:${DB_PASSWORD:-crm_pass}@pgbouncer:5432/${DB_NAME:-wacrm}?schema=public"
     check_and_append "DIRECT_DATABASE_URL" "postgresql://${DB_USER:-crm}:${DB_PASSWORD:-crm_pass}@postgres:5432/${DB_NAME:-wacrm}?schema=public"
     check_and_append "REDIS_URL" "redis://redis:6379"
 
-    # Enforce correct port 6432 for pgbouncer connections in existing .env (Doctor mode)
-    if grep -q "pgbouncer:5432" "$INSTALL_DIR/.env" 2>/dev/null; then
-      sed -i 's/pgbouncer:5432/pgbouncer:6432/g' "$INSTALL_DIR/.env"
-      info "Fixed DATABASE_URL port (5432 -> 6432) in .env"
+    # Enforce native port 5432 for pgbouncer connections in existing .env (Doctor mode)
+    if grep -q "pgbouncer:6432" "$INSTALL_DIR/.env" 2>/dev/null; then
+      sed -i 's/pgbouncer:6432/pgbouncer:5432/g' "$INSTALL_DIR/.env"
+      info "Fixed DATABASE_URL port (6432 -> 5432) in .env"
     fi
 
     check_and_append "JWT_SECRET" "$(openssl rand -hex 32)"
