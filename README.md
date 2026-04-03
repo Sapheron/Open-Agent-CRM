@@ -24,7 +24,7 @@ Developed by **[ASHIK K I](https://github.com/ashik-k-i)**
 
 ---
 
-[🚀 Install in one command](#-one-command-install) · [✨ Features](#-features) · [🏗 Architecture](#-architecture) · [📖 Docs](#-documentation) · [🤝 Contributing](#-contributing)
+[🚀 Install](#one-command-install) · [✨ Features](#features) · [🏗 Architecture](#architecture) · [🛠 Tech Stack](#tech-stack) · [🚦 Roadmap](#roadmap) · [🤝 Contributing](#contributing)
 
 </div>
 
@@ -466,9 +466,11 @@ This project is licensed under the **[MIT License](LICENSE)**.
 
 **A [Sapheron](https://sapheron.com) Project**
 
-*Sapheron is a product and technology brand under*
+*Sapheron is a software brand under*
 
 **TechnoTaLim Platform and Services LLP**
+
+*"Engineering the Future"*
 
 <br/>
 
