@@ -73,12 +73,12 @@ The installer is **fully idempotent** — re-run it anytime to update or repair.
 - Supports **6 AI providers** — all configured from the dashboard, keys encrypted in DB
   | Provider | Models |
   |---|---|
-  | **Google Gemini** | gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash |
-  | **OpenAI** | gpt-4o, gpt-4o-mini, gpt-4-turbo |
+  | **Google Gemini** | gemini-2.5-pro, gemini-2.5-flash, gemini-2.0-flash, gemini-2.0-flash-lite |
+  | **OpenAI** | gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, gpt-4o, gpt-4o-mini, o4-mini, o3 |
   | **Anthropic Claude** | claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5 |
-  | **Groq** | llama-3.3-70b, mixtral-8x7b |
-  | **Ollama** | any local model (llama3, mistral, phi3…) |
-  | **OpenRouter** | 200+ models via unified API |
+  | **Groq** | llama-3.3-70b-versatile, deepseek-r1-distill-llama-70b, qwen-qwq-32b, mixtral-8x7b |
+  | **Ollama** | llama3.3, llama3.1, mistral, phi4, gemma3, deepseek-r1, qwen2.5 |
+  | **OpenRouter** | google/gemini-2.5-pro, openai/gpt-4.1, anthropic/claude-sonnet-4-6, deepseek/deepseek-r1, 200+ more |
 - **8 built-in AI tools:** create-lead, create-deal, create-task, move-deal-stage, create-payment-link, schedule-followup, update-contact, escalate-to-human
 - Circuit breaker (Opossum) — auto-fallback if AI provider goes down
 - Context builder with token counting and smart pruning
@@ -209,11 +209,11 @@ Open-Agent-CRM/
 <td valign="top" width="33%">
 
 **Backend**
-- NestJS 10 (TypeScript)
-- Prisma ORM + PostgreSQL 16
-- Redis 7 + BullMQ
-- Socket.io WebSockets
-- Baileys (WhatsApp Web)
+- NestJS 10 · TypeScript 5.8
+- Prisma 6.6 + PostgreSQL 16
+- Redis 7 + BullMQ 5.27
+- Socket.io 4.8 WebSockets
+- Baileys 6.7 (WhatsApp Web)
 - Passport.js + JWT
 - Opossum (circuit breaker)
 
@@ -221,13 +221,13 @@ Open-Agent-CRM/
 <td valign="top" width="33%">
 
 **Frontend**
-- Next.js 15 (App Router)
-- Tailwind CSS + shadcn/ui
-- Zustand (state)
-- TanStack Query
-- Recharts (charts)
+- Next.js 15.3 (App Router)
+- Tailwind CSS 3.4
+- Zustand 5 (state)
+- TanStack Query 5.67
+- Recharts 2.15 (charts)
 - dnd-kit (kanban)
-- Socket.io client
+- Socket.io client 4.8
 
 </td>
 <td valign="top" width="33%">
@@ -250,8 +250,8 @@ Open-Agent-CRM/
 ## Getting Started (Development)
 
 ### Prerequisites
-- Node.js 20+
-- pnpm 9+
+- Node.js 22+
+- pnpm 9.15.9+
 - Docker + Docker Compose
 
 ### 1. Clone
@@ -372,15 +372,17 @@ docker compose -f deploy/docker-compose.yml up -d
 - [x] Redis pub/sub for QR streaming to dashboard
 - [x] MinIO media storage for inbound media
 - [x] AI provider adapters (Gemini, OpenAI, Anthropic, Groq, Ollama, OpenRouter)
+- [x] AI models updated to latest — Gemini 2.5 Pro/Flash, GPT-4.1, o4-mini, DeepSeek R1, Qwen QwQ
 - [x] Tool system (8 tools with ToolRegistry + ToolExecutor)
 - [x] AI agent loop with circuit breaker + FSM integration
 - [x] BullMQ processors (AI, broadcast, reminder, follow-up, cleanup, payment-check, warmup-reset)
-- [x] Next.js 15 dashboard — all pages implemented
+- [x] Next.js 15.3 dashboard — all pages implemented
 - [x] Setup wizard (6-step onboarding)
 - [x] Prometheus + Grafana + Loki observability stack
 - [x] Docker Compose production stack with Traefik SSL
 - [x] Idempotent one-command installer (Mac/Linux + Windows)
-- [x] GitHub Actions CI/CD pipeline
+- [x] GitHub Actions CI/CD pipeline (Node 22, ESLint v9 flat config, pnpm 9.15.9)
+- [x] All CVEs resolved — Next.js RCE, Multer DoS, lodash injection, picomatch ReDoS
 - [ ] Email notifications for task reminders
 - [ ] WhatsApp Cloud API support
 - [ ] Mobile app (React Native)
@@ -492,6 +494,6 @@ This project is licensed under the **[MIT License](LICENSE)**.
 
 <br/>
 
-<sub>© 2025 TechnoTaLim Platform and Services LLP · MIT License</sub>
+<sub>© 2026 TechnoTaLim Platform and Services LLP · MIT License</sub>
 
 </div>
