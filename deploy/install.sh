@@ -312,10 +312,12 @@ fi
 step 7 "Database migrations, seed & start"
 
 # Migrations
-MIGRATION_DONE=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+MIGRATION_RES=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
-  "npx prisma migrate status --schema=packages/database/prisma/schema.prisma 2>&1 | grep -c 'Database schema is up to date'" \
+  "./node_modules/.bin/prisma migrate status --schema=prisma/schema.prisma 2>&1 | grep -c 'Database schema is up to date'" \
   2>/dev/null || echo "0")
+MIGRATION_DONE=$(echo "$MIGRATION_RES" | grep -o '[0-9]\+' | tail -1)
+MIGRATION_DONE=${MIGRATION_DONE:-0}
 
 if [[ "$MIGRATION_DONE" -gt 0 ]]; then
   if ask_skip "Migrations already up to date"; then
@@ -323,35 +325,37 @@ if [[ "$MIGRATION_DONE" -gt 0 ]]; then
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
       run --rm api sh -c \
-      "npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma"
+      "./node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma"
     ok "Migrations applied"
   fi
 else
   info "Running database migrations..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
     run --rm api sh -c \
-    "npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma"
+    "./node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma"
   ok "Migrations applied"
 fi
 
 # Seed
-USER_COUNT=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+USER_RES=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
-  "node -e \"const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.user.count().then(n=>{console.log(n);p.\$disconnect()})\"" \
-  2>/dev/null | tail -1 || echo "0")
+  "node -e \"const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.user.count().then(n=>{console.log(n);p.\$disconnect()}).catch(()=>console.log(0))\"" \
+  2>/dev/null || echo "0")
+USER_COUNT=$(echo "$USER_RES" | grep -o '[0-9]\+' | tail -1)
+USER_COUNT=${USER_COUNT:-0}
 
 if [[ "${USER_COUNT:-0}" -gt 0 ]]; then
   if ask_skip "Admin user already seeded ($USER_COUNT users found)"; then
     ok "Skipping seed"
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-      run --rm api sh -c "npx tsx packages/database/prisma/seed.ts"
+      run --rm api sh -c "./node_modules/.bin/tsx prisma/seed.ts"
     ok "Database re-seeded"
   fi
 else
   info "Seeding admin user..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-    run --rm api sh -c "npx tsx packages/database/prisma/seed.ts"
+    run --rm api sh -c "./node_modules/.bin/tsx prisma/seed.ts"
   ok "Admin user created"
 fi
 
