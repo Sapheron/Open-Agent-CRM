@@ -31,7 +31,8 @@ RUN apk update && apk upgrade && \
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nestjs
+    adduser --system --uid 1001 nestjs && \
+    npm install -g prisma@6.19.3
 
 COPY --from=installer --chown=nestjs:nodejs /app ./
 USER nestjs
