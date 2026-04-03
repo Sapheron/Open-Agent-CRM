@@ -39,4 +39,4 @@ COPY --from=installer --chown=nestjs:nodejs /app/packages ./packages
 
 USER nestjs
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/apps/api/src/main.js"]

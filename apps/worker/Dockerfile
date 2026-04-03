@@ -35,4 +35,4 @@ COPY --from=installer --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=installer --chown=nestjs:nodejs /app/packages ./packages
 
 USER nestjs
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/apps/worker/src/main.js"]
