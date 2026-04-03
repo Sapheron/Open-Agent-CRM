@@ -32,6 +32,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 COPY --from=installer --chown=nestjs:nodejs /app/apps/worker/dist ./dist
 COPY --from=installer --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=installer --chown=nestjs:nodejs /app/packages ./packages
 
 USER nestjs
 CMD ["node", "dist/main.js"]

@@ -314,7 +314,7 @@ step 7 "Database migrations, seed & start"
 # Migrations
 MIGRATION_RES=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
-  "npx --yes prisma@6 migrate status --schema=prisma/schema.prisma 2>&1 | grep -c 'Database schema is up to date'" \
+  "npx --yes prisma@6 migrate status --schema=packages/database/prisma/schema.prisma 2>&1 | grep -c 'Database schema is up to date'" \
   2>/dev/null || echo "0")
 MIGRATION_DONE=$(echo "$MIGRATION_RES" | grep -o '[0-9]\+' | tail -1)
 MIGRATION_DONE=${MIGRATION_DONE:-0}
@@ -325,21 +325,21 @@ if [[ "$MIGRATION_DONE" -gt 0 ]]; then
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
       run --rm api sh -c \
-      "npx --yes prisma@6 migrate deploy --schema=prisma/schema.prisma"
+      "npx --yes prisma@6 migrate deploy --schema=packages/database/prisma/schema.prisma"
     ok "Migrations applied"
   fi
 else
   info "Running database migrations..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
     run --rm api sh -c \
-    "npx --yes prisma@6 migrate deploy --schema=prisma/schema.prisma"
+    "npx --yes prisma@6 migrate deploy --schema=packages/database/prisma/schema.prisma"
   ok "Migrations applied"
 fi
 
 # Seed
 USER_RES=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
-  "node -e \"const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.user.count().then(n=>{console.log(n);p.\$disconnect()}).catch(()=>console.log(0))\"" \
+  "cd packages/database && node -e \"const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.user.count().then(n=>{console.log(n);p.\$disconnect()}).catch(()=>console.log(0))\"" \
   2>/dev/null || echo "0")
 USER_COUNT=$(echo "$USER_RES" | grep -o '[0-9]\+' | tail -1)
 USER_COUNT=${USER_COUNT:-0}
@@ -375,13 +375,13 @@ if [[ "${USER_COUNT:-0}" -gt 0 ]]; then
     ok "Skipping seed"
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-      run --rm api node -e "$SEED_SCRIPT_JS"
+      run --rm -e SEED_SCRIPT_JS="$SEED_SCRIPT_JS" api sh -c 'cd packages/database && node -e "$SEED_SCRIPT_JS"'
     ok "Database re-seeded"
   fi
 else
   info "Seeding admin user..."
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-    run --rm api node -e "$SEED_SCRIPT_JS"
+    run --rm -e SEED_SCRIPT_JS="$SEED_SCRIPT_JS" api sh -c 'cd packages/database && node -e "$SEED_SCRIPT_JS"'
   ok "Admin user created"
 fi
 
