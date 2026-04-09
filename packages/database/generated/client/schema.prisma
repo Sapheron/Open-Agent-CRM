@@ -1191,3 +1191,54 @@ model ApiKey {
   @@index([companyId])
   @@index([keyHash])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI CHAT CONVERSATIONS (persistent)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ChatConversation {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+  title     String   @default("New Chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@index([companyId, userId, updatedAt])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // user, assistant
+  content        String
+  toolCalls      Json? // [{tool, args, result}]
+  provider       String?
+  model          String?
+  latencyMs      Int?
+  createdAt      DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI MEMORY (knowledge base for AI context)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model AiMemory {
+  id        String   @id @default(cuid())
+  companyId String
+  title     String
+  content   String // The knowledge/fact/instruction
+  category  String   @default("general") // general, product, policy, faq, instruction
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, isActive])
+  @@index([companyId, category])
+}

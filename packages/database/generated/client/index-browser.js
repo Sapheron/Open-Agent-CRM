@@ -816,6 +816,38 @@ exports.Prisma.ApiKeyScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.ChatConversationScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  userId: 'userId',
+  title: 'title',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChatMessageScalarFieldEnum = {
+  id: 'id',
+  conversationId: 'conversationId',
+  role: 'role',
+  content: 'content',
+  toolCalls: 'toolCalls',
+  provider: 'provider',
+  model: 'model',
+  latencyMs: 'latencyMs',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AiMemoryScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  title: 'title',
+  content: 'content',
+  category: 'category',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1032,7 +1064,10 @@ exports.Prisma.ModelName = {
   ActivityLog: 'ActivityLog',
   Document: 'Document',
   DocumentSignature: 'DocumentSignature',
-  ApiKey: 'ApiKey'
+  ApiKey: 'ApiKey',
+  ChatConversation: 'ChatConversation',
+  ChatMessage: 'ChatMessage',
+  AiMemory: 'AiMemory'
 };
 
 /**

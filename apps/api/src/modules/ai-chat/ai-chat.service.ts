@@ -11,6 +11,8 @@ import { prisma } from '@wacrm/database';
 import { decrypt } from '@wacrm/shared';
 import { PROVIDER_BASE_URLS } from '../settings/ai-settings.service';
 import { getAdminToolDefinitions, executeAdminTool } from './admin-tools';
+import { AiMemoryService } from '../ai-memory/ai-memory.service';
+import { ChatConversationsService } from '../chat-conversations/chat-conversations.service';
 
 const MAX_TOOL_ITERATIONS = 8;
 
@@ -48,7 +50,12 @@ interface ToolAction {
 
 @Injectable()
 export class AiChatService {
-  async chat(companyId: string, userMessages: { role: string; content: string }[]) {
+  constructor(
+    private readonly memoryService: AiMemoryService,
+    private readonly chatConvService: ChatConversationsService,
+  ) {}
+
+  async chat(companyId: string, userMessages: { role: string; content: string }[], _conversationId?: string) {
     const config = await prisma.aiConfig.findUnique({ where: { companyId } });
     if (!config || !config.apiKeyEncrypted) {
       throw new BadRequestException('AI provider not configured. Go to Settings > AI to set up.');
@@ -59,9 +66,15 @@ export class AiChatService {
     const actions: ToolAction[] = [];
     const start = Date.now();
 
-    // Build messages with system prompt
+    // Inject memory into system prompt
+    const memoryContext = await this.memoryService.getMemoryContext(companyId);
+    const fullSystemPrompt = memoryContext
+      ? `${ADMIN_SYSTEM_PROMPT}\n\n${memoryContext}`
+      : ADMIN_SYSTEM_PROMPT;
+
+    // Build messages with system prompt + memory
     const messages: ChatMessage[] = [
-      { role: 'system', content: ADMIN_SYSTEM_PROMPT },
+      { role: 'system', content: fullSystemPrompt },
       ...userMessages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     ];
 
