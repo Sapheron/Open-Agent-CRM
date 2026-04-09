@@ -30,26 +30,34 @@ export const PROVIDER_BASE_URLS: Partial<Record<AiProvider, string>> = {
   OPENROUTER: 'https://openrouter.ai/api/v1',
 };
 
-// Models available per provider — synced with OpenClaw catalog April 2026
+// Models available per provider — synced with OpenClaw + verified against live APIs
 export const PROVIDER_MODELS: Record<AiProvider, string[]> = {
   GEMINI: [
-    'gemini-3.1-pro',
-    'gemini-3.1-flash',
-    'gemini-3.1-flash-lite',
+    // Stable (production-ready)
     'gemini-2.5-pro',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
+    // Preview (newer, may change)
+    'gemini-3.1-pro-preview',
+    'gemini-3.1-flash-preview',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3-pro-preview',
+    'gemini-3-flash-preview',
   ],
   OPENAI: [
+    // Stable
+    'gpt-4.1',
+    'gpt-4.1-mini',
+    'gpt-4.1-nano',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o4-mini',
+    'o3',
+    // Latest (may require access)
     'gpt-5.4',
     'gpt-5.4-mini',
     'gpt-5.4-nano',
     'gpt-5.4-pro',
-    'gpt-4.1',
-    'gpt-4.1-mini',
-    'gpt-4.1-nano',
-    'o4-mini',
-    'o3',
   ],
   ANTHROPIC: [
     'claude-opus-4-6',
