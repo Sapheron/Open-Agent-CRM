@@ -144,7 +144,7 @@ export default function AiChatPage() {
                     ))}
                   </div>
                 )}
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <p className="whitespace-pre-wrap">{(msg.content || '').replace(/\\n/g, '\n')}</p>
               </div>
               {msg.role === 'user' && (
                 <div className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center shrink-0 mt-0.5">
