@@ -15,6 +15,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TeamModule } from './modules/team/team.module';
 import { BroadcastModule } from './modules/broadcast/broadcast.module';
 import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+import { TagsModule } from './modules/tags/tags.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { SequencesModule } from './modules/sequences/sequences.module';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
@@ -61,6 +62,7 @@ import { BullModule } from '@nestjs/bullmq';
     TeamModule,
     BroadcastModule,
     AiChatModule,
+    TagsModule,
     TemplatesModule,
     SequencesModule,
     PipelinesModule,

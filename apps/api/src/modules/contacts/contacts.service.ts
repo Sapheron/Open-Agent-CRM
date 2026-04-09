@@ -323,4 +323,59 @@ export class ContactsService {
 
     return { imported, errors: errors.slice(0, 10) };
   }
+
+  // ── Contact Scoring ───────────────────────────────────────────────────────
+
+  async updateScore(contactId: string, points: number) {
+    await prisma.contact.update({
+      where: { id: contactId },
+      data: { score: { increment: points } },
+    });
+  }
+
+  // ── Lifecycle Stage Automation ────────────────────────────────────────────
+
+  private static readonly LIFECYCLE_ORDER = [
+    'SUBSCRIBER', 'LEAD', 'MQL', 'SQL', 'OPPORTUNITY', 'CUSTOMER', 'EVANGELIST',
+  ];
+
+  async advanceLifecycle(contactId: string, trigger: string) {
+    const contact = await prisma.contact.findUnique({
+      where: { id: contactId },
+      select: { lifecycleStage: true, score: true },
+    });
+    if (!contact) return;
+
+    const currentIdx = ContactsService.LIFECYCLE_ORDER.indexOf(contact.lifecycleStage);
+    let targetStage: string | null = null;
+
+    switch (trigger) {
+      case 'message_received':
+        if (currentIdx < 1) targetStage = 'LEAD';
+        break;
+      case 'lead_created':
+        if (currentIdx < 2) targetStage = 'MQL';
+        break;
+      case 'deal_created':
+        if (currentIdx < 3) targetStage = 'SQL';
+        break;
+      case 'deal_proposal':
+      case 'deal_negotiation':
+        if (currentIdx < 4) targetStage = 'OPPORTUNITY';
+        break;
+      case 'deal_won':
+        if (currentIdx < 5) targetStage = 'CUSTOMER';
+        break;
+      case 'score_high':
+        if (currentIdx === 5 && contact.score >= 100) targetStage = 'EVANGELIST';
+        break;
+    }
+
+    if (targetStage) {
+      await prisma.contact.update({
+        where: { id: contactId },
+        data: { lifecycleStage: targetStage },
+      });
+    }
+  }
 }
