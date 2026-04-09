@@ -3,12 +3,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api-client';
-import { Bot, Send, Trash2, Loader2, User } from 'lucide-react';
+import { Bot, Send, Trash2, Loader2, User, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface ToolAction {
+  tool: string;
+  args: Record<string, unknown>;
+  result: string;
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  actions?: ToolAction[];
 }
 
 export default function AiChatPage() {
@@ -35,14 +42,14 @@ export default function AiChatPage() {
       setMessages(newMessages);
       setInput('');
 
-      const res = await api.post<{ data: { content: string; provider: string; model: string; latencyMs: number } }>(
+      const res = await api.post<{ data: { content: string; actions: ToolAction[]; provider: string; model: string; latencyMs: number } }>(
         '/ai/chat',
-        { messages: newMessages },
+        { messages: newMessages.map((m) => ({ role: m.role, content: m.content })) },
       );
       return res.data.data;
     },
     onSuccess: (data) => {
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.content, actions: data.actions }]);
     },
     onError: () => {
       setMessages((prev) => [
@@ -91,11 +98,18 @@ export default function AiChatPage() {
           <div className="h-full flex items-center justify-center">
             <div className="text-center max-w-md">
               <Bot size={48} className="mx-auto mb-4 text-gray-300" />
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Chat with AI</h2>
-              <p className="text-sm text-gray-500 mb-4">
-                Send a message to chat with your configured AI model.
-                Change providers and models in Settings &rarr; AI.
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">AI CRM Assistant</h2>
+              <p className="text-sm text-gray-500 mb-3">
+                Control your entire CRM with natural language. Try:
               </p>
+              <div className="text-xs text-gray-400 space-y-1 text-left mx-auto max-w-xs">
+                <p>&quot;Add a contact named John, phone 919876543210&quot;</p>
+                <p>&quot;Show me all open leads&quot;</p>
+                <p>&quot;Create a task to follow up with John tomorrow&quot;</p>
+                <p>&quot;Move deal X to Won stage&quot;</p>
+                <p>&quot;Send a WhatsApp message to 919876543210&quot;</p>
+                <p>&quot;What are the analytics?&quot;</p>
+              </div>
               {!config?.apiKeySet && (
                 <a
                   href="/settings/ai"
@@ -127,6 +141,20 @@ export default function AiChatPage() {
                     : 'bg-white text-gray-900 rounded-tl-sm shadow-sm border border-gray-100',
                 )}
               >
+                {/* Show tool actions */}
+                {msg.actions && msg.actions.length > 0 && (
+                  <div className="mb-2 space-y-1">
+                    {msg.actions.map((action, ai) => (
+                      <div key={ai} className="flex items-start gap-1.5 text-xs bg-gray-50 rounded-lg px-2 py-1.5 border border-gray-200">
+                        <Wrench size={10} className="text-gray-400 mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-medium text-gray-600">{action.tool}</span>
+                          <span className="text-gray-400 ml-1">{action.result}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
               {msg.role === 'user' && (
