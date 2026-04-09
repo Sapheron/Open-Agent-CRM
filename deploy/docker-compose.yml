@@ -89,13 +89,15 @@ services:
   # ─── PostgreSQL 16 ────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    env_file:
-      - ../.env
+    environment:
+      - POSTGRES_USER=${DB_USER:-crm}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-crm_pass}
+      - POSTGRES_DB=${DB_NAME:-wacrm}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crm"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-crm} -d ${DB_NAME:-wacrm}"]
       interval: 10s
       timeout: 5s
       retries: 5
