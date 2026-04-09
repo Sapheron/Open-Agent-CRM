@@ -46,13 +46,22 @@ const tools: AdminTool[] = [
       },
     },
     execute: async (args, companyId) => {
-      const contact = await prisma.contact.create({
-        data: {
+      const phone = args.phoneNumber as string;
+      const contact = await prisma.contact.upsert({
+        where: { companyId_phoneNumber: { companyId, phoneNumber: phone } },
+        create: {
           companyId,
-          phoneNumber: args.phoneNumber as string,
+          phoneNumber: phone,
           displayName: (args.displayName as string) || undefined,
           email: (args.email as string) || undefined,
           tags: (args.tags as string[]) || [],
+        },
+        update: {
+          // Restore if soft-deleted, update fields
+          deletedAt: null,
+          ...(args.displayName ? { displayName: args.displayName as string } : {}),
+          ...(args.email ? { email: args.email as string } : {}),
+          ...(args.tags ? { tags: args.tags as string[] } : {}),
         },
       });
       return `Created contact: ${contact.displayName || contact.phoneNumber} (ID: ${contact.id})`;
@@ -108,7 +117,7 @@ const tools: AdminTool[] = [
     execute: async (args, companyId) => {
       let id = args.contactId as string;
       if (!id && args.phoneNumber) {
-        const found = await prisma.contact.findFirst({ where: { companyId, phoneNumber: args.phoneNumber as string } });
+        const found = await prisma.contact.findFirst({ where: { companyId, phoneNumber: args.phoneNumber as string, deletedAt: null } });
         if (!found) return `Contact not found`;
         id = found.id;
       }
