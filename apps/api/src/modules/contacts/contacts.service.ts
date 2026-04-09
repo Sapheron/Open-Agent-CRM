@@ -91,10 +91,21 @@ export class ContactsService {
 
   async update(companyId: string, id: string, dto: Partial<CreateContactDto>) {
     await this.get(companyId, id);
-    return prisma.contact.update({
-      where: { id },
-      data: { ...(dto as any), updatedAt: new Date() },
-    });
+    // Explicit whitelist — never pass raw dto to Prisma
+    const data: Record<string, unknown> = { updatedAt: new Date() };
+    if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
+    if (dto.displayName !== undefined) data.displayName = dto.displayName;
+    if (dto.firstName !== undefined) data.firstName = dto.firstName;
+    if (dto.lastName !== undefined) data.lastName = dto.lastName;
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.tags !== undefined) data.tags = dto.tags;
+    if (dto.customFields !== undefined) data.customFields = dto.customFields;
+    if (dto.notes !== undefined) data.notes = dto.notes;
+    if (dto.lifecycleStage !== undefined) data.lifecycleStage = dto.lifecycleStage;
+    if (dto.companyName !== undefined) data.companyName = dto.companyName;
+    if (dto.jobTitle !== undefined) data.jobTitle = dto.jobTitle;
+    if (dto.address !== undefined) data.address = dto.address;
+    return prisma.contact.update({ where: { id }, data });
   }
 
   async softDelete(companyId: string, id: string) {
@@ -125,26 +136,31 @@ export class ContactsService {
         where: { companyId, contactId },
         select: { id: true, title: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: 20,
       }),
       prisma.deal.findMany({
         where: { companyId, contactId },
         select: { id: true, title: true, stage: true, value: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: 20,
       }),
       prisma.task.findMany({
         where: { companyId, contactId },
         select: { id: true, title: true, status: true, priority: true, dueAt: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: 20,
       }),
       prisma.payment.findMany({
         where: { companyId, contactId },
         select: { id: true, amount: true, currency: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: 20,
       }),
       prisma.contactNote.findMany({
-        where: { contactId },
+        where: { contactId, companyId },
         select: { id: true, content: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: 20,
       }),
     ]);
 
@@ -163,9 +179,10 @@ export class ContactsService {
 
   // ── Notes ─────────────────────────────────────────────────────────────────
 
-  async getNotes(contactId: string) {
+  async getNotes(companyId: string, contactId: string) {
+    await this.get(companyId, contactId); // verify access
     return prisma.contactNote.findMany({
-      where: { contactId },
+      where: { contactId, companyId },
       orderBy: { createdAt: 'desc' },
     });
   }

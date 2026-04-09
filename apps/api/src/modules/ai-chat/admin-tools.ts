@@ -1020,10 +1020,35 @@ const tools: AdminTool[] = [
   },
 ];
 
+// ── Core tools (sent to AI to avoid token overflow) ─────────────────────────
+// AI can still execute ANY tool if it knows the name, but we only TELL it about
+// the most useful ~20 tools to avoid overwhelming the context.
+
+const CORE_TOOL_NAMES = new Set([
+  // Contacts
+  'create_contact', 'update_contact', 'delete_contact', 'search_contacts', 'get_contact',
+  'tag_contact', 'add_contact_note', 'get_contact_timeline',
+  // Leads
+  'create_lead', 'update_lead', 'list_leads',
+  // Deals
+  'create_deal', 'update_deal', 'list_deals',
+  // Tasks
+  'create_task', 'update_task', 'list_tasks',
+  // Communication
+  'send_whatsapp', 'list_conversations',
+  // Analytics
+  'get_analytics',
+  // Tickets
+  'create_ticket', 'list_tickets',
+]);
+
 // ── Exports ─────────────────────────────────────────────────────────────────
 
 export function getAdminToolDefinitions(): ToolDefinition[] {
-  return tools.map((t) => t.definition);
+  // Only send core tools to AI to prevent token overflow
+  return tools
+    .filter((t) => CORE_TOOL_NAMES.has(t.definition.name))
+    .map((t) => t.definition);
 }
 
 export async function executeAdminTool(name: string, args: Record<string, unknown>, companyId: string): Promise<string> {

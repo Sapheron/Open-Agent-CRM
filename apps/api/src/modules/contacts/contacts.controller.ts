@@ -55,7 +55,7 @@ export class ContactsController {
   @Get(':id/notes')
   @ApiOperation({ summary: 'Get contact notes' })
   notes(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.svc.getNotes(id);
+    return this.svc.getNotes(user.companyId, id);
   }
 
   @Post()

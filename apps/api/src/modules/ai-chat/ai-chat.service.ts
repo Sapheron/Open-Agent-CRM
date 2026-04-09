@@ -65,11 +65,24 @@ export class AiChatService {
 
     // Agent loop — iterate on tool calls
     for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-      const response = await this.callWithTools(
-        config.provider, config.model, apiKey, config.baseUrl,
-        messages, tools,
-        config.maxTokens ?? 2048, config.temperature ?? 0.7,
-      );
+      let response: { content?: string; toolCalls?: ToolCall[] };
+      try {
+        response = await this.callWithTools(
+          config.provider, config.model, apiKey, config.baseUrl,
+          messages, tools,
+          config.maxTokens ?? 2048, config.temperature ?? 0.7,
+        );
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[AI Chat] Provider call failed:', msg);
+        return {
+          content: `AI provider error: ${msg.slice(0, 200)}`,
+          actions,
+          provider: config.provider,
+          model: config.model,
+          latencyMs: Date.now() - start,
+        };
+      }
 
       // Tool call path
       if (response.toolCalls?.length) {
