@@ -27,20 +27,24 @@ export const PROVIDER_BASE_URLS: Partial<Record<AiProvider, string>> = {
   OPENROUTER: 'https://openrouter.ai/api/v1',
 };
 
-// Models available per provider — updated April 2026
+// Models available per provider — synced with OpenClaw catalog April 2026
 export const PROVIDER_MODELS: Record<AiProvider, string[]> = {
   GEMINI: [
+    'gemini-3.1-pro',
+    'gemini-3.1-flash',
+    'gemini-3.1-flash-lite',
     'gemini-2.5-pro',
     'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
+    'gemini-2.5-flash-lite',
   ],
   OPENAI: [
+    'gpt-5.4',
+    'gpt-5.4-mini',
+    'gpt-5.4-nano',
+    'gpt-5.4-pro',
     'gpt-4.1',
     'gpt-4.1-mini',
     'gpt-4.1-nano',
-    'gpt-4o',
-    'gpt-4o-mini',
     'o4-mini',
     'o3',
   ],
@@ -64,6 +68,8 @@ export const PROVIDER_MODELS: Record<AiProvider, string[]> = {
   ],
   XAI: [
     'grok-4',
+    'grok-4-fast',
+    'grok-4-1-fast',
     'grok-3',
     'grok-3-mini',
     'grok-3-fast',
@@ -76,18 +82,25 @@ export const PROVIDER_MODELS: Record<AiProvider, string[]> = {
   ],
   TOGETHER: [
     'meta-llama/Llama-3.3-70B-Instruct-Turbo',
-    'deepseek-ai/DeepSeek-V3',
+    'meta-llama/Llama-4-Scout-17B-16E-Instruct',
+    'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
+    'deepseek-ai/DeepSeek-V3.1',
     'deepseek-ai/DeepSeek-R1',
+    'moonshotai/Kimi-K2.5',
   ],
   MOONSHOT: [
     'kimi-k2.5',
+    'kimi-k2-thinking',
+    'kimi-k2-thinking-turbo',
     'kimi-k2-turbo',
   ],
   OLLAMA: ['llama3.3', 'llama3.1', 'mistral', 'phi4', 'gemma3', 'deepseek-r1', 'qwen2.5'],
   OPENROUTER: [
     'auto',
-    'google/gemini-2.5-pro',
-    'openai/gpt-4.1',
+    'openrouter/hunter-alpha',
+    'openrouter/healer-alpha',
+    'google/gemini-3.1-pro',
+    'openai/gpt-5.4',
     'anthropic/claude-sonnet-4-6',
     'deepseek/deepseek-r1',
     'meta-llama/llama-3.3-70b-instruct',
