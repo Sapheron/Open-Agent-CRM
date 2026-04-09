@@ -53,7 +53,9 @@
       "tmp": "^0.2.5",
       "music-metadata": "^11.12.3",
       "file-type": "^21.3.2",
-      "webpack": "^5.104.0"
+      "webpack": "^5.104.0",
+      "path-to-regexp": "^8.4.2",
+      "@hono/node-server": "^1.19.13"
     }
   }
 }
