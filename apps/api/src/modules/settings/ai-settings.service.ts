@@ -221,7 +221,8 @@ export class AiSettingsService {
   ): Promise<string> {
     switch (provider) {
       case 'GEMINI':
-        return this.pingGemini(model, apiKey);
+        // Use OpenAI-compatible endpoint for Gemini (avoids thought_signature issues)
+        return this.pingOpenAI(model, apiKey, 'https://generativelanguage.googleapis.com/v1beta/openai');
       case 'OPENAI':
         return this.pingOpenAI(model, apiKey);
       case 'ANTHROPIC':

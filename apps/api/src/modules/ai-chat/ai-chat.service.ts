@@ -170,9 +170,15 @@ export class AiChatService {
     messages: ChatMessage[], tools: { name: string; description: string; parameters: Record<string, unknown> }[],
     maxTokens: number, temperature: number,
   ): Promise<{ content?: string; toolCalls?: ToolCall[] }> {
+    // Route all providers through the appropriate handler
+    // Gemini: use Google's OpenAI-compatible endpoint (avoids thought_signature issues)
     switch (provider) {
       case 'GEMINI':
-        return this.callGeminiWithTools(model, apiKey, messages, tools, maxTokens, temperature);
+        return this.callOpenAIWithTools(
+          model, apiKey,
+          'https://generativelanguage.googleapis.com/v1beta/openai',
+          messages, tools, maxTokens, temperature,
+        );
       case 'ANTHROPIC':
         return this.callAnthropicWithTools(model, apiKey, messages, tools, maxTokens, temperature);
       case 'OLLAMA':
@@ -209,20 +215,34 @@ export class AiChatService {
       return { role: m.role, content: m.content };
     });
 
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: openaiMessages,
-        tools: openaiTools.length > 0 ? openaiTools : undefined,
-        tool_choice: openaiTools.length > 0 ? 'auto' : undefined,
-        max_tokens: maxTokens,
-        temperature,
-      }),
+    const body = JSON.stringify({
+      model,
+      messages: openaiMessages,
+      tools: openaiTools.length > 0 ? openaiTools : undefined,
+      tool_choice: openaiTools.length > 0 ? 'auto' : undefined,
+      max_tokens: maxTokens,
+      temperature,
     });
 
-    if (!res.ok) throw new BadRequestException(`AI error: ${res.status} ${await res.text()}`);
+    // Retry up to 3 times for 503/429 (rate limit / overloaded)
+    let res: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body,
+      });
+      if (res.ok || (res.status !== 503 && res.status !== 429)) break;
+      // Wait before retry: 1s, 3s, 6s
+      const wait = (attempt + 1) * (attempt + 1) * 1000;
+      console.log(`[AI Chat] ${res.status} — retrying in ${wait}ms (attempt ${attempt + 1}/3)`);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+
+    if (!res || !res.ok) {
+      const text = res ? await res.text() : 'No response';
+      throw new BadRequestException(`AI error: ${res?.status ?? 0} ${text.slice(0, 300)}`);
+    }
     const json = await res.json() as {
       choices?: Array<{
         message?: {

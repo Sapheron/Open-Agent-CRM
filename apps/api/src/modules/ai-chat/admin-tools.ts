@@ -444,12 +444,18 @@ const tools: AdminTool[] = [
     execute: async (args, companyId) => {
       const account = await prisma.whatsAppAccount.findFirst({ where: { companyId, status: 'CONNECTED' } });
       if (!account) return 'No connected WhatsApp account found';
+
+      // Normalize phone number: remove +, spaces, dashes; add 91 prefix for 10-digit Indian numbers
+      let phone = (args.phoneNumber as string).replace(/[\s\-\+\(\)]/g, '');
+      if (phone.startsWith('0')) phone = '91' + phone.slice(1); // 08714414424 → 918714414424
+      if (phone.length === 10 && /^\d+$/.test(phone)) phone = '91' + phone; // 8714414424 → 918714414424
+
       await redis.publish('wa:outbound', JSON.stringify({
         accountId: account.id,
-        toPhone: args.phoneNumber as string,
+        toPhone: phone,
         text: args.text as string,
       }));
-      return `Message sent to ${args.phoneNumber}: "${(args.text as string).slice(0, 50)}..."`;
+      return `Message sent to ${phone}: "${(args.text as string).slice(0, 50)}..."`;
     },
   },
   {
