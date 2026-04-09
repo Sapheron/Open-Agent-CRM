@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api-client';
 import { formatRelativeTime, cn } from '@/lib/utils';
-import { TrendingUp, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Lead {
@@ -21,14 +21,14 @@ interface Lead {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  NEW: 'bg-blue-100 text-blue-700',
-  CONTACTED: 'bg-yellow-100 text-yellow-700',
-  QUALIFIED: 'bg-purple-100 text-purple-700',
-  PROPOSAL_SENT: 'bg-orange-100 text-orange-700',
-  NEGOTIATING: 'bg-indigo-100 text-indigo-700',
-  WON: 'bg-green-100 text-green-700',
-  LOST: 'bg-red-100 text-red-700',
-  DISQUALIFIED: 'bg-gray-100 text-gray-500',
+  NEW: 'bg-blue-50 text-blue-600',
+  CONTACTED: 'bg-amber-50 text-amber-600',
+  QUALIFIED: 'bg-violet-50 text-violet-600',
+  PROPOSAL_SENT: 'bg-orange-50 text-orange-600',
+  NEGOTIATING: 'bg-indigo-50 text-indigo-600',
+  WON: 'bg-emerald-50 text-emerald-600',
+  LOST: 'bg-red-50 text-red-600',
+  DISQUALIFIED: 'bg-gray-50 text-gray-400',
 };
 
 const STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATING', 'WON', 'LOST', 'DISQUALIFIED'];
@@ -52,28 +52,25 @@ export default function LeadsPage() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       await api.post(`/leads/${id}/status`, { status });
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['leads'] });
-      toast.success('Lead status updated');
-    },
-    onError: () => toast.error('Failed to update status'),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['leads'] }); toast.success('Status updated'); },
+    onError: () => toast.error('Failed to update'),
   });
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          <Plus size={14} />
-          Add Lead
+    <div className="h-full flex flex-col">
+      <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
+        <span className="text-xs font-semibold text-gray-900">Leads</span>
+        <button className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1 rounded text-[11px] font-medium">
+          <Plus size={11} />
+          Add
         </button>
       </div>
 
-      {/* Status filter */}
-      <div className="flex gap-2 mb-4 flex-wrap">
+      {/* Filters */}
+      <div className="px-3 py-2 flex gap-1 flex-wrap border-b border-gray-100 bg-white shrink-0">
         <button
           onClick={() => { setFilterStatus(''); setPage(1); }}
-          className={cn('text-xs px-3 py-1 rounded-full border transition', !filterStatus ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400')}
+          className={cn('text-[10px] px-2 py-0.5 rounded transition', !filterStatus ? 'bg-gray-900 text-white' : 'text-gray-400 hover:bg-gray-100')}
         >
           All
         </button>
@@ -81,67 +78,63 @@ export default function LeadsPage() {
           <button
             key={s}
             onClick={() => { setFilterStatus(s); setPage(1); }}
-            className={cn('text-xs px-3 py-1 rounded-full border transition', filterStatus === s ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400')}
+            className={cn('text-[10px] px-2 py-0.5 rounded transition', filterStatus === s ? 'bg-gray-900 text-white' : 'text-gray-400 hover:bg-gray-100')}
           >
             {s.replace('_', ' ')}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400">Loading…</div>
+          <div className="p-8 text-center text-gray-300 text-xs">Loading...</div>
         ) : (
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50/80 border-b border-gray-200 sticky top-0">
               <tr>
                 {['Lead', 'Contact', 'Status', 'Score', 'Value', 'Source', 'Updated'].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="text-left px-3 py-2 text-[10px] font-medium text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 bg-white">
               {data?.items.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp size={14} className="text-green-500 shrink-0" />
-                      <span className="text-sm font-medium text-gray-900">{lead.title}</span>
-                    </div>
+                <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-3 py-2 text-xs font-medium text-gray-900">{lead.title}</td>
+                  <td className="px-3 py-2 text-xs text-gray-500">
+                    {lead.contact?.displayName ?? lead.contact?.phoneNumber ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {lead.contact.displayName ?? lead.contact.phoneNumber}
-                  </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <select
                       value={lead.status}
                       onChange={(e) => updateStatusMutation.mutate({ id: lead.id, status: e.target.value })}
-                      className={cn('text-xs px-2 py-1 rounded-full border-0 font-medium cursor-pointer', STATUS_COLORS[lead.status] ?? 'bg-gray-100 text-gray-600')}
+                      className={cn('text-[10px] px-1.5 py-0.5 rounded border-0 font-medium cursor-pointer', STATUS_COLORS[lead.status] ?? 'bg-gray-50 text-gray-400')}
                     >
                       {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                     </select>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${lead.score}%` }} />
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-12 bg-gray-100 rounded-full h-1">
+                        <div className="bg-violet-500 h-1 rounded-full" style={{ width: `${lead.score}%` }} />
                       </div>
-                      <span className="text-xs text-gray-500">{lead.score}</span>
+                      <span className="text-[10px] text-gray-400">{lead.score}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                  <td className="px-3 py-2 text-xs text-gray-500">
                     {lead.estimatedValue ? `${lead.currency} ${lead.estimatedValue.toLocaleString()}` : '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{lead.source ?? '—'}</td>
-                  <td className="px-4 py-3 text-xs text-gray-400">{formatRelativeTime(lead.updatedAt)}</td>
+                  <td className="px-3 py-2 text-[11px] text-gray-400">{lead.source ?? '—'}</td>
+                  <td className="px-3 py-2 text-[10px] text-gray-300">{formatRelativeTime(lead.updatedAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-        <div className="px-4 py-3 border-t text-sm text-gray-500">
-          Total: {data?.total ?? 0} leads
-        </div>
+      </div>
+
+      <div className="h-9 border-t border-gray-200 px-3 flex items-center shrink-0 bg-white">
+        <span className="text-[10px] text-gray-400">{data?.total ?? 0} leads</span>
       </div>
     </div>
   );

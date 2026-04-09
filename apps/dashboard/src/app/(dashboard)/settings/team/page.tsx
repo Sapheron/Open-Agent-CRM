@@ -79,7 +79,7 @@ export default function TeamSettingsPage() {
             <p className="text-sm text-gray-500">Manage team members and their roles</p>
           </div>
         </div>
-        <button onClick={() => setShowInvite(!showInvite)} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <button onClick={() => setShowInvite(!showInvite)} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium">
           <UserPlus size={14} />
           Invite Member
         </button>
@@ -91,25 +91,25 @@ export default function TeamSettingsPage() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="text-sm font-medium text-gray-700">First Name</label>
-              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Last Name</label>
-              <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
             </div>
           </div>
           <div className="mb-3">
             <label className="text-sm font-medium text-gray-700">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
           </div>
           <div className="mb-4">
             <label className="text-sm font-medium text-gray-700">Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400">
               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => inviteMutation.mutate()} disabled={!email || !firstName || inviteMutation.isPending} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+            <button onClick={() => inviteMutation.mutate()} disabled={!email || !firstName || inviteMutation.isPending} className="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
               {inviteMutation.isPending ? 'Inviting…' : 'Send Invite'}
             </button>
             <button onClick={() => setShowInvite(false)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm">Cancel</button>

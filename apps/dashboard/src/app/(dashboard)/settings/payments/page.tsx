@@ -73,8 +73,8 @@ export default function PaymentSettingsPage() {
   return (
     <div className="p-6 max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-          <CreditCard size={20} className="text-green-600" />
+        <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+          <CreditCard size={20} className="text-violet-500" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">Payment Gateway</h1>
@@ -85,7 +85,7 @@ export default function PaymentSettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
         <div>
           <label className="text-sm font-medium text-gray-700">Payment Gateway</label>
-          <select value={provider} onChange={(e) => setProvider(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <select value={provider} onChange={(e) => setProvider(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400">
             {GATEWAYS.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
@@ -94,25 +94,25 @@ export default function PaymentSettingsPage() {
           <>
             <div>
               <label className="text-sm font-medium text-gray-700">
-                API Key / Key ID {config?.keySet && <span className="text-green-600 text-xs">(set)</span>}
+                API Key / Key ID {config?.keySet && <span className="text-violet-500 text-xs">(set)</span>}
               </label>
-              <input type="password" value={key} onChange={(e) => setKey(e.target.value)} placeholder={config?.keySet ? '••••••••••••' : 'Enter key'} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              <input type="password" value={key} onChange={(e) => setKey(e.target.value)} placeholder={config?.keySet ? '••••••••••••' : 'Enter key'} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Secret Key</label>
-              <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="Enter secret" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="Enter secret" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Webhook Secret (for signature verification)</label>
-              <input type="password" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} placeholder="Webhook signing secret" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              <input type="password" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} placeholder="Webhook signing secret" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">Default Currency</label>
-                <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="INR" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="INR" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
               </div>
               <div className="flex items-center gap-2 mt-6">
-                <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} className="rounded text-green-600" />
+                <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} className="rounded text-violet-500" />
                 <label className="text-sm text-gray-700">Test mode</label>
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function PaymentSettingsPage() {
             )}
 
             {testResult && (
-              <div className={cn('flex items-center gap-2 p-3 rounded-lg text-sm', testResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
+              <div className={cn('flex items-center gap-2 p-3 rounded-lg text-sm', testResult.ok ? 'bg-violet-50 text-violet-600' : 'bg-red-50 text-red-700')}>
                 {testResult.ok ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 {testResult.ok ? 'Connection successful!' : `Error: ${testResult.error}`}
               </div>
@@ -147,7 +147,7 @@ export default function PaymentSettingsPage() {
               Test Connection
             </button>
           )}
-          <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+          <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
             {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
           </button>
         </div>

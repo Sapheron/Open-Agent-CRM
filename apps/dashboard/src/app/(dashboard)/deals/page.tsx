@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DEAL_STAGE_ORDER, DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from '@wacrm/shared';
 import { cn, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Plus } from 'lucide-react';
 
 interface Deal {
   id: string;
@@ -30,15 +31,15 @@ function DealCard({ deal }: { deal: Deal }) {
       {...attributes}
       {...listeners}
       className={cn(
-        'bg-white rounded-lg border border-gray-200 p-3 cursor-grab active:cursor-grabbing shadow-sm',
-        isDragging && 'opacity-50 shadow-lg',
+        'bg-white rounded border border-gray-200 p-2 cursor-grab active:cursor-grabbing',
+        isDragging && 'opacity-50 shadow-md',
       )}
     >
-      <p className="text-sm font-medium text-gray-900 mb-1">{deal.title}</p>
-      <p className="text-xs text-gray-500 mb-2">{deal.contact.displayName ?? deal.contact.phoneNumber}</p>
+      <p className="text-[11px] font-medium text-gray-900 mb-0.5 truncate">{deal.title}</p>
+      <p className="text-[10px] text-gray-400 mb-1 truncate">{deal.contact?.displayName ?? deal.contact?.phoneNumber ?? '—'}</p>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-green-700">{formatCurrency(deal.value * 100, deal.currency)}</span>
-        <span className="text-xs text-gray-400">{deal.probability}%</span>
+        <span className="text-[11px] font-semibold text-gray-900">{formatCurrency(deal.value * 100, deal.currency)}</span>
+        <span className="text-[9px] text-gray-300">{deal.probability}%</span>
       </div>
     </div>
   );
@@ -66,8 +67,6 @@ export default function DealsPage() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
-    // over.id is the column stage when dropped into empty column
     const stage = over.id as string;
     if (DEAL_STAGE_ORDER.includes(stage as (typeof DEAL_STAGE_ORDER)[number])) {
       moveMutation.mutate({ dealId: active.id as string, stage });
@@ -80,38 +79,39 @@ export default function DealsPage() {
   }, {});
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Deals Pipeline</h1>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          + New Deal
+    <div className="h-full flex flex-col">
+      <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
+        <span className="text-xs font-semibold text-gray-900">Deals Pipeline</span>
+        <button className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1 rounded text-[11px] font-medium">
+          <Plus size={11} />
+          Add
         </button>
       </div>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1">
+        <div className="flex gap-2 overflow-x-auto p-3 flex-1">
           {DEAL_STAGE_ORDER.map((stage) => {
             const stageDeals = dealsByStage[stage] ?? [];
             const totalValue = stageDeals.reduce((s, d) => s + d.value, 0);
 
             return (
-              <div key={stage} className="w-64 shrink-0 flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className={cn('w-2 h-2 rounded-full', DEAL_STAGE_COLORS[stage])} />
-                    <h3 className="text-sm font-semibold text-gray-700">{DEAL_STAGE_LABELS[stage]}</h3>
+              <div key={stage} className="w-52 shrink-0 flex flex-col">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn('w-1.5 h-1.5 rounded-full', DEAL_STAGE_COLORS[stage])} />
+                    <span className="text-[10px] font-semibold text-gray-600">{DEAL_STAGE_LABELS[stage]}</span>
                   </div>
-                  <span className="text-xs text-gray-400">{stageDeals.length}</span>
+                  <span className="text-[9px] text-gray-300">{stageDeals.length}</span>
                 </div>
 
                 {totalValue > 0 && (
-                  <p className="text-xs text-gray-500 mb-2">{formatCurrency(totalValue * 100)}</p>
+                  <p className="text-[10px] text-gray-400 mb-1.5 px-1">{formatCurrency(totalValue * 100)}</p>
                 )}
 
                 <SortableContext items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
                   <div
                     id={stage}
-                    className="flex-1 bg-gray-50 rounded-xl p-2 space-y-2 min-h-32 border-2 border-dashed border-transparent"
+                    className="flex-1 bg-gray-50/80 rounded-lg p-1.5 space-y-1.5 min-h-[80px] border border-dashed border-gray-200"
                   >
                     {stageDeals.map((deal) => (
                       <DealCard key={deal.id} deal={deal} />

@@ -54,28 +54,28 @@ export default function CompanySettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <div>
           <label className="text-sm font-medium text-gray-700">Company Name *</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Business Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Phone</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Website</label>
-          <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Timezone</label>
-          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400">
             {timezones.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
           </select>
         </div>
         <div className="pt-2">
-          <button onClick={() => saveMutation.mutate()} disabled={!name || saveMutation.isPending} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+          <button onClick={() => saveMutation.mutate()} disabled={!name || saveMutation.isPending} className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
             {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
           </button>
         </div>

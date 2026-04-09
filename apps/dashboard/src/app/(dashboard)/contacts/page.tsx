@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api-client';
-import { Search, UserPlus, Phone } from 'lucide-react';
+import { Search, Plus, Phone } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -31,71 +31,72 @@ export default function ContactsPage() {
   });
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Contacts</h1>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          <UserPlus size={14} />
-          Add Contact
-        </button>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b">
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
+        <span className="text-xs font-semibold text-gray-900">Contacts</span>
+        <div className="flex items-center gap-2">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300" />
             <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search by name, phone, or email…"
-              className="w-full max-w-sm pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Search..."
+              className="w-48 pl-7 pr-2 py-1 border border-gray-200 rounded text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400 placeholder:text-gray-300"
             />
           </div>
+          <button className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1 rounded text-[11px] font-medium">
+            <Plus size={11} />
+            Add
+          </button>
         </div>
+      </div>
 
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400">Loading…</div>
+          <div className="p-8 text-center text-gray-300 text-xs">Loading...</div>
         ) : (
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50/80 border-b border-gray-200 sticky top-0">
               <tr>
                 {['Name', 'Phone', 'Email', 'Tags', 'Added'].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th key={h} className="text-left px-3 py-2 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 bg-white">
               {data?.items.map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600 shrink-0">
+                <tr key={contact.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer">
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-500 shrink-0">
                         {((contact.displayName || contact.firstName || '?')[0] ?? '?').toUpperCase()}
                       </div>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-xs font-medium text-gray-900 truncate">
                         {(contact.displayName ?? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()) || 'Unknown'}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Phone size={12} />
+                  <td className="px-3 py-2">
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <Phone size={10} className="text-gray-300" />
                       {contact.phoneNumber}
-                    </div>
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{contact.email ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
+                  <td className="px-3 py-2 text-xs text-gray-400">{contact.email ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-0.5">
                       {(contact.tags ?? []).map((tag) => (
-                        <span key={tag} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                        <span key={tag} className="text-[10px] bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded">
                           {tag}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-400">
+                  <td className="px-3 py-2 text-[11px] text-gray-300">
                     {new Date(contact.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
@@ -103,31 +104,31 @@ export default function ContactsPage() {
             </tbody>
           </table>
         )}
-
-        {/* Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-            <p className="text-sm text-gray-500">Total: {data.total} contacts</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="text-sm px-3 py-1 border border-gray-200 rounded disabled:opacity-40"
-              >
-                Prev
-              </button>
-              <span className="text-sm px-3 py-1 text-gray-600">{page} / {data.totalPages}</span>
-              <button
-                onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
-                disabled={page === data.totalPages}
-                className="text-sm px-3 py-1 border border-gray-200 rounded disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Footer */}
+      {data && data.totalPages > 1 && (
+        <div className="h-9 border-t border-gray-200 px-3 flex items-center justify-between shrink-0 bg-white">
+          <span className="text-[10px] text-gray-400">{data.total} contacts</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="text-[11px] px-2 py-0.5 border border-gray-200 rounded text-gray-500 disabled:opacity-30 hover:bg-gray-50"
+            >
+              Prev
+            </button>
+            <span className="text-[10px] text-gray-400 px-1">{page}/{data.totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+              disabled={page === data.totalPages}
+              className="text-[11px] px-2 py-0.5 border border-gray-200 rounded text-gray-500 disabled:opacity-30 hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

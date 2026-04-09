@@ -20,7 +20,7 @@ interface WaAccount {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  CONNECTED: 'text-green-600',
+  CONNECTED: 'text-violet-500',
   DISCONNECTED: 'text-gray-400',
   QR_PENDING: 'text-yellow-500',
   CONNECTING: 'text-blue-500',
@@ -49,8 +49,8 @@ function AccountCard({
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-            <Smartphone size={18} className="text-green-600" />
+          <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+            <Smartphone size={18} className="text-violet-500" />
           </div>
           <div>
             <p className="font-semibold text-gray-900">
@@ -100,9 +100,9 @@ function AccountCard({
 
       {/* Connected success state */}
       {isConnected && account.status === 'QR_PENDING' && (
-        <div className="mb-4 p-4 bg-green-50 rounded-lg text-center">
-          <CheckCircle size={24} className="text-green-600 mx-auto mb-2" />
-          <p className="text-sm text-green-700 font-medium">WhatsApp connected successfully!</p>
+        <div className="mb-4 p-4 bg-violet-50 rounded-lg text-center">
+          <CheckCircle size={24} className="text-violet-500 mx-auto mb-2" />
+          <p className="text-sm text-violet-600 font-medium">WhatsApp connected successfully!</p>
         </div>
       )}
 
@@ -175,8 +175,8 @@ export default function WhatsAppSettingsPage() {
     <div className="p-6 max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-            <Smartphone size={20} className="text-green-600" />
+          <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+            <Smartphone size={20} className="text-violet-500" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">WhatsApp Accounts</h1>
@@ -186,7 +186,7 @@ export default function WhatsAppSettingsPage() {
         <button
           onClick={() => createMutation.mutate()}
           disabled={createMutation.isPending}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
         >
           <Plus size={14} />
           Add Account

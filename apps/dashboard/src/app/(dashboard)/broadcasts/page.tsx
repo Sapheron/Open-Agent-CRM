@@ -38,99 +38,79 @@ export default function BroadcastsPage() {
 
   const createMutation = useMutation({
     mutationFn: () => api.post('/broadcasts', {
-      name,
-      message,
+      name, message,
       targetTags: targetTags.split(',').map((t) => t.trim()).filter(Boolean),
     }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['broadcasts'] });
-      toast.success('Broadcast created and queued');
-      setShowForm(false);
-      setName(''); setMessage(''); setTargetTags('');
+      toast.success('Broadcast queued');
+      setShowForm(false); setName(''); setMessage(''); setTargetTags('');
     },
-    onError: () => toast.error('Failed to create broadcast'),
+    onError: () => toast.error('Failed'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/broadcasts/${id}`),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['broadcasts'] }); toast.success('Broadcast cancelled'); },
-    onError: () => toast.error('Cannot cancel a broadcast already in progress'),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['broadcasts'] }); toast.success('Cancelled'); },
   });
 
-  const getStatusBadge = (b: Broadcast) => {
-    if (b.completedAt) return <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full"><CheckCircle size={10} />Completed</span>;
-    if (b.startedAt) return <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full"><Loader2 size={10} className="animate-spin" />Running</span>;
-    if (b.scheduledAt) return <span className="flex items-center gap-1 text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full"><Clock size={10} />Scheduled</span>;
-    return <span className="text-xs text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">Queued</span>;
+  const statusBadge = (b: Broadcast) => {
+    if (b.completedAt) return <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-0.5"><CheckCircle size={8} />Done</span>;
+    if (b.startedAt) return <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Loader2 size={8} className="animate-spin" />Running</span>;
+    if (b.scheduledAt) return <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Clock size={8} />Scheduled</span>;
+    return <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">Queued</span>;
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Broadcasts</h1>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          <Plus size={14} />
-          New Broadcast
+    <div className="h-full flex flex-col">
+      <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
+        <span className="text-xs font-semibold text-gray-900">Broadcasts</span>
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1 rounded text-[11px] font-medium">
+          <Plus size={11} />
+          New
         </button>
       </div>
 
-      {/* Create form */}
       {showForm && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-5">
-          <h3 className="font-semibold text-gray-900 mb-4">New Broadcast</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekly Newsletter" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Message</label>
-              <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Type your message…" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Target Tags (comma-separated)</label>
-              <input value={targetTags} onChange={(e) => setTargetTags(e.target.value)} placeholder="e.g. premium, trial" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-              <p className="text-xs text-gray-400 mt-1">Leave empty to target all opted-in contacts</p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => createMutation.mutate()} disabled={!name || !message || createMutation.isPending} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
-                {createMutation.isPending ? 'Creating…' : 'Send Now'}
-              </button>
-              <button onClick={() => setShowForm(false)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm">Cancel</button>
-            </div>
+        <div className="border-b border-gray-200 bg-white p-3 space-y-2 shrink-0">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Broadcast name" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} placeholder="Message text" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none" />
+          <input value={targetTags} onChange={(e) => setTargetTags(e.target.value)} placeholder="Tags (comma-separated, or empty for all)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          <div className="flex gap-2">
+            <button onClick={() => createMutation.mutate()} disabled={!name || !message} className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-30">Send</button>
+            <button onClick={() => setShowForm(false)} className="text-gray-400 text-[11px] px-2 py-1">Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="flex-1 overflow-auto bg-white">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400">Loading…</div>
+          <div className="p-8 text-center text-gray-300 text-xs">Loading...</div>
         ) : !data?.length ? (
           <div className="p-12 text-center">
-            <Megaphone size={40} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-400">No broadcasts yet</p>
+            <Megaphone size={20} className="mx-auto text-gray-200 mb-2" />
+            <p className="text-xs text-gray-300">No broadcasts</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {data.map((b) => (
-              <div key={b.id} className="p-4 flex items-start justify-between gap-4">
+              <div key={b.id} className="px-3 py-2.5 flex items-start justify-between gap-3 hover:bg-gray-50/50">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="font-medium text-sm text-gray-900">{b.name}</span>
-                    {getStatusBadge(b)}
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-medium text-gray-900">{b.name}</span>
+                    {statusBadge(b)}
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{b.message}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                  <p className="text-[11px] text-gray-400 truncate">{b.message}</p>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-300">
                     <span>{b.totalCount} recipients</span>
-                    {b.sentCount > 0 && <span className="text-green-600">{b.sentCount} sent</span>}
-                    {b.failedCount > 0 && <span className="text-red-500">{b.failedCount} failed</span>}
-                    {b.targetTags.length > 0 && <span>Tags: {b.targetTags.join(', ')}</span>}
+                    {b.sentCount > 0 && <span className="text-emerald-500">{b.sentCount} sent</span>}
+                    {b.failedCount > 0 && <span className="text-red-400">{b.failedCount} failed</span>}
                     <span>{formatRelativeTime(b.createdAt)}</span>
                   </div>
                 </div>
                 {!b.startedAt && (
-                  <button onClick={() => deleteMutation.mutate(b.id)} className="text-gray-400 hover:text-red-500 transition p-1">
-                    <Trash2 size={14} />
+                  <button onClick={() => deleteMutation.mutate(b.id)} className="text-gray-300 hover:text-red-400 p-0.5">
+                    <Trash2 size={12} />
                   </button>
                 )}
               </div>

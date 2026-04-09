@@ -89,8 +89,8 @@ export default function AiSettingsPage() {
   return (
     <div className="p-6 max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-          <Bot size={20} className="text-green-600" />
+        <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+          <Bot size={20} className="text-violet-500" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">AI Model Settings</h1>
@@ -105,7 +105,7 @@ export default function AiSettingsPage() {
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
           >
             {PROVIDERS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -117,7 +117,7 @@ export default function AiSettingsPage() {
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
           >
             {(models ?? [model]).map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
@@ -126,14 +126,14 @@ export default function AiSettingsPage() {
         {/* API Key */}
         <div>
           <label className="text-sm font-medium text-gray-700">
-            API Key {config?.apiKeySet && <span className="text-green-600 text-xs">(set — enter new to change)</span>}
+            API Key {config?.apiKeySet && <span className="text-violet-500 text-xs">(set — enter new to change)</span>}
           </label>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder={config?.apiKeySet ? '••••••••••••••••' : 'Enter API key'}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
           />
         </div>
 
@@ -144,7 +144,7 @@ export default function AiSettingsPage() {
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="http://localhost:11434/v1"
-              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
             />
           </div>
         )}
@@ -156,7 +156,7 @@ export default function AiSettingsPage() {
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
             rows={4}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400 resize-none"
           />
         </div>
 
@@ -168,7 +168,7 @@ export default function AiSettingsPage() {
               type="number"
               value={maxTokens}
               onChange={(e) => setMaxTokens(Number(e.target.value))}
-              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
             />
           </div>
           <div>
@@ -188,18 +188,18 @@ export default function AiSettingsPage() {
         {/* Toggles */}
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={autoReply} onChange={(e) => setAutoReply(e.target.checked)} className="rounded text-green-600" />
+            <input type="checkbox" checked={autoReply} onChange={(e) => setAutoReply(e.target.checked)} className="rounded text-violet-500" />
             <span className="text-sm text-gray-700">Auto-reply enabled</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={toolCalling} onChange={(e) => setToolCalling(e.target.checked)} className="rounded text-green-600" />
+            <input type="checkbox" checked={toolCalling} onChange={(e) => setToolCalling(e.target.checked)} className="rounded text-violet-500" />
             <span className="text-sm text-gray-700">Tool calling enabled</span>
           </label>
         </div>
 
         {/* Test result */}
         {testResult && (
-          <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${testResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${testResult.ok ? 'bg-violet-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
             {testResult.ok ? <CheckCircle size={16} /> : <XCircle size={16} />}
             {testResult.ok
               ? `Connection successful! Latency: ${testResult.latencyMs}ms`
@@ -220,7 +220,7 @@ export default function AiSettingsPage() {
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+            className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
           </button>
