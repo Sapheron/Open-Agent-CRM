@@ -23,7 +23,6 @@ export default function AiChatPage() {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Load current AI config to show which provider is active
   const { data: config } = useQuery({
     queryKey: ['ai-config'],
     queryFn: async () => {
@@ -67,54 +66,53 @@ export default function AiChatPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center">
-            <Bot size={18} className="text-green-600" />
-          </div>
-          <div>
-            <h1 className="font-semibold text-sm text-gray-900">AI Chat</h1>
-            <p className="text-xs text-gray-500">
-              {config?.provider ?? 'Not configured'} · {config?.model ?? '—'}
-              {config?.apiKeySet ? '' : ' · No API key set'}
-            </p>
-          </div>
-        </div>
+      <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMessages([])}
-            disabled={messages.length === 0}
-            className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-40"
-          >
-            <Trash2 size={12} />
-            Clear
-          </button>
+          <Bot size={14} className="text-violet-500" />
+          <span className="text-xs font-semibold text-gray-900">AI Assistant</span>
+          <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+            {config?.provider ?? '—'} / {config?.model ?? '—'}
+          </span>
         </div>
+        <button
+          onClick={() => setMessages([])}
+          disabled={messages.length === 0}
+          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 p-1"
+          title="Clear chat"
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <Bot size={48} className="mx-auto mb-4 text-gray-300" />
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">AI CRM Assistant</h2>
-              <p className="text-sm text-gray-500 mb-3">
-                Control your entire CRM with natural language. Try:
-              </p>
-              <div className="text-xs text-gray-400 space-y-1 text-left mx-auto max-w-xs">
-                <p>&quot;Add a contact named John, phone 919876543210&quot;</p>
-                <p>&quot;Show me all open leads&quot;</p>
-                <p>&quot;Create a task to follow up with John tomorrow&quot;</p>
-                <p>&quot;Move deal X to Won stage&quot;</p>
-                <p>&quot;Send a WhatsApp message to 919876543210&quot;</p>
-                <p>&quot;What are the analytics?&quot;</p>
+            <div className="text-center max-w-sm">
+              <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center mx-auto mb-3">
+                <Bot size={20} className="text-violet-500" />
+              </div>
+              <p className="text-sm font-medium text-gray-900 mb-1">AI CRM Assistant</p>
+              <p className="text-xs text-gray-400 mb-4">Control your CRM with natural language</p>
+              <div className="text-[11px] text-gray-400 space-y-1.5 text-left max-w-xs mx-auto">
+                {[
+                  'Add a contact named John, phone 919876543210',
+                  'Show me all open leads',
+                  'Create a task to follow up tomorrow',
+                  'What are the analytics?',
+                  'Send a WhatsApp to 919876543210',
+                ].map((example) => (
+                  <button
+                    key={example}
+                    onClick={() => { setInput(example); }}
+                    className="block w-full text-left px-2.5 py-1.5 rounded border border-gray-100 hover:border-violet-200 hover:bg-violet-50/50 transition-colors"
+                  >
+                    &ldquo;{example}&rdquo;
+                  </button>
+                ))}
               </div>
               {!config?.apiKeySet && (
-                <a
-                  href="/settings/ai"
-                  className="inline-flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium"
-                >
+                <a href="/settings/ai" className="inline-block mt-4 text-xs text-violet-500 hover:text-violet-600 font-medium">
                   Set up AI provider &rarr;
                 </a>
               )}
@@ -123,34 +121,25 @@ export default function AiChatPage() {
         )}
 
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
-          >
-            <div className={cn('flex items-start gap-2 max-w-xl')}>
+          <div key={i} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+            <div className="flex items-start gap-2 max-w-lg">
               {msg.role === 'assistant' && (
-                <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot size={14} className="text-green-600" />
+                <div className="w-5 h-5 rounded bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot size={11} className="text-violet-500" />
                 </div>
               )}
-              <div
-                className={cn(
-                  'px-4 py-3 rounded-2xl text-sm leading-relaxed',
-                  msg.role === 'user'
-                    ? 'bg-green-600 text-white rounded-tr-sm'
-                    : 'bg-white text-gray-900 rounded-tl-sm shadow-sm border border-gray-100',
-                )}
-              >
-                {/* Show tool actions */}
+              <div className={cn(
+                'px-3 py-2 rounded-lg text-xs leading-relaxed',
+                msg.role === 'user'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-800 border border-gray-150 shadow-sm',
+              )}>
                 {msg.actions && msg.actions.length > 0 && (
-                  <div className="mb-2 space-y-1">
+                  <div className="mb-1.5 space-y-1">
                     {msg.actions.map((action, ai) => (
-                      <div key={ai} className="flex items-start gap-1.5 text-xs bg-gray-50 rounded-lg px-2 py-1.5 border border-gray-200">
-                        <Wrench size={10} className="text-gray-400 mt-0.5 shrink-0" />
-                        <div>
-                          <span className="font-medium text-gray-600">{action.tool}</span>
-                          <span className="text-gray-400 ml-1">{action.result}</span>
-                        </div>
+                      <div key={ai} className="flex items-start gap-1 text-[10px] bg-violet-50 text-violet-700 rounded px-2 py-1 border border-violet-100">
+                        <Wrench size={9} className="mt-0.5 shrink-0" />
+                        <span><strong>{action.tool}</strong> {action.result}</span>
                       </div>
                     ))}
                   </div>
@@ -158,8 +147,8 @@ export default function AiChatPage() {
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
               {msg.role === 'user' && (
-                <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0 mt-0.5">
-                  <User size={14} className="text-gray-600" />
+                <div className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center shrink-0 mt-0.5">
+                  <User size={11} className="text-gray-500" />
                 </div>
               )}
             </div>
@@ -169,23 +158,22 @@ export default function AiChatPage() {
         {chatMutation.isPending && (
           <div className="flex justify-start">
             <div className="flex items-start gap-2">
-              <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                <Bot size={14} className="text-green-600" />
+              <div className="w-5 h-5 rounded bg-violet-100 flex items-center justify-center shrink-0">
+                <Bot size={11} className="text-violet-500" />
               </div>
-              <div className="bg-white text-gray-500 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-gray-100 text-sm flex items-center gap-2">
-                <Loader2 size={14} className="animate-spin" />
-                Thinking…
+              <div className="bg-white text-gray-400 px-3 py-2 rounded-lg border border-gray-150 shadow-sm text-xs flex items-center gap-1.5">
+                <Loader2 size={11} className="animate-spin" />
+                Thinking...
               </div>
             </div>
           </div>
         )}
-
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="bg-white border-t px-4 py-3 shrink-0">
-        <div className="flex items-end gap-3">
+      <div className="border-t border-gray-200 bg-white px-4 py-2.5 shrink-0">
+        <div className="flex items-end gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -195,17 +183,17 @@ export default function AiChatPage() {
                 handleSend();
               }
             }}
-            placeholder={config?.apiKeySet ? 'Type a message… (Enter to send)' : 'Set up AI provider in Settings first'}
+            placeholder={config?.apiKeySet ? 'Ask AI anything... (Enter to send)' : 'Configure AI provider in Settings first'}
             disabled={!config?.apiKeySet}
             rows={1}
-            className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 max-h-32 disabled:bg-gray-50 disabled:text-gray-400"
+            className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400 max-h-24 disabled:bg-gray-50 disabled:text-gray-300 placeholder:text-gray-300"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || chatMutation.isPending || !config?.apiKeySet}
-            className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl p-2.5 transition shrink-0"
+            className="bg-gray-900 hover:bg-gray-800 disabled:opacity-30 text-white rounded-lg p-2 transition shrink-0"
           >
-            <Send size={16} />
+            <Send size={13} />
           </button>
         </div>
       </div>
