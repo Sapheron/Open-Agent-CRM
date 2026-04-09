@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN apk update && apk upgrade && \
@@ -25,14 +25,14 @@ COPY tsconfig.base.json tsconfig.base.json
 RUN pnpm db:generate
 RUN pnpm turbo build --filter=@wacrm/api
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 RUN apk update && apk upgrade && \
     apk add --no-cache libc6-compat
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs && \
-    npm install -g prisma@6.19.3
+    npm install -g prisma@7.7.0
 
 COPY --from=installer --chown=nestjs:nodejs /app ./
 USER nestjs

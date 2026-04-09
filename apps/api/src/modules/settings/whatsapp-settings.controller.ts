@@ -31,6 +31,12 @@ export class WhatsAppSettingsController {
     return this.svc.createAccount(user.companyId, body.phoneNumber);
   }
 
+  @Post(':id/reconnect')
+  @ApiOperation({ summary: 'Reconnect a WhatsApp account (re-triggers QR flow)' })
+  reconnect(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.svc.reconnectAccount(user.companyId, id);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Remove a WhatsApp account' })
   remove(@CurrentUser() user: User, @Param('id') id: string) {

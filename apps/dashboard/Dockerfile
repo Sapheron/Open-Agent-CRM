@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN apk update && apk upgrade && \
@@ -23,7 +23,7 @@ COPY tsconfig.base.json tsconfig.base.json
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm turbo build --filter=@wacrm/dashboard
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 RUN apk update && apk upgrade && \
     apk add --no-cache libc6-compat
 WORKDIR /app

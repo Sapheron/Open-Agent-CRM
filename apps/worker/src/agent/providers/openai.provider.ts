@@ -57,11 +57,13 @@ export class OpenAiProvider implements AiProvider {
     );
 
     const choice = response.choices[0];
-    const toolCalls = choice?.message.tool_calls?.map((tc) => ({
-      id: tc.id,
-      name: tc.function.name,
-      arguments: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-    }));
+    const toolCalls = choice?.message.tool_calls
+      ?.filter((tc): tc is OpenAI.Chat.ChatCompletionMessageFunctionToolCall => tc.type === 'function')
+      .map((tc) => ({
+        id: tc.id,
+        name: tc.function.name,
+        arguments: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+      }));
 
     return {
       content: choice?.message.content ?? undefined,

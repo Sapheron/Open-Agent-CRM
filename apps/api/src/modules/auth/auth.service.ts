@@ -151,14 +151,14 @@ export class AuthService {
       email: user.email,
     };
 
-    const accessToken = this.jwt.sign(payload, {
+    const accessToken = this.jwt.sign<JwtPayload>(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+      expiresIn: (process.env.JWT_EXPIRES_IN ?? '15m') as any,
     });
 
-    const refreshToken = this.jwt.sign(payload, {
+    const refreshToken = this.jwt.sign<JwtPayload>(payload, {
       secret: (process.env.JWT_SECRET ?? '') + '_refresh',
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+      expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as any,
     });
 
     // Store hash of refresh token (so only the latest is valid)

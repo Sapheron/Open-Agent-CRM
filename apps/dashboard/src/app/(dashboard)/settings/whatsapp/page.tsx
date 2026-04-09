@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api-client';
 import { useWhatsAppQr } from '@/hooks/use-whatsapp-qr';
 import { toast } from 'sonner';
@@ -27,8 +28,22 @@ const STATUS_COLORS: Record<string, string> = {
   ERROR: 'text-red-500',
 };
 
-function AccountCard({ account, onDelete }: { account: WaAccount; onDelete: (id: string) => void }) {
-  const qrState = useWhatsAppQr(account.status === 'QR_PENDING' ? account.id : null);
+function AccountCard({
+  account,
+  onDelete,
+  onReconnect,
+  isReconnecting,
+}: {
+  account: WaAccount;
+  onDelete: (id: string) => void;
+  onReconnect: (id: string) => void;
+  isReconnecting: boolean;
+}) {
+  const needsQr = account.status === 'QR_PENDING' || account.status === 'CONNECTING';
+  const qrState = useWhatsAppQr(needsQr ? account.id : null);
+
+  // Show connected state from WebSocket even before list refetch
+  const isConnected = account.status === 'CONNECTED' || qrState.connected;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -38,27 +53,56 @@ function AccountCard({ account, onDelete }: { account: WaAccount; onDelete: (id:
             <Smartphone size={18} className="text-green-600" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{account.displayName ?? account.phoneNumber}</p>
-            <p className="text-sm text-gray-500">{account.phoneNumber}</p>
+            <p className="font-semibold text-gray-900">
+              {qrState.displayName ?? account.displayName ?? account.phoneNumber}
+            </p>
+            <p className="text-sm text-gray-500">
+              {qrState.phoneNumber ?? account.phoneNumber}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn('text-xs font-medium flex items-center gap-1', STATUS_COLORS[account.status] ?? 'text-gray-500')}>
-            {account.status === 'CONNECTED' && <CheckCircle size={12} />}
-            {account.status === 'ERROR' && <XCircle size={12} />}
-            {account.status === 'CONNECTING' && <Loader2 size={12} className="animate-spin" />}
-            {account.status}
+          <span className={cn(
+            'text-xs font-medium flex items-center gap-1',
+            isConnected ? STATUS_COLORS.CONNECTED : (STATUS_COLORS[account.status] ?? 'text-gray-500'),
+          )}>
+            {isConnected && <CheckCircle size={12} />}
+            {account.status === 'ERROR' && !isConnected && <XCircle size={12} />}
+            {(account.status === 'CONNECTING' || (account.status === 'QR_PENDING' && !qrState.qrCode)) && !isConnected && (
+              <Loader2 size={12} className="animate-spin" />
+            )}
+            {isConnected ? 'CONNECTED' : account.status}
           </span>
         </div>
       </div>
 
-      {account.status === 'QR_PENDING' && qrState.qrCode && (
+      {/* QR Code display */}
+      {needsQr && !isConnected && (
         <div className="mb-4 p-4 bg-gray-50 rounded-lg text-center">
-          <p className="text-sm text-gray-600 mb-2 font-medium">Scan with WhatsApp</p>
-          <div className="w-40 h-40 bg-white border border-gray-200 rounded-lg mx-auto flex items-center justify-center text-xs text-gray-400">
-            QR Code<br />(install qrcode.react)
-          </div>
-          <p className="text-xs text-gray-400 mt-2">Waiting for scan…</p>
+          {qrState.qrCode ? (
+            <>
+              <p className="text-sm text-gray-600 mb-3 font-medium">Scan with WhatsApp</p>
+              <div className="bg-white p-3 rounded-lg inline-block border border-gray-200">
+                <QRCodeSVG value={qrState.qrCode} size={200} level="M" />
+              </div>
+              <p className="text-xs text-gray-400 mt-3">
+                Open WhatsApp &rarr; Settings &rarr; Linked Devices &rarr; Link a Device
+              </p>
+            </>
+          ) : (
+            <div className="py-6">
+              <Loader2 size={24} className="animate-spin text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Generating QR code…</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Connected success state */}
+      {isConnected && account.status === 'QR_PENDING' && (
+        <div className="mb-4 p-4 bg-green-50 rounded-lg text-center">
+          <CheckCircle size={24} className="text-green-600 mx-auto mb-2" />
+          <p className="text-sm text-green-700 font-medium">WhatsApp connected successfully!</p>
         </div>
       )}
 
@@ -78,8 +122,12 @@ function AccountCard({ account, onDelete }: { account: WaAccount; onDelete: (id:
       </div>
 
       <div className="flex gap-2">
-        <button className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50">
-          <RefreshCw size={12} />
+        <button
+          onClick={() => onReconnect(account.id)}
+          disabled={isReconnecting}
+          className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+        >
+          <RefreshCw size={12} className={isReconnecting ? 'animate-spin' : ''} />
           Reconnect
         </button>
         <button
@@ -117,6 +165,12 @@ export default function WhatsAppSettingsPage() {
     onError: () => toast.error('Failed to remove account'),
   });
 
+  const reconnectMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/settings/whatsapp/accounts/${id}/reconnect`),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['wa-accounts'] }); toast.success('Reconnecting — scan QR when it appears'); },
+    onError: () => toast.error('Failed to reconnect'),
+  });
+
   return (
     <div className="p-6 max-w-2xl">
       <div className="flex items-center justify-between mb-6">
@@ -150,7 +204,13 @@ export default function WhatsAppSettingsPage() {
       ) : (
         <div className="space-y-4">
           {accounts.map((acc) => (
-            <AccountCard key={acc.id} account={acc} onDelete={(id) => deleteMutation.mutate(id)} />
+            <AccountCard
+              key={acc.id}
+              account={acc}
+              onDelete={(id) => deleteMutation.mutate(id)}
+              onReconnect={(id) => reconnectMutation.mutate(id)}
+              isReconnecting={reconnectMutation.isPending}
+            />
           ))}
         </div>
       )}

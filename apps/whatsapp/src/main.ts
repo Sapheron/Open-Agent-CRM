@@ -35,7 +35,11 @@ async function main() {
   subscriber.on('message', (_channel, message) => {
     const { command, accountId } = JSON.parse(message) as { command: string; accountId: string };
     if (command === 'start') {
-      void startSession(accountId).catch((err: unknown) => logger.error({ accountId, err }, 'Start session error'));
+      // Stop existing session first (if any) so reconnect works cleanly
+      void stopSession(accountId)
+        .catch(() => { /* ignore if not running */ })
+        .then(() => startSession(accountId))
+        .catch((err: unknown) => logger.error({ accountId, err }, 'Start session error'));
     } else if (command === 'stop') {
       void stopSession(accountId).catch((err: unknown) => logger.error({ accountId, err }, 'Stop session error'));
     }

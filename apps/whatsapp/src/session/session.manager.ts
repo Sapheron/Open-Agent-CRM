@@ -121,18 +121,26 @@ export async function startSession(accountId: string): Promise<void> {
   await connect();
 }
 
-export async function stopSession(accountId: string): Promise<void> {
+export async function stopSession(accountId: string, logout = false): Promise<void> {
   const sock = activeSockets.get(accountId);
   if (!sock) return;
 
   activeSockets.delete(accountId);
-  await sock.logout();
+  if (logout) {
+    await sock.logout();
+  } else {
+    sock.end(undefined);
+  }
   await prisma.whatsAppAccount.update({
     where: { id: accountId },
-    data: { status: 'DISCONNECTED', sessionDataEnc: null, qrCode: null },
+    data: {
+      status: 'DISCONNECTED',
+      qrCode: null,
+      ...(logout ? { sessionDataEnc: null } : {}),
+    },
   });
 
-  logger.info({ accountId }, 'Session stopped and logged out');
+  logger.info({ accountId, logout }, 'Session stopped');
 }
 
 export function getSocket(accountId: string): WASocket | undefined {

@@ -3,9 +3,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "commonjs",
-    "moduleResolution": "node10",
-    "ignoreDeprecations": "5.0",
+    "module": "node16",
+    "moduleResolution": "node16",
     "types": ["node"],
     "strict": true,
     "esModuleInterop": true,
