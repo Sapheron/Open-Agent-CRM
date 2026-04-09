@@ -2,10 +2,30 @@
 
 import { useEffect, useRef } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import axios from 'axios';
 import { useInboxStore } from '@/stores/inbox.store';
 import { useAuthStore } from '@/stores/auth.store';
 
 let socket: Socket | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return null;
+  try {
+    const { data } = await axios.post<{ data: { accessToken: string; refreshToken: string } }>(
+      '/api/auth/refresh',
+      { refreshToken },
+    );
+    localStorage.setItem('access_token', data.data.accessToken);
+    localStorage.setItem('refresh_token', data.data.refreshToken);
+    useAuthStore.getState().setTokens(data.data.accessToken, data.data.refreshToken);
+    return data.data.accessToken;
+  } catch {
+    localStorage.clear();
+    window.location.href = '/login';
+    return null;
+  }
+}
 
 export function useSocket() {
   const { accessToken } = useAuthStore();
@@ -24,7 +44,17 @@ export function useSocket() {
     });
 
     socket.on('connect', () => console.log('[WS] Connected'));
-    socket.on('disconnect', () => console.log('[WS] Disconnected'));
+    socket.on('disconnect', async (reason) => {
+      console.log('[WS] Disconnected:', reason);
+      // If server kicked us (likely expired token), refresh and reconnect
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        const newToken = await refreshAccessToken();
+        if (newToken && socket) {
+          socket.auth = { token: newToken };
+          socket.connect();
+        }
+      }
+    });
 
     socket.on('message.new', ({ conversationId, message }: { conversationId: string; message: Parameters<typeof addMessage>[1] }) => {
       addMessage(conversationId, message);
