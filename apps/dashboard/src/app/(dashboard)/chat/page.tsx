@@ -11,16 +11,9 @@ interface ChatMessage {
   content: string;
 }
 
-const PROVIDERS = [
-  'GEMINI', 'OPENAI', 'ANTHROPIC', 'GROQ', 'DEEPSEEK',
-  'XAI', 'MISTRAL', 'TOGETHER', 'MOONSHOT',
-  'OLLAMA', 'OPENROUTER', 'CUSTOM',
-];
-
 export default function AiChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Load current AI config to show which provider is active
@@ -28,16 +21,6 @@ export default function AiChatPage() {
     queryKey: ['ai-config'],
     queryFn: async () => {
       const res = await api.get<{ data: { provider: string; model: string; apiKeySet: boolean } }>('/settings/ai');
-      return res.data.data;
-    },
-  });
-
-  // Load models for the active provider
-  const provider = selectedProvider || config?.provider || 'GEMINI';
-  const { data: models } = useQuery({
-    queryKey: ['ai-models', provider],
-    queryFn: async () => {
-      const res = await api.get<{ data: string[] }>(`/settings/ai/models?provider=${provider}`);
       return res.data.data;
     },
   });
