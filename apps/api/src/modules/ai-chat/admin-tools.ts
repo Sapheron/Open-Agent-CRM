@@ -70,35 +70,56 @@ const tools: AdminTool[] = [
   {
     definition: {
       name: 'update_contact',
-      description: 'Update an existing contact. Can update name, email, phone, tags, notes.',
+      description: 'Update an existing contact. Find by contactId, phoneNumber, or displayName. Use newPhoneNumber to change the phone.',
       parameters: {
         type: 'object',
         properties: {
-          contactId: { type: 'string', description: 'Contact ID' },
-          phoneNumber: { type: 'string', description: 'Phone to search by (if no contactId)' },
-          displayName: { type: 'string' },
-          email: { type: 'string' },
+          contactId: { type: 'string', description: 'Contact ID (best way to identify)' },
+          phoneNumber: { type: 'string', description: 'Current phone number (used to find the contact)' },
+          displayName: { type: 'string', description: 'Current display name (used to find the contact if no ID/phone)' },
+          newPhoneNumber: { type: 'string', description: 'New phone number to set' },
+          newDisplayName: { type: 'string', description: 'New display name to set' },
+          email: { type: 'string', description: 'New email to set' },
           tags: { type: 'array', items: { type: 'string' } },
           notes: { type: 'string' },
+          companyName: { type: 'string' },
+          jobTitle: { type: 'string' },
+          lifecycleStage: { type: 'string' },
         },
         required: [],
       },
     },
     execute: async (args, companyId) => {
+      // Find the contact - by contactId first, then by phoneNumber lookup, then by displayName
       let id = args.contactId as string;
       if (!id && args.phoneNumber) {
-        const found = await prisma.contact.findFirst({ where: { companyId, phoneNumber: args.phoneNumber as string } });
-        if (!found) return `Contact not found with phone ${args.phoneNumber}`;
-        id = found.id;
+        // Try exact phone match first
+        const found = await prisma.contact.findFirst({ where: { companyId, phoneNumber: args.phoneNumber as string, deletedAt: null } });
+        if (found) id = found.id;
       }
-      if (!id) return 'Please provide a contactId or phoneNumber';
+      if (!id && args.displayName) {
+        const found = await prisma.contact.findFirst({ where: { companyId, displayName: { contains: args.displayName as string, mode: 'insensitive' as const }, deletedAt: null } });
+        if (found) id = found.id;
+      }
+      if (!id) return 'Contact not found. Provide contactId, phoneNumber, or displayName.';
+
+      // Build update data — include ALL possible fields
       const data: Record<string, unknown> = {};
-      if (args.displayName) data.displayName = args.displayName;
+      if (args.newPhoneNumber) data.phoneNumber = (args.newPhoneNumber as string).replace(/[\s\-\+\(\)]/g, '');
+      if (args.displayName && !args.contactId) { /* displayName was used for lookup, don't update it */ }
+      else if (args.displayName) data.displayName = args.displayName;
+      if (args.newDisplayName) data.displayName = args.newDisplayName;
       if (args.email) data.email = args.email;
       if (args.tags) data.tags = args.tags;
       if (args.notes) data.notes = args.notes;
+      if (args.companyName) data.companyName = args.companyName;
+      if (args.jobTitle) data.jobTitle = args.jobTitle;
+      if (args.lifecycleStage) data.lifecycleStage = args.lifecycleStage;
+
+      if (Object.keys(data).length === 0) return 'No fields to update. Specify what to change.';
+
       const updated = await prisma.contact.update({ where: { id }, data });
-      return `Updated contact: ${updated.displayName || updated.phoneNumber}`;
+      return `Updated contact: ${updated.displayName || updated.phoneNumber} (ID: ${updated.id})`;
     },
   },
   {
