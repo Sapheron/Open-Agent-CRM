@@ -463,6 +463,359 @@ exports.Prisma.NotificationScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.TemplateScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  category: 'category',
+  body: 'body',
+  variables: 'variables',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CannedResponseScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  shortcut: 'shortcut',
+  body: 'body'
+};
+
+exports.Prisma.SequenceScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SequenceStepScalarFieldEnum = {
+  id: 'id',
+  sequenceId: 'sequenceId',
+  sortOrder: 'sortOrder',
+  delayHours: 'delayHours',
+  action: 'action',
+  message: 'message',
+  templateId: 'templateId'
+};
+
+exports.Prisma.SequenceEnrollmentScalarFieldEnum = {
+  id: 'id',
+  sequenceId: 'sequenceId',
+  contactId: 'contactId',
+  companyId: 'companyId',
+  currentStep: 'currentStep',
+  status: 'status',
+  nextRunAt: 'nextRunAt',
+  enrolledAt: 'enrolledAt',
+  completedAt: 'completedAt'
+};
+
+exports.Prisma.CallLogScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  agentId: 'agentId',
+  duration: 'duration',
+  outcome: 'outcome',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PipelineScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  isDefault: 'isDefault',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PipelineStageScalarFieldEnum = {
+  id: 'id',
+  pipelineId: 'pipelineId',
+  name: 'name',
+  color: 'color',
+  sortOrder: 'sortOrder',
+  probability: 'probability'
+};
+
+exports.Prisma.ProductScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  description: 'description',
+  price: 'price',
+  currency: 'currency',
+  sku: 'sku',
+  isActive: 'isActive'
+};
+
+exports.Prisma.QuoteScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  dealId: 'dealId',
+  quoteNumber: 'quoteNumber',
+  status: 'status',
+  subtotal: 'subtotal',
+  tax: 'tax',
+  discount: 'discount',
+  total: 'total',
+  currency: 'currency',
+  validUntil: 'validUntil',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteLineItemScalarFieldEnum = {
+  id: 'id',
+  quoteId: 'quoteId',
+  productId: 'productId',
+  name: 'name',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  total: 'total'
+};
+
+exports.Prisma.InvoiceScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  dealId: 'dealId',
+  invoiceNumber: 'invoiceNumber',
+  status: 'status',
+  subtotal: 'subtotal',
+  tax: 'tax',
+  total: 'total',
+  currency: 'currency',
+  dueDate: 'dueDate',
+  paidAt: 'paidAt',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.InvoiceLineItemScalarFieldEnum = {
+  id: 'id',
+  invoiceId: 'invoiceId',
+  name: 'name',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  total: 'total'
+};
+
+exports.Prisma.CampaignScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  channel: 'channel',
+  status: 'status',
+  segmentId: 'segmentId',
+  budget: 'budget',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  sentCount: 'sentCount',
+  replyCount: 'replyCount',
+  convertedCount: 'convertedCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FormScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  fields: 'fields',
+  isActive: 'isActive',
+  submitCount: 'submitCount',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.FormSubmissionScalarFieldEnum = {
+  id: 'id',
+  formId: 'formId',
+  companyId: 'companyId',
+  data: 'data',
+  contactId: 'contactId',
+  leadId: 'leadId',
+  utmSource: 'utmSource',
+  utmMedium: 'utmMedium',
+  utmCampaign: 'utmCampaign',
+  ipAddress: 'ipAddress',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.WorkflowScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  isActive: 'isActive',
+  trigger: 'trigger',
+  steps: 'steps',
+  runCount: 'runCount',
+  lastRunAt: 'lastRunAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WorkflowExecutionScalarFieldEnum = {
+  id: 'id',
+  workflowId: 'workflowId',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  status: 'status',
+  steps: 'steps',
+  error: 'error',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt'
+};
+
+exports.Prisma.TicketScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  assignedToId: 'assignedToId',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  priority: 'priority',
+  category: 'category',
+  source: 'source',
+  firstResponseAt: 'firstResponseAt',
+  resolvedAt: 'resolvedAt',
+  closedAt: 'closedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TicketCommentScalarFieldEnum = {
+  id: 'id',
+  ticketId: 'ticketId',
+  authorId: 'authorId',
+  content: 'content',
+  isInternal: 'isInternal',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.KnowledgeBaseArticleScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  title: 'title',
+  content: 'content',
+  category: 'category',
+  isPublic: 'isPublic',
+  viewCount: 'viewCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SlaPolicyScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  firstResponseMins: 'firstResponseMins',
+  resolutionMins: 'resolutionMins',
+  priority: 'priority',
+  isActive: 'isActive'
+};
+
+exports.Prisma.CustomReportScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  entity: 'entity',
+  filters: 'filters',
+  groupBy: 'groupBy',
+  columns: 'columns',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ScheduledReportScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  reportId: 'reportId',
+  frequency: 'frequency',
+  recipients: 'recipients',
+  lastSentAt: 'lastSentAt',
+  nextRunAt: 'nextRunAt',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.IntegrationScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  type: 'type',
+  config: 'config',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CalendarEventScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  dealId: 'dealId',
+  title: 'title',
+  description: 'description',
+  startAt: 'startAt',
+  endAt: 'endAt',
+  location: 'location',
+  externalId: 'externalId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ActivityLogScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  userId: 'userId',
+  contactId: 'contactId',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  action: 'action',
+  details: 'details',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.DocumentScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  contactId: 'contactId',
+  dealId: 'dealId',
+  name: 'name',
+  type: 'type',
+  fileUrl: 'fileUrl',
+  fileSize: 'fileSize',
+  mimeType: 'mimeType',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.DocumentSignatureScalarFieldEnum = {
+  id: 'id',
+  documentId: 'documentId',
+  signerName: 'signerName',
+  signerEmail: 'signerEmail',
+  status: 'status',
+  signedAt: 'signedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ApiKeyScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  keyHash: 'keyHash',
+  prefix: 'prefix',
+  scopes: 'scopes',
+  lastUsedAt: 'lastUsedAt',
+  expiresAt: 'expiresAt',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -646,7 +999,37 @@ exports.Prisma.ModelName = {
   Tag: 'Tag',
   Segment: 'Segment',
   CustomFieldDefinition: 'CustomFieldDefinition',
-  Notification: 'Notification'
+  Notification: 'Notification',
+  Template: 'Template',
+  CannedResponse: 'CannedResponse',
+  Sequence: 'Sequence',
+  SequenceStep: 'SequenceStep',
+  SequenceEnrollment: 'SequenceEnrollment',
+  CallLog: 'CallLog',
+  Pipeline: 'Pipeline',
+  PipelineStage: 'PipelineStage',
+  Product: 'Product',
+  Quote: 'Quote',
+  QuoteLineItem: 'QuoteLineItem',
+  Invoice: 'Invoice',
+  InvoiceLineItem: 'InvoiceLineItem',
+  Campaign: 'Campaign',
+  Form: 'Form',
+  FormSubmission: 'FormSubmission',
+  Workflow: 'Workflow',
+  WorkflowExecution: 'WorkflowExecution',
+  Ticket: 'Ticket',
+  TicketComment: 'TicketComment',
+  KnowledgeBaseArticle: 'KnowledgeBaseArticle',
+  SlaPolicy: 'SlaPolicy',
+  CustomReport: 'CustomReport',
+  ScheduledReport: 'ScheduledReport',
+  Integration: 'Integration',
+  CalendarEvent: 'CalendarEvent',
+  ActivityLog: 'ActivityLog',
+  Document: 'Document',
+  DocumentSignature: 'DocumentSignature',
+  ApiKey: 'ApiKey'
 };
 
 /**

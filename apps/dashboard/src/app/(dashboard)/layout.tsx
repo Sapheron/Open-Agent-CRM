@@ -9,6 +9,9 @@ import { usePathname } from 'next/navigation';
 import {
   MessageSquare, Users, TrendingUp, Briefcase, CheckSquare,
   BarChart3, Settings, Megaphone, LogOut, Zap, CreditCard,
+  FileText, Repeat, Package, Receipt, FileSpreadsheet,
+  Target, Clipboard, Workflow, LifeBuoy, BookOpen, PieChart,
+  Plug, FolderOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,19 +29,52 @@ const navSections = [
       { href: '/leads', icon: TrendingUp, label: 'Leads' },
       { href: '/deals', icon: Briefcase, label: 'Deals' },
       { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
+      { href: '/products', icon: Package, label: 'Products' },
     ],
   },
   {
     label: 'Engage',
     items: [
       { href: '/broadcasts', icon: Megaphone, label: 'Broadcasts' },
+      { href: '/templates', icon: FileText, label: 'Templates' },
+      { href: '/sequences', icon: Repeat, label: 'Sequences' },
+      { href: '/campaigns', icon: Target, label: 'Campaigns' },
+      { href: '/forms', icon: Clipboard, label: 'Forms' },
+    ],
+  },
+  {
+    label: 'Sales',
+    items: [
+      { href: '/quotes', icon: Receipt, label: 'Quotes' },
+      { href: '/invoices', icon: FileSpreadsheet, label: 'Invoices' },
       { href: '/payments', icon: CreditCard, label: 'Payments' },
+    ],
+  },
+  {
+    label: 'Support',
+    items: [
+      { href: '/tickets', icon: LifeBuoy, label: 'Tickets' },
+      { href: '/kb', icon: BookOpen, label: 'Knowledge Base' },
+    ],
+  },
+  {
+    label: 'Automate',
+    items: [
+      { href: '/workflows', icon: Workflow, label: 'Workflows' },
     ],
   },
   {
     label: 'Insights',
     items: [
       { href: '/analytics', icon: BarChart3, label: 'Analytics' },
+      { href: '/reports', icon: PieChart, label: 'Reports' },
+    ],
+  },
+  {
+    label: 'More',
+    items: [
+      { href: '/documents', icon: FolderOpen, label: 'Documents' },
+      { href: '/integrations', icon: Plug, label: 'Integrations' },
     ],
   },
 ];

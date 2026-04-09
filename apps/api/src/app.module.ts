@@ -15,6 +15,21 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TeamModule } from './modules/team/team.module';
 import { BroadcastModule } from './modules/broadcast/broadcast.module';
 import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+import { TemplatesModule } from './modules/templates/templates.module';
+import { SequencesModule } from './modules/sequences/sequences.module';
+import { PipelinesModule } from './modules/pipelines/pipelines.module';
+import { ProductsModule } from './modules/products/products.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { FormsModule } from './modules/forms/forms.module';
+import { WorkflowsModule } from './modules/workflows/workflows.module';
+import { TicketsModule } from './modules/tickets/tickets.module';
+import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { WsGatewayModule } from './gateway/ws-gateway.module';
 import { BullModule } from '@nestjs/bullmq';
 
@@ -46,6 +61,21 @@ import { BullModule } from '@nestjs/bullmq';
     TeamModule,
     BroadcastModule,
     AiChatModule,
+    TemplatesModule,
+    SequencesModule,
+    PipelinesModule,
+    ProductsModule,
+    QuotesModule,
+    InvoicesModule,
+    CampaignsModule,
+    FormsModule,
+    WorkflowsModule,
+    TicketsModule,
+    KnowledgeBaseModule,
+    ReportsModule,
+    IntegrationsModule,
+    DocumentsModule,
+    ApiKeysModule,
     WsGatewayModule,
   ],
 })
