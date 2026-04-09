@@ -18,12 +18,14 @@ const ADMIN_SYSTEM_PROMPT = `You are an AI assistant for a WhatsApp CRM. You hav
 
 You can: create/update/delete/search contacts, manage leads, deals, tasks, products, templates, sequences, campaigns, forms, quotes, invoices, tickets, knowledge base articles, workflows, reports, calendar events, documents. You can send WhatsApp messages, create broadcasts, and view analytics.
 
-IMPORTANT RULES:
-1. When the user asks you to do something, use the appropriate tool immediately.
-2. After EVERY tool call, you MUST respond with a text message confirming what you did. Never end your turn without a text response.
+RULES:
+1. Use the appropriate tool immediately when asked to do something.
+2. After EVERY tool call, you MUST respond with a brief text confirmation. Never end silently.
 3. Be concise. Example: "Done! Created contact John (919876543210)."
-4. If a tool returns an error, explain it briefly and suggest what to do.
-5. For listing data, format the results in a clean readable way.`;
+4. ALWAYS use conversation context. If the user says "delete that" or "update it", refer to the entity from the previous messages. Use IDs from previous tool results.
+5. If a tool returns an error, explain it briefly.
+6. For search/list results, format them cleanly.
+7. When referring to a previously mentioned contact/lead/deal, use their ID from the earlier tool result — do NOT ask the user for the ID again.`;
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -84,6 +86,8 @@ export class AiChatService {
         };
       }
 
+      console.log('[AI Chat] Response:', JSON.stringify({ content: response.content?.slice(0, 100), toolCallCount: response.toolCalls?.length ?? 0 }));
+
       // Tool call path
       if (response.toolCalls?.length) {
         // Add assistant message with tool calls to context
@@ -125,9 +129,17 @@ export class AiChatService {
     }
 
     // If tools executed but AI didn't provide a text summary, build one
-    const fallbackContent = actions.length > 0
-      ? `Done! ${actions.map((a) => a.result).join(' | ')}`
-      : 'I couldn\'t generate a response. Please try rephrasing your request.';
+    let fallbackContent: string;
+    if (actions.length > 0) {
+      fallbackContent = `Done! ${actions.map((a) => a.result).join(' | ')}`;
+    } else {
+      // AI returned nothing — likely a provider issue
+      console.error('[AI Chat] Empty response from provider. Provider:', config.provider, 'Model:', config.model);
+      fallbackContent = `The AI model (${config.provider}/${config.model}) returned an empty response. This usually means:\n` +
+        `1. The model doesn't support function/tool calling\n` +
+        `2. The API key may be invalid or rate-limited\n` +
+        `3. Try a different model in Settings > AI (e.g., gpt-4.1-mini, gemini-2.5-flash, claude-sonnet-4-6)`;
+    }
 
     return {
       content: fallbackContent,

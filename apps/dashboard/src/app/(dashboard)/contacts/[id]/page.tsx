@@ -8,8 +8,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft, Phone, Mail, Building, Briefcase, MapPin,
-  MessageSquare, TrendingUp, CreditCard, CheckSquare,
-  Plus, Trash2, UserX, Tag,
+  TrendingUp, CreditCard, CheckSquare, Save, X,
+  Plus, Trash2, UserX, StickyNote,
 } from 'lucide-react';
 
 interface Contact {
@@ -56,51 +56,16 @@ const LIFECYCLE_COLORS: Record<string, string> = {
 
 const LIFECYCLE_STAGES = ['SUBSCRIBER', 'LEAD', 'MQL', 'SQL', 'OPPORTUNITY', 'CUSTOMER', 'EVANGELIST'];
 
-function EditableField({ label, value, icon: Icon, onSave, type = 'text' }: {
-  label: string; value: string; icon: React.ElementType; onSave: (val: string) => void; type?: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  const handleSave = () => {
-    if (draft !== value) onSave(draft);
-    setEditing(false);
-  };
-
-  return (
-    <div className="flex items-start gap-2 py-1.5 group">
-      <Icon size={12} className="text-gray-300 mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] text-gray-400 mb-0.5">{label}</p>
-        {editing ? (
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            type={type}
-            autoFocus
-            className="w-full text-xs border border-violet-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-400"
-          />
-        ) : (
-          <p
-            onClick={() => { setDraft(value); setEditing(true); }}
-            className="text-xs text-gray-900 cursor-pointer hover:bg-gray-50 rounded px-1 -mx-1 min-h-[18px]"
-          >
-            {value || <span className="text-gray-300 italic">Click to add</span>}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
   const [noteText, setNoteText] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [editMode, setEditMode] = useState(false);
+
+  // Edit form state
+  const [form, setForm] = useState<Record<string, string>>({});
 
   const { data: contact, isLoading } = useQuery({
     queryKey: ['contact', id],
@@ -136,10 +101,15 @@ export default function ContactDetailPage() {
     },
   });
 
+  const invalidateAll = () => {
+    void qc.invalidateQueries({ queryKey: ['contact', id] });
+    void qc.invalidateQueries({ queryKey: ['contacts'] }); // Also refresh the list page
+  };
+
   const updateMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => api.patch(`/contacts/${id}`, data),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['contact', id] }); toast.success('Updated'); },
-    onError: () => toast.error('Failed to update'),
+    onSuccess: () => { invalidateAll(); toast.success('Saved'); },
+    onError: () => toast.error('Failed to save'),
   });
 
   const addNoteMutation = useMutation({
@@ -150,12 +120,16 @@ export default function ContactDetailPage() {
       setNoteText('');
       toast.success('Note added');
     },
-    onError: () => toast.error('Failed to add note'),
+    onError: () => toast.error('Failed'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/contacts/${id}`),
-    onSuccess: () => { toast.success('Contact deleted'); router.push('/contacts'); },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Deleted');
+      router.push('/contacts');
+    },
   });
 
   if (isLoading || !contact) {
@@ -165,17 +139,51 @@ export default function ContactDetailPage() {
   const displayName = contact.displayName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Unknown';
   const initials = (displayName[0] || '?').toUpperCase();
 
+  const startEdit = () => {
+    setForm({
+      displayName: contact.displayName || '',
+      firstName: contact.firstName || '',
+      lastName: contact.lastName || '',
+      phoneNumber: contact.phoneNumber || '',
+      email: contact.email || '',
+      companyName: contact.companyName || '',
+      jobTitle: contact.jobTitle || '',
+      address: contact.address || '',
+    });
+    setEditMode(true);
+  };
+
+  const saveEdit = () => {
+    // Only send changed fields
+    const changes: Record<string, string> = {};
+    if (form.displayName !== (contact.displayName || '')) changes.displayName = form.displayName;
+    if (form.firstName !== (contact.firstName || '')) changes.firstName = form.firstName;
+    if (form.lastName !== (contact.lastName || '')) changes.lastName = form.lastName;
+    if (form.phoneNumber !== contact.phoneNumber) changes.phoneNumber = form.phoneNumber;
+    if (form.email !== (contact.email || '')) changes.email = form.email;
+    if (form.companyName !== (contact.companyName || '')) changes.companyName = form.companyName;
+    if (form.jobTitle !== (contact.jobTitle || '')) changes.jobTitle = form.jobTitle;
+    if (form.address !== (contact.address || '')) changes.address = form.address;
+
+    if (Object.keys(changes).length > 0) {
+      updateMutation.mutate(changes);
+    }
+    setEditMode(false);
+  };
+
   const handleAddTag = () => {
     if (!newTag.trim()) return;
-    const currentTags = contact.tags || [];
-    if (currentTags.includes(newTag.trim())) { setNewTag(''); return; }
-    updateMutation.mutate({ tags: [...currentTags, newTag.trim()] });
+    if ((contact.tags || []).includes(newTag.trim())) { setNewTag(''); return; }
+    updateMutation.mutate({ tags: [...(contact.tags || []), newTag.trim()] });
     setNewTag('');
   };
 
   const handleRemoveTag = (tag: string) => {
     updateMutation.mutate({ tags: (contact.tags || []).filter((t) => t !== tag) });
   };
+
+  // Filter out WhatsApp messages from timeline
+  const filteredTimeline = (timeline || []).filter((item) => item.type !== 'message');
 
   return (
     <div className="h-full flex flex-col">
@@ -204,21 +212,76 @@ export default function ContactDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 h-full">
           {/* Left: Contact Info */}
           <div className="border-r border-gray-200 bg-white p-4 space-y-4 overflow-auto">
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Contact Info</p>
-              <EditableField label="Display Name" value={contact.displayName || ''} icon={Phone} onSave={(v) => updateMutation.mutate({ displayName: v })} />
-              <EditableField label="First Name" value={contact.firstName || ''} icon={Phone} onSave={(v) => updateMutation.mutate({ firstName: v })} />
-              <EditableField label="Last Name" value={contact.lastName || ''} icon={Phone} onSave={(v) => updateMutation.mutate({ lastName: v })} />
-              <EditableField label="Phone" value={contact.phoneNumber} icon={Phone} onSave={(v) => updateMutation.mutate({ phoneNumber: v })} />
-              <EditableField label="Email" value={contact.email || ''} icon={Mail} onSave={(v) => updateMutation.mutate({ email: v })} type="email" />
-              <EditableField label="Company" value={contact.companyName || ''} icon={Building} onSave={(v) => updateMutation.mutate({ companyName: v })} />
-              <EditableField label="Job Title" value={contact.jobTitle || ''} icon={Briefcase} onSave={(v) => updateMutation.mutate({ jobTitle: v })} />
-              <EditableField label="Address" value={contact.address || ''} icon={MapPin} onSave={(v) => updateMutation.mutate({ address: v })} />
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Contact Info</p>
+              {!editMode ? (
+                <button onClick={startEdit} className="text-[10px] text-violet-500 hover:text-violet-600 font-medium">
+                  Edit
+                </button>
+              ) : (
+                <div className="flex gap-1">
+                  <button onClick={saveEdit} disabled={updateMutation.isPending} className="flex items-center gap-0.5 text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded hover:bg-gray-800 disabled:opacity-50">
+                    <Save size={9} /> Save
+                  </button>
+                  <button onClick={() => setEditMode(false)} className="flex items-center gap-0.5 text-[10px] text-gray-400 px-1.5 py-0.5 rounded hover:bg-gray-100">
+                    <X size={9} /> Cancel
+                  </button>
+                </div>
+              )}
             </div>
+
+            {editMode ? (
+              <div className="space-y-2">
+                {[
+                  { key: 'displayName', label: 'Display Name', icon: Phone },
+                  { key: 'firstName', label: 'First Name', icon: Phone },
+                  { key: 'lastName', label: 'Last Name', icon: Phone },
+                  { key: 'phoneNumber', label: 'Phone', icon: Phone },
+                  { key: 'email', label: 'Email', icon: Mail, type: 'email' },
+                  { key: 'companyName', label: 'Company', icon: Building },
+                  { key: 'jobTitle', label: 'Job Title', icon: Briefcase },
+                  { key: 'address', label: 'Address', icon: MapPin },
+                ].map(({ key, label, icon: Icon, type }) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <Icon size={11} className="text-gray-300 shrink-0" />
+                    <div className="flex-1">
+                      <label className="text-[9px] text-gray-400 block">{label}</label>
+                      <input
+                        value={form[key] || ''}
+                        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                        type={type || 'text'}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {[
+                  { label: 'Display Name', value: contact.displayName, icon: Phone },
+                  { label: 'First Name', value: contact.firstName, icon: Phone },
+                  { label: 'Last Name', value: contact.lastName, icon: Phone },
+                  { label: 'Phone', value: contact.phoneNumber, icon: Phone },
+                  { label: 'Email', value: contact.email, icon: Mail },
+                  { label: 'Company', value: contact.companyName, icon: Building },
+                  { label: 'Job Title', value: contact.jobTitle, icon: Briefcase },
+                  { label: 'Address', value: contact.address, icon: MapPin },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="flex items-start gap-2 py-1">
+                    <Icon size={11} className="text-gray-300 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-[9px] text-gray-400">{label}</p>
+                      <p className="text-xs text-gray-900">{value || <span className="text-gray-300 italic">—</span>}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Lifecycle */}
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Lifecycle Stage</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Lifecycle Stage</p>
               <select
                 value={contact.lifecycleStage}
                 onChange={(e) => updateMutation.mutate({ lifecycleStage: e.target.value })}
@@ -230,14 +293,15 @@ export default function ContactDetailPage() {
 
             {/* Tags */}
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Tags</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Tags</p>
               <div className="flex flex-wrap gap-1 mb-2">
                 {(contact.tags || []).map((tag) => (
                   <span key={tag} className="text-[10px] bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="text-violet-400 hover:text-violet-600">×</button>
+                    <button onClick={() => handleRemoveTag(tag)} className="text-violet-400 hover:text-violet-600 ml-0.5">×</button>
                   </span>
                 ))}
+                {(contact.tags || []).length === 0 && <span className="text-[10px] text-gray-300 italic">No tags</span>}
               </div>
               <div className="flex gap-1">
                 <select
@@ -245,7 +309,7 @@ export default function ContactDetailPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   className="flex-1 border border-gray-200 rounded px-2 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-violet-400"
                 >
-                  <option value="">Select tag...</option>
+                  <option value="">Add tag...</option>
                   {(tags || []).filter((t) => !(contact.tags || []).includes(t.name)).map((t) => (
                     <option key={t.id} value={t.name}>{t.name}</option>
                   ))}
@@ -258,7 +322,7 @@ export default function ContactDetailPage() {
 
             {/* Actions */}
             <div className="pt-2 border-t border-gray-100 space-y-1">
-              <button onClick={() => deleteMutation.mutate()} className="flex items-center gap-1.5 text-[10px] text-red-500 hover:text-red-600 w-full py-1">
+              <button onClick={() => { if (confirm('Delete this contact?')) deleteMutation.mutate(); }} className="flex items-center gap-1.5 text-[10px] text-red-500 hover:text-red-600 w-full py-1">
                 <Trash2 size={10} /> Delete contact
               </button>
               {!contact.optedOut && (
@@ -269,38 +333,35 @@ export default function ContactDetailPage() {
             </div>
           </div>
 
-          {/* Middle: Timeline */}
+          {/* Middle: Timeline (no WhatsApp messages) */}
           <div className="bg-gray-50 p-4 overflow-auto">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Activity Timeline</p>
-            {!timeline?.length ? (
-              <p className="text-xs text-gray-300">No activity yet</p>
+            {!filteredTimeline.length ? (
+              <p className="text-xs text-gray-300 italic">No activity yet</p>
             ) : (
               <div className="space-y-2">
-                {timeline.map((item, i) => (
+                {filteredTimeline.map((item, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <div className={cn('w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5', {
-                      'bg-blue-50': item.type === 'message',
                       'bg-green-50': item.type === 'lead',
                       'bg-violet-50': item.type === 'deal',
                       'bg-amber-50': item.type === 'task',
                       'bg-emerald-50': item.type === 'payment',
                       'bg-gray-100': item.type === 'note',
                     })}>
-                      {item.type === 'message' && <MessageSquare size={10} className="text-blue-500" />}
                       {item.type === 'lead' && <TrendingUp size={10} className="text-green-500" />}
                       {item.type === 'deal' && <Briefcase size={10} className="text-violet-500" />}
                       {item.type === 'task' && <CheckSquare size={10} className="text-amber-500" />}
                       {item.type === 'payment' && <CreditCard size={10} className="text-emerald-500" />}
-                      {item.type === 'note' && <Tag size={10} className="text-gray-400" />}
+                      {item.type === 'note' && <StickyNote size={10} className="text-gray-400" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-gray-700">
-                        {item.type === 'message' && `${(item.data as Record<string, string>).direction}: ${((item.data as Record<string, string>).body || '').slice(0, 60)}`}
                         {item.type === 'lead' && `Lead: ${(item.data as Record<string, string>).title} [${(item.data as Record<string, string>).status}]`}
                         {item.type === 'deal' && `Deal: ${(item.data as Record<string, string>).title} [${(item.data as Record<string, string>).stage}]`}
                         {item.type === 'task' && `Task: ${(item.data as Record<string, string>).title} [${(item.data as Record<string, string>).status}]`}
                         {item.type === 'payment' && `Payment: ₹${Number((item.data as Record<string, number>).amount) / 100} [${(item.data as Record<string, string>).status}]`}
-                        {item.type === 'note' && `Note: ${((item.data as Record<string, string>).content || '').slice(0, 80)}`}
+                        {item.type === 'note' && ((item.data as Record<string, string>).content || '').slice(0, 100)}
                       </p>
                       <p className="text-[9px] text-gray-300">{new Date(item.date).toLocaleString()}</p>
                     </div>
@@ -317,23 +378,24 @@ export default function ContactDetailPage() {
               <textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Add a note..."
-                rows={2}
+                placeholder="Write a note..."
+                rows={3}
                 className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none placeholder:text-gray-300"
               />
               <button
                 onClick={() => addNoteMutation.mutate()}
                 disabled={!noteText.trim() || addNoteMutation.isPending}
-                className="mt-1 bg-gray-900 text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-30"
+                className="mt-1.5 bg-gray-900 text-white px-3 py-1 rounded text-[10px] disabled:opacity-30 flex items-center gap-1"
               >
-                Add Note
+                <Plus size={9} /> Add Note
               </button>
             </div>
             <div className="space-y-2">
+              {(notes || []).length === 0 && <p className="text-xs text-gray-300 italic">No notes yet</p>}
               {(notes || []).map((note) => (
-                <div key={note.id} className="border border-gray-100 rounded p-2">
-                  <p className="text-xs text-gray-700 whitespace-pre-wrap">{note.content}</p>
-                  <p className="text-[9px] text-gray-300 mt-1">{new Date(note.createdAt).toLocaleString()}</p>
+                <div key={note.id} className="border border-gray-100 rounded p-2.5 bg-gray-50/50">
+                  <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                  <p className="text-[9px] text-gray-300 mt-1.5">{new Date(note.createdAt).toLocaleString()}</p>
                 </div>
               ))}
             </div>
