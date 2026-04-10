@@ -15,7 +15,7 @@ import api from '@/lib/api-client';
 import { formatRelativeTime, cn } from '@/lib/utils';
 import {
   Plus, Search, X, Trash2, KanbanSquare, Table as TableIcon,
-  TrendingUp, Award, Flame, Clock, BookOpen,
+  TrendingUp, Award, Flame, Clock, Key,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LeadKanban } from './kanban';
@@ -205,11 +205,11 @@ export default function LeadsPage() {
             </button>
           </div>
           <Link
-            href="/leads/api-docs"
-            title="API documentation"
+            href="/leads/api-keys"
+            title="Manage API keys"
             className="flex items-center gap-1 border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
           >
-            <BookOpen size={11} /> API Docs
+            <Key size={11} /> API Keys
           </Link>
           <button
             onClick={() => setShowCreate(true)}

@@ -81,8 +81,10 @@ export default function IntegrationsSettingsPage() {
           <Globe size={20} className="text-violet-600" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-gray-900">Integrations Settings</h1>
-          <p className="text-sm text-gray-500">Configure your public domain for webhooks</p>
+          <h1 className="text-lg font-bold text-gray-900">Public URL & lead intake</h1>
+          <p className="text-sm text-gray-500">
+            Configure your public domain so external sources can reach your webhooks
+          </p>
         </div>
       </div>
 
