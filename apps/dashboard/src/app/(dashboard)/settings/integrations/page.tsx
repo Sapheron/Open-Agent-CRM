@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import api from '@/lib/api-client';
 import { toast } from 'sonner';
 import { Globe, Check, AlertCircle, Save, ExternalLink } from 'lucide-react';
@@ -205,12 +206,12 @@ export default function IntegrationsSettingsPage() {
 
       {/* Links */}
       <div className="mt-6 flex items-center gap-3">
-        <a
+        <Link
           href="/leads/integrations"
           className="text-[11px] text-violet-600 hover:text-violet-700 flex items-center gap-1"
         >
           Manage lead integrations <ExternalLink size={10} />
-        </a>
+        </Link>
       </div>
     </div>
   );

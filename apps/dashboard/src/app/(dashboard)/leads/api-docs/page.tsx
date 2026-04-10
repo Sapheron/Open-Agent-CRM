@@ -7,20 +7,11 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api-client';
 import { Copy, Check, BookOpen, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function LeadsApiDocsPage() {
-  const { data: company } = useQuery({
-    queryKey: ['company'],
-    queryFn: async () => {
-      const r = await api.get<{ data: { name: string } }>('/company');
-      return r.data.data;
-    },
-  });
-
   const apiBaseUrl = window.location.origin + '/api';
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
@@ -359,7 +350,7 @@ export default function LeadsApiDocsPage() {
                 <p className="text-xs text-violet-700 leading-relaxed mb-2">
                   For simple lead ingestion from any external source, use the custom webhook endpoint.
                   Generate an API key with the <code className="bg-violet-100 px-1 rounded">leads:write</code> scope
-                  in <a href="/leads/integrations" className="underline">Leads → Integrations</a>.
+                  in <Link href="/leads/integrations" className="underline">Leads → Integrations</Link>.
                 </p>
                 <CodeBlock
                   id="webhook"
@@ -426,16 +417,16 @@ function AuthSection() {
 }
 
 function EndpointSection({
-  title,
+  title: _title,
   method,
   path,
   description,
   queryParams,
   requestBody,
   children,
-  copyCommand,
-  copiedCmd,
-  apiBaseUrl,
+  copyCommand: _copyCommand,
+  copiedCmd: _copiedCmd,
+  apiBaseUrl: _apiBaseUrl,
 }: {
   title: string;
   method: string;
