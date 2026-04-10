@@ -305,6 +305,27 @@ exports.Prisma.LeadScoreEventScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.LeadIntakeIntegrationScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  provider: 'provider',
+  name: 'name',
+  status: 'status',
+  metaPageId: 'metaPageId',
+  metaPageName: 'metaPageName',
+  metaAppSecretEnc: 'metaAppSecretEnc',
+  metaVerifyToken: 'metaVerifyToken',
+  metaPageAccessTokenEnc: 'metaPageAccessTokenEnc',
+  lastEventAt: 'lastEventAt',
+  lastError: 'lastError',
+  totalLeads: 'totalLeads',
+  defaultTags: 'defaultTags',
+  defaultPriority: 'defaultPriority',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deletedAt: 'deletedAt'
+};
+
 exports.Prisma.DealScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
@@ -1074,6 +1095,8 @@ exports.LeadSource = exports.$Enums.LeadSource = {
   IMPORT: 'IMPORT',
   AI_CHAT: 'AI_CHAT',
   MANUAL: 'MANUAL',
+  META_ADS: 'META_ADS',
+  WEBHOOK: 'WEBHOOK',
   OTHER: 'OTHER'
 };
 
@@ -1103,6 +1126,17 @@ exports.LeadActivityType = exports.$Enums.LeadActivityType = {
   DISQUALIFIED: 'DISQUALIFIED',
   FIELD_UPDATED: 'FIELD_UPDATED',
   CUSTOM: 'CUSTOM'
+};
+
+exports.LeadIntegrationProvider = exports.$Enums.LeadIntegrationProvider = {
+  META_ADS: 'META_ADS',
+  CUSTOM_WEBHOOK: 'CUSTOM_WEBHOOK'
+};
+
+exports.LeadIntegrationStatus = exports.$Enums.LeadIntegrationStatus = {
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  ERROR: 'ERROR'
 };
 
 exports.DealStage = exports.$Enums.DealStage = {
@@ -1242,6 +1276,7 @@ exports.Prisma.ModelName = {
   Lead: 'Lead',
   LeadActivity: 'LeadActivity',
   LeadScoreEvent: 'LeadScoreEvent',
+  LeadIntakeIntegration: 'LeadIntakeIntegration',
   Deal: 'Deal',
   DealActivity: 'DealActivity',
   DealLineItem: 'DealLineItem',

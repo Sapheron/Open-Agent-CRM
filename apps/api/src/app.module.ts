@@ -7,6 +7,7 @@ import { ContactsModule } from './modules/contacts/contacts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { LeadIntakeModule } from './modules/lead-intake/lead-intake.module';
 import { DealsModule } from './modules/deals/deals.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -57,6 +58,7 @@ import { BullModule } from '@nestjs/bullmq';
     ConversationsModule,
     MessagesModule,
     LeadsModule,
+    LeadIntakeModule,
     DealsModule,
     TasksModule,
     PaymentsModule,

@@ -15,7 +15,7 @@ import api from '@/lib/api-client';
 import { formatRelativeTime, cn } from '@/lib/utils';
 import {
   Plus, Search, X, Trash2, KanbanSquare, Table as TableIcon,
-  TrendingUp, Award, Flame, Clock,
+  TrendingUp, Award, Flame, Clock, BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LeadKanban } from './kanban';
@@ -204,6 +204,13 @@ export default function LeadsPage() {
               <KanbanSquare size={11} />
             </button>
           </div>
+          <Link
+            href="/leads/integrations"
+            title="API & Meta Ads integrations"
+            className="flex items-center gap-1 border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
+          >
+            <BookOpen size={11} /> Docs
+          </Link>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1 rounded text-[11px] font-medium"

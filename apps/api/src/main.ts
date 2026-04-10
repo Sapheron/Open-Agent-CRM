@@ -10,6 +10,9 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log'],
+    // `rawBody: true` makes `req.rawBody` available for HMAC signature
+    // verification on webhook receivers (Meta Lead Ads, payment providers).
+    rawBody: true,
   });
 
   // ── Security ───────────────────────────────────────────────────────────────

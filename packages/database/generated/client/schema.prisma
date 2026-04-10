@@ -74,7 +74,20 @@ enum LeadSource {
   IMPORT
   AI_CHAT
   MANUAL
+  META_ADS
+  WEBHOOK
   OTHER
+}
+
+enum LeadIntegrationProvider {
+  META_ADS
+  CUSTOM_WEBHOOK
+}
+
+enum LeadIntegrationStatus {
+  ACTIVE
+  PAUSED
+  ERROR
 }
 
 enum LeadPriority {
@@ -542,6 +555,40 @@ model LeadScoreEvent {
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId, createdAt])
+}
+
+// ─── LEAD INTAKE INTEGRATIONS (Meta Ads + custom webhooks) ──────────────────
+
+model LeadIntakeIntegration {
+  id        String                  @id @default(cuid())
+  companyId String
+  provider  LeadIntegrationProvider
+  name      String
+  status    LeadIntegrationStatus   @default(ACTIVE)
+
+  // Meta-specific fields. AppSecret + PageAccessToken are encrypted at rest
+  // using the existing `encrypt`/`decrypt` helpers from @wacrm/shared.
+  metaPageId             String?
+  metaPageName           String?
+  metaAppSecretEnc       String?
+  metaVerifyToken        String?
+  metaPageAccessTokenEnc String?
+
+  // Stats
+  lastEventAt DateTime?
+  lastError   String?
+  totalLeads  Int       @default(0)
+
+  // Defaults applied to every lead created via this integration
+  defaultTags     String[]     @default([])
+  defaultPriority LeadPriority @default(MEDIUM)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([companyId])
+  @@index([companyId, provider])
 }
 
 // ─── DEAL ─────────────────────────────────────────────────────────────────────
