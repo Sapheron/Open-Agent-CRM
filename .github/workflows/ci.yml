@@ -30,7 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        # pgvector image (Postgres 16 + pgvector extension preinstalled).
+        # The schema uses Unsupported("vector(1536)") on MemoryChunk, so plain
+        # postgres:16 fails `prisma db push` with "type vector does not exist".
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: crm
           POSTGRES_PASSWORD: crm
@@ -67,7 +70,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+      # Enable pgvector extension before pushing the schema — the MemoryChunk
+      # model declares an `Unsupported("vector(1536)")` column and Prisma's
+      # CREATE TABLE will fail otherwise.
+      - name: Enable pgvector extension
+        run: |
+          PGPASSWORD=crm psql -h localhost -U crm -d wacrm_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - run: pnpm db:push
+      # Apply the manual pgvector migration (vector column + tsvector + indexes).
+      - name: Apply pgvector migration
+        run: |
+          PGPASSWORD=crm psql -h localhost -U crm -d wacrm_test -f packages/database/prisma/migrations/manual_pgvector.sql
       - run: pnpm turbo test
 
   build:
