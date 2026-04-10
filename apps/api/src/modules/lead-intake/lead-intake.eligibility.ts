@@ -2,18 +2,24 @@
  * Eligibility helper — decides whether the CRM is hosted on a real domain
  * that Meta (and other webhook providers) can actually reach.
  *
- * Pure function. Reads `process.env.API_PUBLIC_URL` and refuses any URL that
- * resolves to localhost / a loopback interface / an RFC1918 private range /
- * an obvious docker hostname. The integrations dashboard calls this on mount
- * via `GET /lead-integrations/eligibility` so the UI can disable the
- * Meta-connection panel with an explanation when the gate fails.
+ * Priority order for determining public URL:
+ *   1. process.env.API_PUBLIC_URL (global default)
+ *   2. Company.publicUrl (per-company override from settings UI)
+ *   3. Auto-detect from request headers (X-Forwarded-Host, Host)
+ *
+ * The integrations dashboard calls this on mount via `GET /lead-integrations/eligibility`
+ * so the UI can disable the Meta-connection panel with an explanation when the gate fails.
  */
+
+import type { IncomingHttpHeaders } from 'http';
 
 export interface EligibilityResult {
   eligible: boolean;
   publicUrl?: string;
   webhookBaseUrl?: string;
+  customWebhookUrl?: string;
   reason?: string;
+  source?: 'env' | 'company' | 'detected';
 }
 
 const PRIVATE_HOSTS = new Set([
@@ -41,16 +47,62 @@ function isPrivateHost(hostname: string): boolean {
   return false;
 }
 
-export function checkLeadIntakeEligibility(): EligibilityResult {
-  const publicUrl = (process.env.API_PUBLIC_URL || '').trim();
-
-  if (!publicUrl) {
-    return {
-      eligible: false,
-      reason: 'API_PUBLIC_URL is not set. Configure your reverse proxy + DNS, then set API_PUBLIC_URL=https://your-domain in .env and restart the API.',
-    };
+/**
+ * Extract protocol from headers. Assumes HTTPS if X-Forwarded-Proto is set
+ * or the connection is secure. Falls back to http for local dev.
+ */
+function getProtocol(headers: IncomingHttpHeaders, isSecure: boolean): string {
+  const proto = headers['x-forwarded-proto'];
+  if (proto) {
+    // X-Forwarded-Proto can be comma-separated (e.g., "https,http")
+    const protoStr = Array.isArray(proto) ? proto[0] : proto;
+    return protoStr.split(',')[0].trim() + ':';
   }
+  return isSecure ? 'https:' : 'http:';
+}
 
+/**
+ * Extract host from headers, preferring X-Forwarded-Host (set by reverse proxies)
+ * over the Host header.
+ */
+function getHost(headers: IncomingHttpHeaders): string | null {
+  const forwardedHost = headers['x-forwarded-host'];
+  if (forwardedHost) {
+    // X-Forwarded-Host can be comma-separated (e.g., "example.com,localhost:8080")
+    const hostStr = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost;
+    return hostStr.split(',')[0].trim();
+  }
+  const host = headers.host;
+  if (host) {
+    const hostStr = Array.isArray(host) ? host[0] : host;
+    return hostStr.split(':')[0] ?? null;
+  }
+  return null;
+}
+
+/**
+ * Auto-detect public URL from request headers. Works behind reverse proxies
+ * like nginx that set X-Forwarded-* headers.
+ */
+export function detectPublicUrlFromRequest(
+  headers: IncomingHttpHeaders,
+  isSecure = false,
+): string | null {
+  const host = getHost(headers);
+  if (!host) return null;
+  if (isPrivateHost(host)) return null; // Don't auto-detect private hosts
+
+  const protocol = getProtocol(headers, isSecure);
+  const url = `${protocol}//${host}`;
+
+  // Strip trailing slash
+  return url.replace(/\/+$/, '');
+}
+
+/**
+ * Core eligibility check that validates a URL string.
+ */
+function validatePublicUrl(publicUrl: string): EligibilityResult {
   let parsed: URL;
   try {
     parsed = new URL(publicUrl);
@@ -58,7 +110,7 @@ export function checkLeadIntakeEligibility(): EligibilityResult {
     return {
       eligible: false,
       publicUrl,
-      reason: `API_PUBLIC_URL "${publicUrl}" is not a valid URL.`,
+      reason: `"${publicUrl}" is not a valid URL.`,
     };
   }
 
@@ -66,7 +118,7 @@ export function checkLeadIntakeEligibility(): EligibilityResult {
     return {
       eligible: false,
       publicUrl,
-      reason: `API_PUBLIC_URL must use http or https (got ${parsed.protocol}).`,
+      reason: `URL must use http or https (got ${parsed.protocol}).`,
     };
   }
 
@@ -80,16 +132,79 @@ export function checkLeadIntakeEligibility(): EligibilityResult {
     return {
       eligible: false,
       publicUrl,
-      reason: `API_PUBLIC_URL points at a private/local host (${parsed.hostname}). Meta cannot reach this — configure a reverse proxy + public domain first.`,
+      reason: `URL points at a private/local host (${parsed.hostname}). Meta cannot reach this — configure a reverse proxy + public domain first.`,
     };
   }
 
   // Strip trailing slash for clean concatenation
   const base = publicUrl.replace(/\/+$/, '');
+  const webhookBaseUrl = `${base}/api/webhooks/leads`;
+
   return {
     eligible: true,
     publicUrl: base,
-    webhookBaseUrl: `${base}/api/webhooks/leads`,
+    webhookBaseUrl,
+    customWebhookUrl: `${webhookBaseUrl}/custom`,
+  };
+}
+
+/**
+ * Check eligibility with fallback chain:
+ *   1. Company.publicUrl (from settings UI)
+ *   2. process.env.API_PUBLIC_URL (global env var)
+ *   3. Request headers (auto-detect)
+ *
+ * @param companyPublicUrl The publicUrl stored in Company model
+ * @param headers Request headers for auto-detection (optional)
+ * @param isSecure Whether the original request was HTTPS (optional)
+ */
+export function checkLeadIntakeEligibility(
+  companyPublicUrl?: string | null,
+  headers?: IncomingHttpHeaders,
+  isSecure = false,
+): EligibilityResult {
+  // Priority 1: Company-specific public URL (from settings UI)
+  if (companyPublicUrl?.trim()) {
+    const result = validatePublicUrl(companyPublicUrl.trim());
+    if (result.eligible) {
+      return { ...result, source: 'company' };
+    }
+    // If company URL is invalid, continue to other sources but note the issue
+    return {
+      ...result,
+      reason: `Company URL is invalid: ${result.reason}. Fix it in Settings, or use API_PUBLIC_URL env var.`,
+    };
+  }
+
+  // Priority 2: Global API_PUBLIC_URL environment variable
+  const envUrl = (process.env.API_PUBLIC_URL || '').trim();
+  if (envUrl) {
+    const result = validatePublicUrl(envUrl);
+    if (result.eligible) {
+      return { ...result, source: 'env' };
+    }
+    return {
+      ...result,
+      source: 'env',
+      reason: `API_PUBLIC_URL is invalid: ${result.reason}. Update your .env file.`,
+    };
+  }
+
+  // Priority 3: Auto-detect from request headers (for reverse proxy setups)
+  if (headers) {
+    const detected = detectPublicUrlFromRequest(headers, isSecure);
+    if (detected) {
+      const result = validatePublicUrl(detected);
+      if (result.eligible) {
+        return { ...result, source: 'detected' };
+      }
+    }
+  }
+
+  // No valid URL found
+  return {
+    eligible: false,
+    reason: 'Public URL not configured. Go to Settings → Integrations to set your domain, or set API_PUBLIC_URL in .env and restart.',
   };
 }
 
@@ -97,8 +212,11 @@ export function checkLeadIntakeEligibility(): EligibilityResult {
  * Build the public Meta webhook URL for a given integration ID.
  * Returns null when ineligible so callers can surface a "not configured" UI.
  */
-export function buildMetaWebhookUrl(integrationId: string): string | null {
-  const result = checkLeadIntakeEligibility();
+export function buildMetaWebhookUrl(
+  integrationId: string,
+  companyPublicUrl?: string | null,
+): string | null {
+  const result = checkLeadIntakeEligibility(companyPublicUrl);
   if (!result.eligible || !result.webhookBaseUrl) return null;
   return `${result.webhookBaseUrl}/meta/${integrationId}`;
 }
@@ -106,8 +224,8 @@ export function buildMetaWebhookUrl(integrationId: string): string | null {
 /**
  * Build the public custom webhook URL.
  */
-export function buildCustomWebhookUrl(): string | null {
-  const result = checkLeadIntakeEligibility();
-  if (!result.eligible || !result.webhookBaseUrl) return null;
-  return `${result.webhookBaseUrl}/custom`;
+export function buildCustomWebhookUrl(companyPublicUrl?: string | null): string | null {
+  const result = checkLeadIntakeEligibility(companyPublicUrl);
+  if (!result.eligible || !result.customWebhookUrl) return null;
+  return result.customWebhookUrl;
 }

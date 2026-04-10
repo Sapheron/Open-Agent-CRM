@@ -309,6 +309,7 @@ model Company {
   phone     String?
   website   String?
   logoUrl   String?
+  publicUrl String?  // Public URL for webhooks/integrations (e.g., https://yourdomain.com)
   timezone  String   @default("UTC")
   isActive  Boolean  @default(true)
   setupDone Boolean  @default(false)

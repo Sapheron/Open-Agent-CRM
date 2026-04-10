@@ -76,6 +76,17 @@ interface UpdateIntegrationDto {
 export class LeadIntakeService {
   constructor(private readonly leads: LeadsService) {}
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  async getCompany(companyId: string) {
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, publicUrl: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
   // ── Integration CRUD (called by controller for the dashboard) ────────────
 
   async listIntegrations(companyId: string) {

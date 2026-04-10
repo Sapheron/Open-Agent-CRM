@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import {
   ArrowLeft, Save, Send, Calendar, X, Pause, Play, RefreshCw, Trash2,
-  Users as UsersIcon, MessageSquare, Activity as ActivityIcon, AlertCircle,
-  CheckCircle, Clock, Copy,
+  Users as UsersIcon, MessageSquare, Activity as ActivityIcon,
+  Clock, Copy,
 } from 'lucide-react';
 import { STATUS_COLORS, type BroadcastStatus } from '../page';
 

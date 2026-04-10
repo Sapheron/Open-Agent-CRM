@@ -205,11 +205,11 @@ export default function LeadsPage() {
             </button>
           </div>
           <Link
-            href="/leads/integrations"
-            title="API & Meta Ads integrations"
+            href="/leads/api-docs"
+            title="API documentation"
             className="flex items-center gap-1 border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
           >
-            <BookOpen size={11} /> Docs
+            <BookOpen size={11} /> API Docs
           </Link>
           <button
             onClick={() => setShowCreate(true)}

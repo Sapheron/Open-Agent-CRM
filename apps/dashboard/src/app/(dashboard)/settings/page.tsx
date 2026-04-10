@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Bot, Smartphone, CreditCard, Users, Globe, Building } from 'lucide-react';
+import { Bot, Smartphone, CreditCard, Users, Globe, Building, Webhook } from 'lucide-react';
 
 const sections = [
   { href: '/settings/whatsapp', icon: Smartphone, title: 'WhatsApp', desc: 'Manage connected accounts' },
@@ -7,6 +7,7 @@ const sections = [
   { href: '/settings/payments', icon: CreditCard, title: 'Payments', desc: 'Gateway configuration' },
   { href: '/settings/team', icon: Users, title: 'Team', desc: 'Members and roles' },
   { href: '/settings/webhooks', icon: Globe, title: 'Webhooks', desc: 'Outbound endpoints' },
+  { href: '/settings/integrations', icon: Webhook, title: 'Integrations', desc: 'Public URL & lead intake' },
   { href: '/settings/company', icon: Building, title: 'Company', desc: 'Profile and timezone' },
 ];
 

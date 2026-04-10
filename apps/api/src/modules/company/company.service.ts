@@ -7,6 +7,7 @@ export interface UpdateCompanyDto {
   phone?: string;
   website?: string;
   logoUrl?: string;
+  publicUrl?: string;
   timezone?: string;
 }
 

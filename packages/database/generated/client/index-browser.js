@@ -128,6 +128,7 @@ exports.Prisma.CompanyScalarFieldEnum = {
   phone: 'phone',
   website: 'website',
   logoUrl: 'logoUrl',
+  publicUrl: 'publicUrl',
   timezone: 'timezone',
   isActive: 'isActive',
   setupDone: 'setupDone',
