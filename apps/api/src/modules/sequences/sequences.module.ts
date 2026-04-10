@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { SequencesController } from './sequences.controller';
+import { SequencesController, EnrollmentsController } from './sequences.controller';
 import { SequencesService } from './sequences.service';
 
 @Module({
-  controllers: [SequencesController],
+  controllers: [SequencesController, EnrollmentsController],
   providers: [SequencesService],
   exports: [SequencesService],
 })

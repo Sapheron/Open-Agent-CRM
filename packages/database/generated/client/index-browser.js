@@ -676,11 +676,38 @@ exports.Prisma.TemplateScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
   name: 'name',
+  type: 'type',
+  status: 'status',
   category: 'category',
   body: 'body',
   variables: 'variables',
+  mediaUrl: 'mediaUrl',
+  language: 'language',
+  tags: 'tags',
+  useCount: 'useCount',
+  lastUsedAt: 'lastUsedAt',
+  sentCount: 'sentCount',
+  deliveredCount: 'deliveredCount',
+  failedCount: 'failedCount',
+  conversionCount: 'conversionCount',
+  variantOf: 'variantOf',
+  variantName: 'variantName',
+  createdById: 'createdById',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TemplateActivityScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CannedResponseScalarFieldEnum = {
@@ -694,7 +721,14 @@ exports.Prisma.SequenceScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
   name: 'name',
-  isActive: 'isActive',
+  description: 'description',
+  status: 'status',
+  useCount: 'useCount',
+  completionCount: 'completionCount',
+  avgCompletionTime: 'avgCompletionTime',
+  lastUsedAt: 'lastUsedAt',
+  tags: 'tags',
+  createdById: 'createdById',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -706,7 +740,14 @@ exports.Prisma.SequenceStepScalarFieldEnum = {
   delayHours: 'delayHours',
   action: 'action',
   message: 'message',
-  templateId: 'templateId'
+  templateId: 'templateId',
+  subject: 'subject',
+  tagName: 'tagName',
+  webhookUrl: 'webhookUrl',
+  condition: 'condition',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SequenceEnrollmentScalarFieldEnum = {
@@ -716,9 +757,46 @@ exports.Prisma.SequenceEnrollmentScalarFieldEnum = {
   companyId: 'companyId',
   currentStep: 'currentStep',
   status: 'status',
-  nextRunAt: 'nextRunAt',
   enrolledAt: 'enrolledAt',
-  completedAt: 'completedAt'
+  startedAt: 'startedAt',
+  lastStepAt: 'lastStepAt',
+  nextRunAt: 'nextRunAt',
+  completedAt: 'completedAt',
+  pausedAt: 'pausedAt',
+  pausedReason: 'pausedReason',
+  stoppedAt: 'stoppedAt',
+  stoppedReason: 'stoppedReason',
+  retryCount: 'retryCount',
+  lastError: 'lastError',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SequenceActivityScalarFieldEnum = {
+  id: 'id',
+  sequenceId: 'sequenceId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SequenceEnrollmentActivityScalarFieldEnum = {
+  id: 'id',
+  enrollmentId: 'enrollmentId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CallLogScalarFieldEnum = {
@@ -1489,6 +1567,89 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   SETTINGS_CHANGE: 'SETTINGS_CHANGE'
 };
 
+exports.TemplateType = exports.$Enums.TemplateType = {
+  TEXT: 'TEXT',
+  IMAGE: 'IMAGE',
+  DOCUMENT: 'DOCUMENT',
+  VIDEO: 'VIDEO',
+  LOCATION: 'LOCATION',
+  CONTACTS: 'CONTACTS'
+};
+
+exports.TemplateStatus = exports.$Enums.TemplateStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.TemplateCategory = exports.$Enums.TemplateCategory = {
+  GREETING: 'GREETING',
+  FOLLOW_UP: 'FOLLOW_UP',
+  PROMOTION: 'PROMOTION',
+  PAYMENT_REMINDER: 'PAYMENT_REMINDER',
+  ORDER_UPDATE: 'ORDER_UPDATE',
+  SUPPORT: 'SUPPORT',
+  FEEDBACK: 'FEEDBACK',
+  REVIEW: 'REVIEW',
+  APPOINTMENT: 'APPOINTMENT',
+  GENERAL: 'GENERAL'
+};
+
+exports.TemplateActivityType = exports.$Enums.TemplateActivityType = {
+  CREATED: 'CREATED',
+  UPDATED: 'UPDATED',
+  ACTIVATED: 'ACTIVATED',
+  ARCHIVED: 'ARCHIVED',
+  DELETED: 'DELETED',
+  USED: 'USED',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  FAILED: 'FAILED',
+  CONVERTED: 'CONVERTED',
+  VARIABLE_RENDERED: 'VARIABLE_RENDERED',
+  PREVIEWED: 'PREVIEWED'
+};
+
+exports.SequenceStatus = exports.$Enums.SequenceStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.EnrollmentStatus = exports.$Enums.EnrollmentStatus = {
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  COMPLETED: 'COMPLETED',
+  STOPPED: 'STOPPED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.SequenceActivityType = exports.$Enums.SequenceActivityType = {
+  CREATED: 'CREATED',
+  UPDATED: 'UPDATED',
+  ACTIVATED: 'ACTIVATED',
+  PAUSED: 'PAUSED',
+  ARCHIVED: 'ARCHIVED',
+  DELETED: 'DELETED',
+  STEPS_CHANGED: 'STEPS_CHANGED',
+  ENROLLMENT_ADDED: 'ENROLLMENT_ADDED',
+  ENROLLMENT_REMOVED: 'ENROLLMENT_REMOVED',
+  BULK_ENROLLED: 'BULK_ENROLLED',
+  PERFORMANCE_ALERT: 'PERFORMANCE_ALERT'
+};
+
+exports.EnrollmentActivityType = exports.$Enums.EnrollmentActivityType = {
+  ENROLLED: 'ENROLLED',
+  STEP_COMPLETED: 'STEP_COMPLETED',
+  PAUSED: 'PAUSED',
+  RESUMED: 'RESUMED',
+  STOPPED: 'STOPPED',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  RETRIED: 'RETRIED'
+};
+
 exports.ProductActivityType = exports.$Enums.ProductActivityType = {
   CREATED: 'CREATED',
   UPDATED: 'UPDATED',
@@ -1546,10 +1707,13 @@ exports.Prisma.ModelName = {
   CustomFieldDefinition: 'CustomFieldDefinition',
   Notification: 'Notification',
   Template: 'Template',
+  TemplateActivity: 'TemplateActivity',
   CannedResponse: 'CannedResponse',
   Sequence: 'Sequence',
   SequenceStep: 'SequenceStep',
   SequenceEnrollment: 'SequenceEnrollment',
+  SequenceActivity: 'SequenceActivity',
+  SequenceEnrollmentActivity: 'SequenceEnrollmentActivity',
   CallLog: 'CallLog',
   Pipeline: 'Pipeline',
   PipelineStage: 'PipelineStage',

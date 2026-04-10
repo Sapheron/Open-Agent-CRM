@@ -15,6 +15,10 @@ import { ProductsService } from '../products/products.service';
 import type { ProductActor } from '../products/products.types';
 import { BroadcastService } from '../broadcast/broadcast.service';
 import type { BroadcastActor } from '../broadcast/broadcast.types';
+import { TemplatesService } from '../templates/templates.service';
+import type { TemplateActor } from '../templates/templates.types';
+import { SequencesService } from '../sequences/sequences.service';
+import { SequenceMemoryService } from '../sequences/sequence-memory.service';
 import { Queue } from 'bullmq';
 import { QUEUES } from '@wacrm/shared';
 import type { ChatAttachment } from './attachments';
@@ -27,6 +31,9 @@ const leadsService = new LeadsService();
 const dealsService = new DealsService();
 const tasksService = new TasksService();
 const productsService = new ProductsService();
+const templatesService = new TemplatesService();
+const sequencesService = new SequencesService();
+const sequenceMemoryService = new SequenceMemoryService();
 
 // BroadcastService takes a BullMQ Queue. We construct one here so the AI
 // tools can drive the same single-write-path service the controller uses.
@@ -40,6 +47,7 @@ const AI_DEAL_ACTOR: DealActor = { type: 'ai' };
 const AI_TASK_ACTOR: TaskActor = { type: 'ai' };
 const AI_PRODUCT_ACTOR: ProductActor = { type: 'ai' };
 const AI_BROADCAST_ACTOR: BroadcastActor = { type: 'ai' };
+const AI_TEMPLATE_ACTOR: TemplateActor = { type: 'ai' };
 
 /**
  * Per-call execution context — anything that isn't part of the AI's tool args
@@ -2754,64 +2762,1001 @@ const tools: AdminTool[] = [
 
   // ── Templates ─────────────────────────────────────────────────────────────
   {
-    definition: { name: 'create_template', description: 'Create a message template with variables like {{name}}.', parameters: { type: 'object', properties: { name: { type: 'string' }, body: { type: 'string', description: 'Template text with {{variables}}' }, category: { type: 'string', description: 'greeting, follow-up, payment, support' } }, required: ['name', 'body'] } },
+    definition: {
+      name: 'list_templates',
+      description: 'List message templates with rich filters. Shows name, category, status, type, and usage stats.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filter by status: DRAFT, ACTIVE, or ARCHIVED' },
+          category: { type: 'string', description: 'Filter by category (greeting, follow_up, promotion, payment_reminder, etc.)' },
+          type: { type: 'string', description: 'Filter by type: TEXT, IMAGE, DOCUMENT, VIDEO' },
+          search: { type: 'string', description: 'Search in name and body' },
+          limit: { type: 'number', description: 'Max results (default 50)' },
+        },
+        required: [],
+      },
+    },
     execute: async (args, companyId) => {
-      const vars = ((args.body as string).match(/\{\{(\w+)\}\}/g) || []).map((v) => v.replace(/[{}]/g, ''));
-      const t = await prisma.template.create({ data: { companyId, name: args.name as string, body: args.body as string, category: (args.category as string) || 'general', variables: vars } });
-      return `Created template "${t.name}" with ${vars.length} variables`;
+      const result = await templatesService.list(companyId, {
+        status: args.status as any,
+        category: args.category as any,
+        type: args.type as any,
+        search: args.search as string,
+        limit: args.limit as number | undefined,
+      });
+      if (result.items.length === 0) return 'No templates found';
+      return result.items
+        .map((t: any) => `- "${t.name}" [${t.category}/${t.status}]: ${t.body.slice(0, 50)}... (used ${t.useCount}x)`)
+        .join('\n');
     },
   },
   {
-    definition: { name: 'list_templates', description: 'List message templates.', parameters: { type: 'object', properties: { category: { type: 'string' } }, required: [] } },
+    definition: {
+      name: 'get_template',
+      description: 'Get detailed template information including variables, tags, media, and usage stats.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID' },
+          templateName: { type: 'string', description: 'Template name (alternative to ID)' },
+        },
+        required: [],
+      },
+    },
     execute: async (args, companyId) => {
-      const where: Record<string, unknown> = { companyId };
-      if (args.category) where.category = args.category;
-      const templates = await prisma.template.findMany({ where: where as any, take: 20 });
-      if (!templates.length) return 'No templates found';
-      return templates.map((t) => `- "${t.name}" [${t.category}]: ${t.body.slice(0, 60)}...`).join('\n');
+      let templateId = args.templateId as string | undefined;
+      if (args.templateName && !templateId) {
+        const template = await prisma.template.findFirst({
+          where: { companyId, name: args.templateName as string },
+          select: { id: true },
+        });
+        if (!template) return `Template "${args.templateName}" not found`;
+        templateId = template.id;
+      }
+      if (!templateId) return 'Either templateId or templateName is required';
+      const template = await templatesService.get(companyId, templateId as string);
+      const vars = Object.keys((template.variables as Record<string, string>) || {});
+      return `Template: ${template.name}\nCategory: ${template.category}\nStatus: ${template.status}\nType: ${template.type}\nBody: ${template.body}\nVariables: ${vars.length ? vars.join(', ') : 'none'}\nTags: ${(template.tags as string[]).join(', ') || 'none'}\nUsed ${template.useCount} times, sent ${template.sentCount}x`;
     },
   },
   {
-    definition: { name: 'send_template', description: 'Send a template message to a contact with variable substitution.', parameters: { type: 'object', properties: { templateName: { type: 'string' }, phoneNumber: { type: 'string' }, variables: { type: 'object', description: 'Key-value pairs for template variables' } }, required: ['templateName', 'phoneNumber'] } },
+    definition: {
+      name: 'create_template',
+      description: 'Create a new message template. Templates use {{variable}} syntax for personalization. Always starts as DRAFT.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Unique template name' },
+          body: { type: 'string', description: 'Template body with {{variable}} placeholders' },
+          category: { type: 'string', description: 'Category: greeting, follow_up, promotion, payment_reminder, order_update, support, feedback, review, appointment, general' },
+          type: { type: 'string', description: 'Type: TEXT, IMAGE, DOCUMENT, VIDEO (default TEXT)' },
+          variables: { type: 'object', description: 'Default values for variables (e.g., {firstName: "John"})' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Tags for organization' },
+          language: { type: 'string', description: 'ISO 639-1 language code (default en)' },
+        },
+        required: ['name', 'body'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const template = await templatesService.create(companyId, {
+        name: args.name as string,
+        body: args.body as string,
+        category: args.category as any,
+        type: args.type as any,
+        variables: args.variables as Record<string, string> | undefined,
+        tags: args.tags as string[] | undefined,
+        language: args.language as string | undefined,
+      }, AI_TEMPLATE_ACTOR);
+      const vars = ((args.body as string).match(/\{\{(\w+)\}\}/g) || []).map((v) => v.slice(2, -2));
+      return `Created DRAFT template "${template.name}" with ${vars.length} variables: ${vars.join(', ') || 'none'}. Use activate_template to make it active.`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_template',
+      description: 'Update an existing template. Only DRAFT and ARCHIVED templates can be edited.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID' },
+          name: { type: 'string', description: 'New name' },
+          body: { type: 'string', description: 'New body' },
+          category: { type: 'string', description: 'New category' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'New tags' },
+          variables: { type: 'object', description: 'New variable defaults' },
+        },
+        required: ['templateId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const template = await templatesService.update(companyId, args.templateId as string, {
+        name: args.name as string | undefined,
+        body: args.body as string | undefined,
+        category: args.category as any,
+        tags: args.tags as string[] | undefined,
+        variables: args.variables as Record<string, string> | undefined,
+      }, AI_TEMPLATE_ACTOR);
+      return `Updated template "${template.name}". Status: ${template.status}`;
+    },
+  },
+  {
+    definition: {
+      name: 'activate_template',
+      description: 'Activate a DRAFT template for use. Auto-extracts variables from body.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID to activate' },
+        },
+        required: ['templateId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const template = await templatesService.activate(companyId, args.templateId as string, AI_TEMPLATE_ACTOR);
+      const vars = Object.keys((template.variables as Record<string, string>) || {});
+      return `Activated template "${template.name}" with variables: ${vars.join(', ') || 'none'}`;
+    },
+  },
+  {
+    definition: {
+      name: 'archive_template',
+      description: 'Archive a template (removes from active list but keeps history).',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID to archive' },
+        },
+        required: ['templateId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const template = await templatesService.archive(companyId, args.templateId as string, AI_TEMPLATE_ACTOR);
+      return `Archived template "${template.name}"`;
+    },
+  },
+  {
+    definition: {
+      name: 'duplicate_template',
+      description: 'Duplicate a template as a new DRAFT. Useful for A/B testing variations.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID to duplicate' },
+          newName: { type: 'string', description: 'Name for the duplicate (default: "name (copy)")' },
+        },
+        required: ['templateId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const template = await templatesService.duplicate(companyId, args.templateId as string, AI_TEMPLATE_ACTOR, args.newName as string | undefined);
+      return `Created duplicate "${template.name}" from template`;
+    },
+  },
+  {
+    definition: {
+      name: 'delete_template',
+      description: 'Permanently delete a DRAFT or ARCHIVED template. Active templates must be archived first.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID to delete' },
+        },
+        required: ['templateId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await templatesService.delete(companyId, args.templateId as string, AI_TEMPLATE_ACTOR);
+      return `Deleted template`;
+    },
+  },
+  {
+    definition: {
+      name: 'preview_template',
+      description: 'Preview a template with variable substitution without sending.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateId: { type: 'string', description: 'Template ID' },
+          variables: { type: 'object', description: 'Variable values for substitution (e.g., {firstName: "John"})' },
+        },
+        required: ['templateId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const result = await templatesService.render(companyId, args.templateId as string, (args.variables as Record<string, string> | undefined) ?? {});
+      return `Preview:\n${result.rendered}`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_template_stats',
+      description: 'Get template usage statistics including total counts, top performers, and breakdowns.',
+      parameters: {
+        type: 'object',
+        properties: {
+          days: { type: 'number', description: 'Number of days to look back (default 30)' },
+        },
+        required: [],
+      },
+    },
+    execute: async (args, companyId) => {
+      const stats = await templatesService.stats(companyId, args.days as number | undefined);
+      return `Templates: ${stats.totalTemplates} total (${stats.activeTemplates} active, ${stats.draftTemplates} draft, ${stats.archivedTemplates} archived)\nTotal uses: ${stats.totalUses}\nTop templates: ${stats.topTemplates.map((t: any) => `"${t.name}" (${t.conversionRate}% convert, ${t.useCount} uses)`).join(', ')}\nBy category: ${Object.entries(stats.byCategory).map(([k, v]) => `${k}: ${v}`).join(', ')}`;
+    },
+  },
+  {
+    definition: {
+      name: 'send_template',
+      description: 'Send a template message via WhatsApp with variable substitution. Template must be ACTIVE.',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateName: { type: 'string', description: 'Template name' },
+          phoneNumber: { type: 'string', description: 'Phone number with country code' },
+          variables: { type: 'object', description: 'Variable values for substitution' },
+        },
+        required: ['templateName', 'phoneNumber'],
+      },
+    },
     execute: async (args, companyId) => {
       const template = await prisma.template.findFirst({ where: { companyId, name: args.templateName as string } });
       if (!template) return `Template "${args.templateName}" not found`;
+      if (template.status !== 'ACTIVE') return `Template "${template.name}" is ${template.status}. Activate it first.`;
+
+      // Render with variables
       let text = template.body;
       const vars = (args.variables || {}) as Record<string, string>;
-      for (const [k, v] of Object.entries(vars)) { text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), v); }
+      const allVars = { ...((template.variables as Record<string, string>) || {}), ...vars };
+      for (const [k, v] of Object.entries(allVars)) {
+        text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), v || '');
+      }
+
+      // Find connected WhatsApp account
       const account = await prisma.whatsAppAccount.findFirst({ where: { companyId, status: 'CONNECTED' } });
-      if (!account) return 'No connected WhatsApp account';
+      if (!account) return 'No connected WhatsApp account found. Connect a WhatsApp account first.';
+
+      // Send via WhatsApp gateway
       await redis.publish('wa:outbound', JSON.stringify({ accountId: account.id, toPhone: args.phoneNumber as string, text }));
-      return `Sent template "${template.name}" to ${args.phoneNumber}`;
+
+      // Record usage
+      await templatesService.recordUsage(companyId, template.id);
+      await templatesService.recordSent(companyId, template.id);
+
+      return `Sent template "${template.name}" to ${args.phoneNumber}. Body: ${text.slice(0, 100)}${text.length > 100 ? '...' : ''}`;
     },
   },
 
   // ── Sequences ─────────────────────────────────────────────────────────────
+  // Sequence Management Tools (12 tools)
   {
-    definition: { name: 'create_sequence', description: 'Create an auto follow-up sequence.', parameters: { type: 'object', properties: { name: { type: 'string' }, steps: { type: 'array', items: { type: 'object', properties: { delayHours: { type: 'number' }, message: { type: 'string' } } }, description: 'Array of steps with delay and message' } }, required: ['name', 'steps'] } },
+    definition: {
+      name: 'list_sequences',
+      description: 'List sequences with filters. Supports filtering by status (DRAFT, ACTIVE, PAUSED, ARCHIVED), search text, tags, and sorting (recent, used, name, completion).',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'], description: 'Filter by sequence status' },
+          search: { type: 'string', description: 'Search in name and description' },
+          tags: { type: 'string', description: 'Comma-separated tag list to filter' },
+          sort: { type: 'string', enum: ['recent', 'used', 'name', 'completion'], description: 'Sort order' },
+          limit: { type: 'number', description: 'Max results (default 20)' },
+        },
+      },
+    },
     execute: async (args, companyId) => {
-      const seq = await prisma.sequence.create({ data: { companyId, name: args.name as string } });
-      const steps = (args.steps as Array<{ delayHours?: number; message?: string }>) || [];
-      for (let i = 0; i < steps.length; i++) {
-        await prisma.sequenceStep.create({ data: { sequenceId: seq.id, sortOrder: i, delayHours: steps[i].delayHours ?? 24, message: steps[i].message } });
-      }
-      return `Created sequence "${seq.name}" with ${steps.length} steps`;
+      const result = await sequencesService.list(companyId, {
+        status: args.status as any,
+        search: args.search as string,
+        tags: args.tags ? (args.tags as string).split(',') : undefined,
+        sort: args.sort as any,
+        limit: args.limit as number | undefined,
+      });
+      if (!result.items.length) return 'No sequences found.';
+      return [
+        `Found ${result.total} sequence(s) (showing ${result.items.length}):`,
+        ...result.items.map((s) => {
+          const status = s.status.padEnd(8);
+          const enroll = s.useCount > 0 ? ` · ${s.useCount} enrollments, ${s.completionCount} completed (${Math.round((s.completionCount / s.useCount) * 100)}%)` : '';
+          const tags = s.tags.length ? ` · tags: ${s.tags.join(', ')}` : '';
+          return `- [${status}] ${s.name} (${s.steps.length} steps)${enroll}${tags} · ID: ${s.id}`;
+        }),
+      ].join('\n');
     },
   },
   {
-    definition: { name: 'enroll_in_sequence', description: 'Enroll a contact in a follow-up sequence.', parameters: { type: 'object', properties: { sequenceName: { type: 'string' }, contactId: { type: 'string' }, phoneNumber: { type: 'string' } }, required: ['sequenceName'] } },
+    definition: {
+      name: 'get_sequence',
+      description: 'Get a sequence with all steps and details.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string', description: 'Sequence ID' },
+        },
+        required: ['sequenceId'],
+      },
+    },
     execute: async (args, companyId) => {
-      const seq = await prisma.sequence.findFirst({ where: { companyId, name: args.sequenceName as string } });
-      if (!seq) return `Sequence "${args.sequenceName}" not found`;
-      let contactId = args.contactId as string;
-      if (!contactId && args.phoneNumber) {
-        const c = await prisma.contact.findFirst({ where: { companyId, phoneNumber: args.phoneNumber as string } });
-        if (!c) return 'Contact not found';
-        contactId = c.id;
+      const s = await sequencesService.get(companyId, args.sequenceId as string);
+      const steps = s.steps.map((step: any, i: number) => {
+        const delay = `+${step.delayHours}h`;
+        const action = step.action.padEnd(15);
+        const msg = step.message ? `"${step.message.slice(0, 60)}..."` : step.templateId ? `(template: ${step.templateId})` : '';
+        return `  ${i + 1}. [${delay}] ${action} ${msg}`;
+      }).join('\n');
+      return [
+        `Sequence: ${s.name}`,
+        `Status: ${s.status}`,
+        `Description: ${s.description || 'No description'}`,
+        `Tags: ${s.tags.join(', ') || 'None'}`,
+        `Stats: ${s.useCount} enrollments, ${s.completionCount} completed`,
+        '',
+        'Steps:',
+        steps || '  (no steps)',
+      ].join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_sequence_timeline',
+      description: 'Get activity timeline for a sequence. Shows creation, updates, activations, and other events.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+          limit: { type: 'number', description: 'Max activities (default 20)' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const activities = await sequencesService.getTimeline(companyId, args.sequenceId as string, args.limit as number | undefined);
+      if (!activities.length) return 'No activity recorded for this sequence.';
+      return activities.map((a) => {
+        const date = new Date(a.createdAt).toLocaleDateString();
+        return `${date} · ${a.type} · ${a.title}${a.body ? `\n  ${a.body}` : ''}`;
+      }).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'create_sequence',
+      description: 'Create a new DRAFT sequence. Optionally include initial steps.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Sequence name (unique per company)' },
+          description: { type: 'string', description: 'What this sequence does' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Tags for organization' },
+          steps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                sortOrder: { type: 'number' },
+                delayHours: { type: 'number', description: 'Hours after previous step' },
+                action: {
+                  type: 'string',
+                  enum: ['send_message', 'send_email', 'wait', 'add_tag', 'remove_tag', 'webhook', 'ai_task'],
+                  description: 'Action type',
+                },
+                message: { type: 'string', description: 'Message text (for send_message)' },
+                templateId: { type: 'string', description: 'Template ID instead of message' },
+                tagName: { type: 'string', description: 'Tag name (for add_tag/remove_tag)' },
+                webhookUrl: { type: 'string', description: 'Webhook URL (for webhook action)' },
+              },
+            },
+            description: 'Initial steps (optional)',
+          },
+        },
+        required: ['name'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const steps = (args.steps as Array<any>) || [];
+      const sequence = await sequencesService.create(
+        companyId,
+        {
+          name: args.name as string,
+          description: args.description as string | undefined,
+          tags: args.tags as string[] | undefined,
+        },
+        { type: 'ai' },
+      );
+      for (const step of steps) {
+        await sequencesService.addStep(companyId, sequence.id, step, { type: 'ai' });
       }
-      if (!contactId) return 'Provide contactId or phoneNumber';
-      await prisma.sequenceEnrollment.create({ data: { sequenceId: seq.id, contactId, companyId, nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
-      return `Enrolled contact in sequence "${seq.name}"`;
+      return `Created DRAFT sequence "${sequence.name}" (ID: ${sequence.id}) with ${steps.length} step(s). Use activate_sequence to make it live.`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_sequence',
+      description: 'Update sequence name, description, or tags. Cannot modify steps directly (use add/update/remove_step).',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sequence = await sequencesService.update(
+        companyId,
+        args.sequenceId as string,
+        {
+          name: args.name as string | undefined,
+          description: args.description as string | undefined,
+          tags: args.tags as string[] | undefined,
+        },
+        { type: 'ai' },
+      );
+      return `Updated sequence "${sequence.name}".`;
+    },
+  },
+  {
+    definition: {
+      name: 'activate_sequence',
+      description: 'Activate a DRAFT sequence so it can accept enrollments and start processing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string', description: 'Sequence ID to activate' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sequence = await sequencesService.activate(companyId, args.sequenceId as string, { type: 'ai' });
+      return `Activated sequence "${sequence.name}". It is now live and can accept enrollments.`;
+    },
+  },
+  {
+    definition: {
+      name: 'pause_sequence',
+      description: 'Pause an ACTIVE sequence. Existing enrollments will pause; no new enrollments allowed.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sequence = await sequencesService.pause(companyId, args.sequenceId as string, { type: 'ai' });
+      return `Paused sequence "${sequence.name}". Existing enrollments are paused.`;
+    },
+  },
+  {
+    definition: {
+      name: 'archive_sequence',
+      description: 'Archive a sequence. Removes from active list but preserves data.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sequence = await sequencesService.archive(companyId, args.sequenceId as string, { type: 'ai' });
+      return `Archived sequence "${sequence.name}".`;
+    },
+  },
+  {
+    definition: {
+      name: 'duplicate_sequence',
+      description: 'Duplicate a sequence as a new DRAFT. Useful for creating variations.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string', description: 'Source sequence to copy' },
+          newName: { type: 'string', description: 'Name for the copy (defaults to "Copy of X")' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sequence = await sequencesService.duplicate(
+        companyId,
+        args.sequenceId as string,
+        { type: 'ai' },
+        args.newName as string | undefined,
+      );
+      return `Duplicated sequence as "${sequence.name}" (ID: ${sequence.id}). It is in DRAFT status.`;
+    },
+  },
+  {
+    definition: {
+      name: 'delete_sequence',
+      description: 'Delete a sequence permanently. Only works for DRAFT or ARCHIVED sequences.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.delete(companyId, args.sequenceId as string, { type: 'ai' });
+      return 'Sequence deleted.';
+    },
+  },
+  {
+    definition: {
+      name: 'get_sequence_stats',
+      description: 'Get overall sequence statistics for the company.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+    execute: async (args, companyId) => {
+      const stats = await sequencesService.getStats(companyId);
+      return [
+        'Sequence Statistics:',
+        `- Total sequences: ${stats.totalSequences}`,
+        `- Active sequences: ${stats.activeSequences}`,
+        `- Total enrollments: ${stats.totalEnrollments}`,
+        `- Active enrollments: ${stats.activeEnrollments}`,
+        `- Overall completion rate: ${Math.round(stats.overallCompletionRate * 100)}%`,
+        '',
+        'Top sequences:',
+        ...stats.topSequences.map((s) => {
+          return `  ${s.name}: ${s.useCount} enrollments, ${s.completionCount} completed (${Math.round(s.rate * 100)}%)`;
+        }),
+      ].join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_sequence_performance',
+      description: 'Get detailed performance metrics for a sequence. Includes drop-off analysis per step.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string', description: 'Sequence ID to analyze' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const perf = await sequencesService.getPerformance(companyId, args.sequenceId as string);
+      const dropOff = perf.dropOffPerStep.map((d) => {
+        return `Step ${d.stepNumber}: ${d.completed}/${d.enrolled} completed (${Math.round(d.dropOffRate * 100)}% drop-off)`;
+      }).join('\n  ');
+      const avgTime = perf.avgCompletionHours !== null ? `${Math.round(perf.avgCompletionHours)}h` : 'N/A';
+      return [
+        `Performance for sequence: ${perf.sequenceId}`,
+        `- Total enrollments: ${perf.totalEnrollments}`,
+        `- Completed: ${perf.completed}`,
+        `- Stopped: ${perf.stopped}`,
+        `- In progress: ${perf.inProgress}`,
+        `- Completion rate: ${Math.round(perf.completionRate * 100)}%`,
+        `- Avg time to complete: ${avgTime}`,
+        '',
+        'Drop-off per step:',
+        dropOff || '  (no data)',
+      ].join('\n');
+    },
+  },
+
+  // Step Management Tools (4 tools)
+  {
+    definition: {
+      name: 'add_sequence_step',
+      description: 'Add a step to a sequence. Steps execute in order based on sortOrder.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+          sortOrder: { type: 'number', description: 'Position in sequence (0, 1, 2, ...)' },
+          delayHours: { type: 'number', description: 'Hours to wait after previous step completes' },
+          action: {
+            type: 'string',
+            enum: ['send_message', 'send_email', 'wait', 'add_tag', 'remove_tag', 'webhook', 'ai_task'],
+            description: 'Action to execute',
+          },
+          message: { type: 'string', description: 'Message text (for send_message)' },
+          templateId: { type: 'string', description: 'Use template instead of message' },
+          tagName: { type: 'string', description: 'Tag name (for add_tag/remove_tag)' },
+          webhookUrl: { type: 'string', description: 'Webhook URL (for webhook)' },
+          condition: { type: 'string', description: 'Conditional logic JSON (e.g., {"tags": {"includes": "VIP"}})' },
+        },
+        required: ['sequenceId', 'sortOrder', 'action'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const step = await sequencesService.addStep(
+        companyId,
+        args.sequenceId as string,
+        {
+          sortOrder: args.sortOrder as number | undefined,
+          delayHours: (args.delayHours as number | undefined) ?? 24,
+          action: args.action as string,
+          message: args.message as string | undefined,
+          templateId: args.templateId as string | undefined,
+          tagName: args.tagName as string | undefined,
+          webhookUrl: args.webhookUrl as string | undefined,
+          condition: args.condition as string | undefined,
+        },
+        { type: 'ai' },
+      );
+      return `Added step ${step.sortOrder} (${step.action}) to sequence.`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_sequence_step',
+      description: 'Update an existing step. Use stepId to identify it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          stepId: { type: 'string' },
+          delayHours: { type: 'number' },
+          action: { type: 'string' },
+          message: { type: 'string' },
+          templateId: { type: 'string' },
+          tagName: { type: 'string' },
+          webhookUrl: { type: 'string' },
+          condition: { type: 'string' },
+        },
+        required: ['stepId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.updateStep(
+        companyId,
+        args.stepId as string,
+        {
+          delayHours: args.delayHours as number | undefined,
+          action: args.action as string | undefined,
+          message: args.message as string | undefined,
+          templateId: args.templateId as string | undefined,
+          tagName: args.tagName as string | undefined,
+          webhookUrl: args.webhookUrl as string | undefined,
+          condition: args.condition as string | undefined,
+        },
+        { type: 'ai' },
+      );
+      return `Step updated.`;
+    },
+  },
+  {
+    definition: {
+      name: 'remove_sequence_step',
+      description: 'Remove a step from its sequence.',
+      parameters: {
+        type: 'object',
+        properties: {
+          stepId: { type: 'string' },
+        },
+        required: ['stepId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.removeStep(companyId, args.stepId as string, { type: 'ai' });
+      return 'Step removed.';
+    },
+  },
+  {
+    definition: {
+      name: 'reorder_sequence_steps',
+      description: 'Reorder all steps in a sequence. Pass step IDs in new order.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+          stepIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Step IDs in the desired order',
+          },
+        },
+        required: ['sequenceId', 'stepIds'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.reorderSteps(
+        companyId,
+        args.sequenceId as string,
+        args.stepIds as string[],
+        { type: 'ai' },
+      );
+      return 'Steps reordered.';
+    },
+  },
+
+  // Enrollment Management Tools (7 tools)
+  {
+    definition: {
+      name: 'list_enrollments',
+      description: 'List enrollments for a sequence. Can filter by status.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string', description: 'Sequence to list enrollments for' },
+          status: { type: 'string', enum: ['ACTIVE', 'PAUSED', 'COMPLETED', 'STOPPED', 'CANCELLED'], description: 'Filter by enrollment status' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const enrollments = await sequencesService.getEnrollments(
+        companyId,
+        args.sequenceId as string,
+        args.status as any,
+      );
+      if (!enrollments.length) return 'No enrollments found.';
+      return enrollments.map((e) => {
+        const contact = e.contact.displayName || e.contact.phoneNumber;
+        const status = e.status.padEnd(10);
+        const step = e.currentStep;
+        const next = e.nextRunAt ? `next: ${new Date(e.nextRunAt).toLocaleDateString()}` : '';
+        return `- [${status}] ${contact} · step ${step}${next ? ` · ${next}` : ''}`;
+      }).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_enrollment_timeline',
+      description: 'Get activity timeline for an enrollment.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentId: { type: 'string' },
+          limit: { type: 'number', description: 'Max activities (default 20)' },
+        },
+        required: ['enrollmentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const activities = await sequencesService.getEnrollmentTimeline(
+        companyId,
+        args.enrollmentId as string,
+        args.limit as number | undefined,
+      );
+      if (!activities.length) return 'No activity recorded.';
+      return activities.map((a) => {
+        const date = new Date(a.createdAt).toLocaleString();
+        return `${date} · ${a.type} · ${a.title}${a.body ? `\n  ${a.body}` : ''}`;
+      }).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'enroll_contact_in_sequence',
+      description: 'Enroll a contact in a sequence. Provide either contactId or phoneNumber to look up the contact.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+          contactId: { type: 'string', description: 'Contact ID (preferred)' },
+          phoneNumber: { type: 'string', description: 'Phone number to look up contact' },
+          startAt: { type: 'string', description: 'ISO datetime to start (optional, defaults to now)' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const enrollment = await sequencesService.enrollContact(
+        companyId,
+        args.sequenceId as string,
+        {
+          contactId: args.contactId as string | undefined,
+          phoneNumber: args.phoneNumber as string | undefined,
+          startAt: args.startAt ? new Date(args.startAt as string) : undefined,
+        },
+        { type: 'ai' },
+      );
+      return `Enrolled ${enrollment.contact.displayName || enrollment.contact.phoneNumber} in sequence. First step runs at ${new Date(enrollment.nextRunAt!).toLocaleString()}.`;
+    },
+  },
+  {
+    definition: {
+      name: 'unenroll_contact_from_sequence',
+      description: 'Remove a contact from a sequence. This cancels the enrollment.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentId: { type: 'string' },
+        },
+        required: ['enrollmentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.unenrollContact(companyId, args.enrollmentId as string, { type: 'ai' });
+      return 'Contact unenrolled from sequence.';
+    },
+  },
+  {
+    definition: {
+      name: 'pause_enrollment',
+      description: 'Pause an active enrollment. The contact will not receive further messages until resumed.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentId: { type: 'string' },
+          reason: { type: 'string', description: 'Why pausing' },
+        },
+        required: ['enrollmentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.pauseEnrollment(
+        companyId,
+        args.enrollmentId as string,
+        args.reason as string | undefined,
+        { type: 'ai' },
+      );
+      return 'Enrollment paused.';
+    },
+  },
+  {
+    definition: {
+      name: 'resume_enrollment',
+      description: 'Resume a paused enrollment. Recalculates nextRunAt from current step.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentId: { type: 'string' },
+        },
+        required: ['enrollmentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.resumeEnrollment(companyId, args.enrollmentId as string, { type: 'ai' });
+      return 'Enrollment resumed.';
+    },
+  },
+  {
+    definition: {
+      name: 'stop_enrollment',
+      description: 'Stop an enrollment permanently. Cannot be resumed.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentId: { type: 'string' },
+          reason: { type: 'string', description: 'Why stopping' },
+        },
+        required: ['enrollmentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequencesService.stopEnrollment(
+        companyId,
+        args.enrollmentId as string,
+        { type: 'ai' },
+        args.reason as string | undefined,
+      );
+      return 'Enrollment stopped.';
+    },
+  },
+
+  // Bulk Operations (3 tools)
+  {
+    definition: {
+      name: 'bulk_enroll_contacts',
+      description: 'Enroll multiple contacts in a sequence at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string' },
+          contactIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Contact IDs to enroll',
+          },
+        },
+        required: ['sequenceId', 'contactIds'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const result = await sequencesService.bulkEnroll(
+        companyId,
+        args.sequenceId as string,
+        args.contactIds as string[],
+        { type: 'ai' },
+      );
+      return `Enrolled ${result.successful} contacts. Failed: ${result.failed}.`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_unenroll_contacts',
+      description: 'Unenroll multiple contacts at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Enrollment IDs to cancel',
+          },
+        },
+        required: ['enrollmentIds'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const enrollmentIds = args.enrollmentIds as string[];
+      await sequencesService.bulkUnenroll(companyId, enrollmentIds, { type: 'ai' });
+      return `Unenrolled ${enrollmentIds.length} contacts.`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_pause_enrollments',
+      description: 'Pause multiple enrollments at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enrollmentIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Enrollment IDs to pause',
+          },
+        },
+        required: ['enrollmentIds'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const enrollmentIds = args.enrollmentIds as string[];
+      await sequencesService.bulkPauseEnrollments(companyId, enrollmentIds, { type: 'ai' });
+      return `Paused ${enrollmentIds.length} enrollments.`;
+    },
+  },
+
+  // Smart Features with OpenClaw Memory (2 tools)
+  {
+    definition: {
+      name: 'suggest_sequence',
+      description: 'Search memory for similar sequences based on context. Uses semantic search + completion rate scoring.',
+      parameters: {
+        type: 'object',
+        properties: {
+          context: { type: 'string', description: 'Describe the use case (e.g., "follow up after demo")' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Optional tag filters' },
+        },
+        required: ['context'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const suggestions = await sequenceMemoryService.suggestSequenceForContext(
+        companyId,
+        args.context as string,
+        args.tags as string[] | undefined,
+      );
+      if (!suggestions.length) return 'No similar sequences found in memory.';
+      return [
+        `Found ${suggestions.length} similar sequence(s):`,
+        ...suggestions.map((s) => {
+          return `- ${s.sequence.name}: ${s.reason}`;
+        }),
+      ].join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'learn_from_sequence',
+      description: 'Store a successful sequence pattern in long-term memory. Only works for sequences with 80%+ completion rate.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sequenceId: { type: 'string', description: 'Sequence to learn from' },
+        },
+        required: ['sequenceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await sequenceMemoryService.learnFromSequence(args.sequenceId as string);
+      return 'Analyzed sequence. If completion rate ≥80%, pattern stored in memory.';
     },
   },
 
@@ -3604,6 +4549,12 @@ const CORE_TOOL_NAMES = new Set([
   // Broadcasts (full lifecycle — see admin-tools.ts for the additional ~12 callable-by-name tools)
   'list_broadcasts', 'get_broadcast', 'create_broadcast', 'set_broadcast_audience',
   'preview_audience_size', 'schedule_broadcast', 'send_broadcast_now',
+  // Templates (full lifecycle — see admin-tools.ts for the additional ~12 callable-by-name tools)
+  'list_templates', 'get_template', 'create_template', 'update_template',
+  'activate_template', 'archive_template', 'preview_template', 'send_template',
+  // Sequences (full lifecycle — see admin-tools.ts for the additional ~26 callable-by-name tools)
+  'list_sequences', 'get_sequence', 'create_sequence', 'update_sequence',
+  'activate_sequence', 'pause_sequence', 'add_sequence_step', 'enroll_contact_in_sequence',
   // Communication
   'send_whatsapp', 'list_conversations',
   // Analytics

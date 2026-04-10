@@ -118,6 +118,49 @@ enum LeadActivityType {
   CUSTOM
 }
 
+enum TemplateType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  VIDEO
+  LOCATION
+  CONTACTS
+}
+
+enum TemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum TemplateCategory {
+  GREETING
+  FOLLOW_UP
+  PROMOTION
+  PAYMENT_REMINDER
+  ORDER_UPDATE
+  SUPPORT
+  FEEDBACK
+  REVIEW
+  APPOINTMENT
+  GENERAL
+}
+
+enum TemplateActivityType {
+  CREATED
+  UPDATED
+  ACTIVATED
+  ARCHIVED
+  DELETED
+  USED
+  SENT
+  DELIVERED
+  FAILED
+  CONVERTED
+  VARIABLE_RENDERED
+  PREVIEWED
+}
+
 enum DealStage {
   LEAD_IN
   QUALIFIED
@@ -316,19 +359,22 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users            User[]
-  whatsappAccounts WhatsAppAccount[]
-  contacts         Contact[]
-  conversations    Conversation[]
-  leads            Lead[]
-  deals            Deal[]
-  tasks            Task[]
-  payments         Payment[]
-  broadcasts       Broadcast[]
-  auditLogs        AuditLog[]
-  aiConfig         AiConfig?
-  paymentConfig    PaymentConfig?
-  webhookEndpoints WebhookEndpoint[]
+  users               User[]
+  whatsappAccounts    WhatsAppAccount[]
+  contacts            Contact[]
+  conversations       Conversation[]
+  leads               Lead[]
+  deals               Deal[]
+  tasks               Task[]
+  payments            Payment[]
+  broadcasts          Broadcast[]
+  templates           Template[]
+  sequences           Sequence[]
+  sequenceEnrollments SequenceEnrollment[]
+  auditLogs           AuditLog[]
+  aiConfig            AiConfig?
+  paymentConfig       PaymentConfig?
+  webhookEndpoints    WebhookEndpoint[]
 
   @@index([slug])
   @@index([isActive])
@@ -358,6 +404,8 @@ model User {
   assignedTasks     Task[]         @relation("AssignedAgent")
   createdTasks      Task[]         @relation("CreatedBy")
   createdBroadcasts Broadcast[]    @relation("BroadcastCreatedBy")
+  createdSequences  Sequence[]     @relation("SequenceCreator")
+  createdTemplates  Template[]     @relation("TemplateCreator")
   auditLogs         AuditLog[]
 
   @@unique([companyId, email])
@@ -437,6 +485,7 @@ model Contact {
   payments            Payment[]
   contactNotes        ContactNote[]
   broadcastRecipients BroadcastRecipient[]
+  enrollments         SequenceEnrollment[]
 
   @@unique([companyId, phoneNumber])
   @@index([companyId])
@@ -1197,17 +1246,67 @@ model Notification {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 model Template {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   companyId String
   name      String
-  category  String   @default("general") // greeting, follow-up, payment, support
-  body      String
-  variables String[] // e.g. ["name", "amount"]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  type      TemplateType     @default(TEXT)
+  status    TemplateStatus   @default(DRAFT)
+  category  TemplateCategory @default(GENERAL)
+  body      String           @db.Text
+  variables Json             @default("{}")
+  mediaUrl  String?
+  language  String           @default("en")
+  tags      String[]         @default([])
+
+  // Usage tracking
+  useCount       Int       @default(0)
+  lastUsedAt     DateTime?
+  sentCount      Int       @default(0)
+  deliveredCount Int       @default(0)
+  failedCount    Int       @default(0)
+
+  // Conversions
+  conversionCount Int @default(0)
+
+  // A/B testing
+  variantOf   String?
+  variantName String?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activities  TemplateActivity[]
+  createdBy   User?              @relation("TemplateCreator", fields: [createdById], references: [id])
+  variants    Template[]         @relation("TemplateVariants")
+  parent      Template?          @relation("TemplateVariants", fields: [variantOf], references: [id])
+  usedInSteps SequenceStep[]
 
   @@unique([companyId, name])
+  @@index([companyId, status])
   @@index([companyId, category])
+  @@index([companyId, useCount])
+  @@index([variantOf])
+}
+
+model TemplateActivity {
+  id         String               @id @default(cuid())
+  templateId String
+  companyId  String
+  type       TemplateActivityType
+  actorType  String
+  actorId    String?
+  title      String
+  body       String?
+  metadata   Json                 @default("{}")
+  createdAt  DateTime             @default(now())
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, createdAt])
+  @@index([companyId, type])
 }
 
 model CannedResponse {
@@ -1220,51 +1319,181 @@ model CannedResponse {
   @@index([companyId])
 }
 
+enum SequenceStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  STOPPED
+  CANCELLED
+}
+
+enum SequenceActivityType {
+  CREATED
+  UPDATED
+  ACTIVATED
+  PAUSED
+  ARCHIVED
+  DELETED
+  STEPS_CHANGED
+  ENROLLMENT_ADDED
+  ENROLLMENT_REMOVED
+  BULK_ENROLLED
+  PERFORMANCE_ALERT
+}
+
+enum EnrollmentActivityType {
+  ENROLLED
+  STEP_COMPLETED
+  PAUSED
+  RESUMED
+  STOPPED
+  COMPLETED
+  FAILED
+  RETRIED
+}
+
 model Sequence {
-  id        String   @id @default(cuid())
-  companyId String
-  name      String
-  isActive  Boolean  @default(true)
+  id          String         @id @default(cuid())
+  companyId   String
+  name        String
+  description String?        @db.Text
+  status      SequenceStatus @default(DRAFT)
+
+  // Analytics
+  useCount          Int       @default(0)
+  completionCount   Int       @default(0)
+  avgCompletionTime Float?
+  lastUsedAt        DateTime?
+
+  // Organization
+  tags        String[] @default([])
+  createdById String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   steps       SequenceStep[]
   enrollments SequenceEnrollment[]
+  activities  SequenceActivity[]
+  createdBy   User?                @relation("SequenceCreator", fields: [createdById], references: [id])
 
   @@unique([companyId, name])
-  @@index([companyId])
+  @@index([companyId, status])
+  @@index([companyId, tags])
+  @@index([useCount])
 }
 
 model SequenceStep {
-  id         String  @id @default(cuid())
+  id         String @id @default(cuid())
   sequenceId String
-  sortOrder  Int
-  delayHours Int     @default(24)
-  action     String  @default("send_message") // send_message, send_email, wait
-  message    String?
+
+  sortOrder  Int    @default(0)
+  delayHours Int    @default(24)
+  action     String @default("send_message")
+
+  // Action-specific fields
+  message    String? @db.Text
   templateId String?
+  subject    String?
+  tagName    String?
+  webhookUrl String?
+  condition  String? @db.Text
+  metadata   Json    @default("{}")
 
-  sequence Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([sequenceId])
+  sequence Sequence  @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  template Template? @relation(fields: [templateId], references: [id])
+
+  @@index([sequenceId, sortOrder])
 }
 
 model SequenceEnrollment {
-  id          String    @id @default(cuid())
-  sequenceId  String
-  contactId   String
-  companyId   String
-  currentStep Int       @default(0)
-  status      String    @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED, STOPPED
-  nextRunAt   DateTime?
+  id         String @id @default(cuid())
+  sequenceId String
+  contactId  String
+  companyId  String
+
+  currentStep Int              @default(0)
+  status      EnrollmentStatus @default(ACTIVE)
+
+  // Timing
   enrolledAt  DateTime  @default(now())
+  startedAt   DateTime?
+  lastStepAt  DateTime?
+  nextRunAt   DateTime?
   completedAt DateTime?
+
+  // Control
+  pausedAt      DateTime?
+  pausedReason  String?
+  stoppedAt     DateTime?
+  stoppedReason String?
+
+  // Retry tracking
+  retryCount Int     @default(0)
+  lastError  String?
+
+  metadata Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sequence   Sequence                     @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  contact    Contact                      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  company    Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activities SequenceEnrollmentActivity[]
+
+  @@unique([sequenceId, contactId])
+  @@index([companyId, status])
+  @@index([nextRunAt])
+  @@index([sequenceId, status])
+}
+
+model SequenceActivity {
+  id         String               @id @default(cuid())
+  sequenceId String
+  companyId  String
+  type       SequenceActivityType
+  actorType  String // user | ai | system
+  actorId    String?
+  title      String
+  body       String?
+  metadata   Json                 @default("{}")
+  createdAt  DateTime             @default(now())
 
   sequence Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
 
-  @@index([companyId, status])
-  @@index([sequenceId, status])
-  @@index([nextRunAt])
+  @@index([sequenceId, createdAt])
+  @@index([companyId, type])
+}
+
+model SequenceEnrollmentActivity {
+  id           String                 @id @default(cuid())
+  enrollmentId String
+  companyId    String
+  type         EnrollmentActivityType
+  actorType    String // user | ai | system | worker
+  actorId      String?
+  title        String
+  body         String?
+  metadata     Json                   @default("{}")
+  createdAt    DateTime               @default(now())
+
+  enrollment SequenceEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, createdAt])
+  @@index([companyId, type])
 }
 
 model CallLog {

@@ -25,6 +25,7 @@ import { startMemoryDreamingProcessor, memoryDreamingQueue } from './jobs/memory
 import { startLeadDecayProcessor, leadDecayQueue } from './jobs/lead-decay.processor';
 import { startDealCycleProcessor, dealCycleQueue } from './jobs/deal-cycle.processor';
 import { startTaskCycleProcessor, taskCycleQueue } from './jobs/task-cycle.processor';
+import { startSequenceExecutionProcessor } from './jobs/sequence-execution.processor';
 
 const logger = pino({
   level: process.env.LOG_LEVEL ?? 'info',
@@ -63,6 +64,7 @@ async function main() {
   const leadDecayWorker = startLeadDecayProcessor();
   const dealCycleWorker = startDealCycleProcessor();
   const taskCycleWorker = startTaskCycleProcessor();
+  const sequenceExecutionWorker = startSequenceExecutionProcessor();
   logger.info('All workers started');
 
   // Schedule recurring jobs via BullMQ repeatable jobs
@@ -95,6 +97,17 @@ async function main() {
   const tCycleQueue = taskCycleQueue();
   await tCycleQueue.add('task-cycle', {}, { repeat: { pattern: '0 5 * * *' }, jobId: 'task-cycle-recurring' });
 
+  // Sequence execution: every minute — process pending enrollments
+  const sequenceExecutionQueue = new Queue(QUEUES.SEQUENCE_EXECUTION, {
+    connection: new Redis((process.env.REDIS_URL || '').trim(), { maxRetriesPerRequest: null }),
+  });
+  await sequenceExecutionQueue.add('sequence-execution', {}, {
+    repeat: { pattern: '* * * * *' },
+    jobId: 'sequence-execution-recurring',
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+  });
+
   logger.info('Worker service ready — all workers running');
 
   // Graceful shutdown
@@ -112,6 +125,7 @@ async function main() {
       leadDecayWorker.close(),
       dealCycleWorker.close(),
       taskCycleWorker.close(),
+      sequenceExecutionWorker.close(),
     ]);
     await redis.quit();
     process.exit(0);

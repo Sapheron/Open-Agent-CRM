@@ -18,6 +18,7 @@ import pino from 'pino';
 import { createHash, randomUUID } from 'crypto';
 import { prisma } from '@wacrm/database';
 import { QUEUES } from '@wacrm/shared';
+import { SequenceMemoryService } from '@wacrm/sequences';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const connection = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
@@ -219,6 +220,17 @@ async function runDreaming(): Promise<{ promoted: number; scanned: number }> {
       data: { promotedAt: new Date() },
     });
     promotedTotal += top.length;
+  }
+
+  // Promote successful sequences to long-term memory
+  const sequenceMemory = new SequenceMemoryService();
+  for (const [companyId] of byCompany) {
+    try {
+      await sequenceMemory.promoteSuccessfulSequences(companyId);
+      logger.debug({ companyId }, 'Promoted successful sequences to memory');
+    } catch (error) {
+      logger.error({ companyId, error }, 'Failed to promote sequences to memory');
+    }
   }
 
   return { promoted: promotedTotal, scanned: candidates.length };

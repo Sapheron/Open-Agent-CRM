@@ -10,6 +10,7 @@ export const QUEUES = {
   LEAD_DECAY: 'lead_decay',
   DEAL_CYCLE: 'deal_cycle',
   TASK_CYCLE: 'task_cycle',
+  SEQUENCE_EXECUTION: 'sequence_execution',
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
