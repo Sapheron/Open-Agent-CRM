@@ -45,7 +45,7 @@ ask_skip() {
 echo ""
 echo -e "${CYAN}${BOLD}"
 echo "  ╔═══════════════════════════════════════════════════╗"
-echo "  ║       Open Agent CRM — Installer v1.0            ║"
+echo "  ║       Open Agent CRM — Installer v1.1            ║"
 echo "  ║    WhatsApp AI CRM • Self-hosted • Open Source    ║"
 echo "  ║         A Sapheron Project                        ║"
 echo "  ╚═══════════════════════════════════════════════════╝"
