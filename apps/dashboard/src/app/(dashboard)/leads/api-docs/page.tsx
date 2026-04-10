@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { Copy, Check, BookOpen, ExternalLink } from 'lucide-react';
+import { Copy, Check, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -370,21 +370,6 @@ export default function LeadsApiDocsPage() {
             </div>
           </div>
 
-          {/* OpenAPI Link */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-700">Full OpenAPI/Swagger documentation</p>
-              <p className="text-[10px] text-gray-400">Interactive API explorer with all endpoints</p>
-            </div>
-            <a
-              href={`${apiBaseUrl}/docs`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[11px] text-violet-600 hover:text-violet-700 flex items-center gap-1"
-            >
-              Open Docs <ExternalLink size={10} />
-            </a>
-          </div>
         </div>
       </div>
     </div>
