@@ -322,8 +322,19 @@ step 6 "Infrastructure (postgres, redis, minio, pgbouncer)"
 INFRA_RUNNING=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   ps -q postgres redis minio pgbouncer 2>/dev/null | wc -l | tr -d ' ')
 
-if [[ "$INFRA_RUNNING" -ge 4 ]]; then
-  if ask_skip "Infrastructure already running ($INFRA_RUNNING containers)"; then
+# Detect whether the running postgres container has pgvector. If not, we MUST
+# recreate it with the new pgvector/pgvector:pg16 image — otherwise the memory
+# schema migration fails with "type vector does not exist".
+PG_HAS_VECTOR=0
+if [[ "$INFRA_RUNNING" -ge 1 ]]; then
+  if docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+    exec -T postgres sh -c "psql -U \"\${POSTGRES_USER:-crm}\" -d \"\${POSTGRES_DB:-wacrm}\" -tAc \"SELECT 1 FROM pg_extension WHERE extname='vector'\"" 2>/dev/null | grep -q '^1$'; then
+    PG_HAS_VECTOR=1
+  fi
+fi
+
+if [[ "$INFRA_RUNNING" -ge 4 && "$PG_HAS_VECTOR" -eq 1 ]]; then
+  if ask_skip "Infrastructure already running ($INFRA_RUNNING containers, pgvector ready)"; then
     ok "Using running infrastructure"
   else
     docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
@@ -331,9 +342,17 @@ if [[ "$INFRA_RUNNING" -ge 4 ]]; then
     ok "Infrastructure restarted"
   fi
 else
-  info "Starting postgres, redis, minio, pgbouncer..."
-  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
-    up -d postgres redis minio pgbouncer
+  if [[ "$INFRA_RUNNING" -ge 1 && "$PG_HAS_VECTOR" -eq 0 ]]; then
+    warn "Postgres is missing pgvector — recreating container with pgvector/pgvector:pg16 image"
+    info "(Postgres data volume is preserved — only the container is replaced.)"
+    docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" pull postgres || true
+    docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+      up -d --force-recreate postgres
+  else
+    info "Starting postgres, redis, minio, pgbouncer..."
+    docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+      up -d postgres redis minio pgbouncer
+  fi
 
   info "Waiting for health checks (up to 60s)..."
   for svc in postgres redis; do
@@ -349,7 +368,21 @@ else
       sleep 3
     done
   done
+
+  # Bring up the rest of the infra (in case we only force-recreated postgres)
+  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+    up -d redis minio pgbouncer
 fi
+
+# CREATE EXTENSION vector — must run BEFORE prisma db push, because the
+# MemoryChunk model declares an Unsupported("vector(1536)") column. Without
+# the extension, `prisma db push` fails with "type vector does not exist".
+info "Ensuring pgvector extension is installed..."
+docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+  exec -T postgres sh -c \
+  "psql -U \"\${POSTGRES_USER:-crm}\" -d \"\${POSTGRES_DB:-wacrm}\" -c 'CREATE EXTENSION IF NOT EXISTS vector;'" \
+  && ok "pgvector extension ready" \
+  || fail "Could not enable pgvector extension. Check that postgres is the pgvector/pgvector:pg16 image."
 
 # ════════════════════════════════════════════════════════════════════════════
 # STEP 7 — DATABASE + START APP
