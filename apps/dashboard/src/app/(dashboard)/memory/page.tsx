@@ -60,16 +60,16 @@ export default function MemoryPage() {
   const { data: files } = useQuery({
     queryKey: ['memory-files'],
     queryFn: async () => {
-      const r = await api.get<MemoryFile[]>('/memory/files');
-      return r.data;
+      const r = await api.get<{ data: MemoryFile[] }>('/memory/files');
+      return r.data.data;
     },
   });
 
   const { data: stats } = useQuery({
     queryKey: ['memory-stats'],
     queryFn: async () => {
-      const r = await api.get<MemoryStats>('/memory/stats');
-      return r.data;
+      const r = await api.get<{ data: MemoryStats }>('/memory/stats');
+      return r.data.data;
     },
   });
 
@@ -84,10 +84,10 @@ export default function MemoryPage() {
     queryKey: ['memory-file', selectedPath],
     enabled: !!selectedPath,
     queryFn: async () => {
-      const r = await api.get<{ path: string; content: string | null }>('/memory/file', {
+      const r = await api.get<{ data: { path: string; content: string | null } }>('/memory/file', {
         params: { path: selectedPath },
       });
-      return r.data.content ?? '';
+      return r.data.data.content ?? '';
     },
   });
 
@@ -135,8 +135,8 @@ export default function MemoryPage() {
 
   const searchMutation = useMutation({
     mutationFn: (query: string) =>
-      api.post<SearchHit[]>('/memory/search', { query, maxResults: 15 }),
-    onSuccess: (r) => setSearchHits(r.data),
+      api.post<{ data: SearchHit[] }>('/memory/search', { query, maxResults: 15 }),
+    onSuccess: (r) => setSearchHits(r.data.data),
     onError: () => toast.error('Search failed'),
   });
 

@@ -5,11 +5,22 @@
 import { prisma } from '@wacrm/database';
 import Redis from 'ioredis';
 import { MemoryService } from '../memory/memory.service';
+import type { ChatAttachment } from './attachments';
 
 // Memory service is a plain class (no DI deps), so we can instantiate it once
 // here and reuse across tool calls. Tools that don't go through Nest's DI
 // container (like the chat tools) need this.
 const memoryService = new MemoryService();
+
+/**
+ * Per-call execution context — anything that isn't part of the AI's tool args
+ * but is needed to fulfill the call. Currently used to surface the user's
+ * just-uploaded chat attachments to tools like `send_whatsapp` so the AI can
+ * forward an image to a contact without having to re-encode it.
+ */
+export interface ToolContext {
+  attachments?: ChatAttachment[];
+}
 
 const redis = new Redis((process.env.REDIS_URL || '').trim());
 
@@ -25,7 +36,11 @@ export interface ToolResult {
   result: string;
 }
 
-type ToolExecutor = (args: Record<string, unknown>, companyId: string) => Promise<string>;
+type ToolExecutor = (
+  args: Record<string, unknown>,
+  companyId: string,
+  context: ToolContext,
+) => Promise<string>;
 
 interface AdminTool {
   definition: ToolDefinition;
@@ -458,17 +473,25 @@ const tools: AdminTool[] = [
   {
     definition: {
       name: 'send_whatsapp',
-      description: 'Send a WhatsApp message to a contact.',
+      description: 'Send a WhatsApp message to a contact. Can send plain text, OR forward an attachment the user uploaded in this chat (image, PDF, document, etc.) by setting `attachmentIndex`. When the user attached a file and says "send this to <contact>", call this with the appropriate attachmentIndex (0 for the first attachment).',
       parameters: {
         type: 'object',
         properties: {
-          phoneNumber: { type: 'string', description: 'Phone number to send to' },
-          text: { type: 'string', description: 'Message text' },
+          phoneNumber: { type: 'string', description: 'Phone number to send to (with or without country code)' },
+          text: { type: 'string', description: 'Message text. When sending an attachment this becomes the caption.' },
+          attachmentIndex: {
+            type: 'number',
+            description: 'Index (0-based) into the user\'s uploaded attachments for THIS message. Omit to send text only. Use 0 if there is exactly one attachment.',
+          },
+          attachmentName: {
+            type: 'string',
+            description: 'Alternative to attachmentIndex — match an attachment by file name (case-insensitive substring).',
+          },
         },
-        required: ['phoneNumber', 'text'],
+        required: ['phoneNumber'],
       },
     },
-    execute: async (args, companyId) => {
+    execute: async (args, companyId, context) => {
       const account = await prisma.whatsAppAccount.findFirst({ where: { companyId, status: 'CONNECTED' } });
       if (!account) return 'No connected WhatsApp account found';
 
@@ -477,12 +500,55 @@ const tools: AdminTool[] = [
       if (phone.startsWith('0')) phone = '91' + phone.slice(1); // 08714414424 → 918714414424
       if (phone.length === 10 && /^\d+$/.test(phone)) phone = '91' + phone; // 8714414424 → 918714414424
 
+      // Resolve attachment if requested
+      const allAtts = context.attachments ?? [];
+      let chosen: ChatAttachment | undefined;
+      if (typeof args.attachmentIndex === 'number') {
+        chosen = allAtts[args.attachmentIndex];
+        if (!chosen) {
+          return `No attachment at index ${args.attachmentIndex} (user uploaded ${allAtts.length} file${allAtts.length === 1 ? '' : 's'} this turn)`;
+        }
+      } else if (typeof args.attachmentName === 'string' && args.attachmentName) {
+        const needle = args.attachmentName.toLowerCase();
+        chosen = allAtts.find((a) => a.fileName.toLowerCase().includes(needle));
+        if (!chosen) return `No attachment matching name "${args.attachmentName}"`;
+      }
+
+      const text = (args.text as string | undefined)?.trim();
+
+      if (chosen) {
+        // Image: stored as base64. Text file: stored as decoded UTF-8 text.
+        // For text files we re-encode to base64 so the WhatsApp service can
+        // upload to MinIO uniformly.
+        let mediaBase64: string;
+        const mimeType = chosen.mimeType;
+        if (chosen.kind === 'image' && chosen.dataBase64) {
+          mediaBase64 = chosen.dataBase64;
+        } else if (chosen.kind === 'text' && typeof chosen.text === 'string') {
+          mediaBase64 = Buffer.from(chosen.text, 'utf-8').toString('base64');
+        } else {
+          return `Attachment "${chosen.fileName}" has no payload to send`;
+        }
+
+        await redis.publish('wa:outbound', JSON.stringify({
+          accountId: account.id,
+          toPhone: phone,
+          mediaBase64,
+          mimeType,
+          fileName: chosen.fileName,
+          caption: text || undefined,
+        }));
+        return `Sent ${chosen.kind === 'image' ? 'image' : 'document'} "${chosen.fileName}" to ${phone}${text ? ` with caption "${text.slice(0, 50)}"` : ''}`;
+      }
+
+      if (!text) return 'No text or attachment to send';
+
       await redis.publish('wa:outbound', JSON.stringify({
         accountId: account.id,
         toPhone: phone,
-        text: args.text as string,
+        text,
       }));
-      return `Message sent to ${phone}: "${(args.text as string).slice(0, 50)}..."`;
+      return `Message sent to ${phone}: "${text.slice(0, 50)}${text.length > 50 ? '...' : ''}"`;
     },
   },
   {
@@ -1186,11 +1252,16 @@ export function getAdminToolDefinitions(): ToolDefinition[] {
     .map((t) => t.definition);
 }
 
-export async function executeAdminTool(name: string, args: Record<string, unknown>, companyId: string): Promise<string> {
+export async function executeAdminTool(
+  name: string,
+  args: Record<string, unknown>,
+  companyId: string,
+  context: ToolContext = {},
+): Promise<string> {
   const tool = tools.find((t) => t.definition.name === name);
   if (!tool) return `Unknown tool: ${name}`;
   try {
-    return await tool.execute(args, companyId);
+    return await tool.execute(args, companyId, context);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return `Tool error: ${msg}`;

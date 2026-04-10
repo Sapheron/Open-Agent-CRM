@@ -26,7 +26,10 @@ const MAX_TOOL_ITERATIONS = 8;
 
 const ADMIN_SYSTEM_PROMPT = `You are an AI assistant for a WhatsApp CRM. You have full control over the CRM and can perform any operation the user asks.
 
-You can: create/update/delete/search contacts, manage leads, deals, tasks, products, templates, sequences, campaigns, forms, quotes, invoices, tickets, knowledge base articles, workflows, reports, calendar events, documents. You can send WhatsApp messages, create broadcasts, and view analytics.
+You can: create/update/delete/search contacts, manage leads, deals, tasks, products, templates, sequences, campaigns, forms, quotes, invoices, tickets, knowledge base articles, workflows, reports, calendar events, documents. You can send WhatsApp messages (text, images, documents, PDFs), create broadcasts, and view analytics.
+
+WHATSAPP MEDIA (IMPORTANT):
+You CAN send images, documents, and PDFs to WhatsApp contacts. When the user uploads a file in this chat and asks you to "send this to <contact>", call \`send_whatsapp\` with both \`phoneNumber\` AND \`attachmentIndex\` (0 for the first uploaded file, 1 for the second, etc.). Use \`text\` as the optional caption. Available attachments for the current turn appear in a system message titled "Available attachments". NEVER refuse to send a file when the user has uploaded one — just call the tool.
 
 MEMORY (CRITICAL — OpenClaw-style file memory):
 You have a file-based long-term memory system backed by markdown files (\`MEMORY.md\` and \`memory/YYYY-MM-DD-{slug}.md\`). Use these tools:
@@ -125,6 +128,23 @@ export class AiChatService {
       }),
     ];
 
+    // Latest user message's attachments — exposed to admin tools so they can
+    // forward an uploaded file to a WhatsApp contact, etc.
+    const latestUserAttachments =
+      [...userMessages].reverse().find((m) => m.role === 'user' && (m.attachments?.length ?? 0) > 0)?.attachments ?? [];
+
+    // Tell the AI explicitly which attachments are available so it can use
+    // their indices in the send_whatsapp tool.
+    if (latestUserAttachments.length > 0) {
+      const list = latestUserAttachments
+        .map((a, i) => `  - [${i}] ${a.fileName} (${a.kind}, ${a.mimeType}, ${a.size} bytes)`)
+        .join('\n');
+      messages.push({
+        role: 'system',
+        content: `## Available attachments (this turn)\nThe user uploaded ${latestUserAttachments.length} file${latestUserAttachments.length === 1 ? '' : 's'} with their last message:\n${list}\n\nIf they ask you to send/forward "this" / "the image" / "the document" to a contact, call \`send_whatsapp\` with \`attachmentIndex\` set to the right index.`,
+      });
+    }
+
     // Agent loop — iterate on tool calls
     for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
       let response: { content?: string; toolCalls?: ToolCall[] };
@@ -162,7 +182,9 @@ export class AiChatService {
           let args: Record<string, unknown> = {};
           try { args = JSON.parse(tc.function.arguments); } catch { /* empty */ }
 
-          const result = await executeAdminTool(tc.function.name, args, companyId);
+          const result = await executeAdminTool(tc.function.name, args, companyId, {
+            attachments: latestUserAttachments,
+          });
           actions.push({ tool: tc.function.name, args, result });
 
           messages.push({

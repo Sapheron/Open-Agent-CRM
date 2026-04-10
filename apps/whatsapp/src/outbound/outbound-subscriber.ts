@@ -10,6 +10,7 @@ import Redis from 'ioredis';
 import pino from 'pino';
 import { prisma } from '@wacrm/database';
 import { sendTextMessage, sendMediaMessage } from './sender';
+import { uploadMedia, mimeToExtension } from '../media/media-storage';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const redisUrl = (process.env.REDIS_URL || '').trim();
@@ -25,6 +26,10 @@ interface OutboundPayload {
   mediaUrl?: string;
   mimeType?: string;
   caption?: string;
+  // Inline base64 media — uploaded to MinIO server-side then sent. Used by the
+  // AI chat tool when the user attaches a file in the dashboard chat panel.
+  mediaBase64?: string;
+  fileName?: string;
 }
 
 interface BroadcastPayload {
@@ -76,11 +81,29 @@ async function handleOutbound(channel: string, raw: string): Promise<void> {
 
     const p = payload as OutboundPayload;
 
+    // If the AI chat tool sent inline base64, upload it to MinIO first so
+    // Baileys can fetch a real URL. (Baileys can take a Buffer directly too,
+    // but the existing sendMediaMessage helper expects a URL.)
+    let mediaUrl = p.mediaUrl;
+    let mimeType = p.mimeType;
+    if (p.mediaBase64 && p.mimeType) {
+      try {
+        const buffer = Buffer.from(p.mediaBase64, 'base64');
+        const ext = (p.fileName?.split('.').pop()?.toLowerCase()) || mimeToExtension(p.mimeType);
+        mediaUrl = await uploadMedia(buffer, p.mimeType, ext);
+        mimeType = p.mimeType;
+        logger.info({ mediaUrl, size: buffer.length }, 'Uploaded inline AI-chat media to MinIO');
+      } catch (err: unknown) {
+        logger.error({ err }, 'Failed to upload inline media to MinIO');
+        return;
+      }
+    }
+
     // Send via Baileys
     let result: { success: boolean; waMessageId?: string; error?: string };
 
-    if (p.mediaUrl && p.mimeType) {
-      result = await sendMediaMessage(accountId, toPhone, p.mediaUrl, p.mimeType, p.caption);
+    if (mediaUrl && mimeType) {
+      result = await sendMediaMessage(accountId, toPhone, mediaUrl, mimeType, p.caption ?? p.text);
     } else if (p.text) {
       result = await sendTextMessage(accountId, toPhone, p.text);
     } else {
