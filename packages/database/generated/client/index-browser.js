@@ -870,14 +870,29 @@ exports.Prisma.QuoteScalarFieldEnum = {
   contactId: 'contactId',
   dealId: 'dealId',
   quoteNumber: 'quoteNumber',
+  publicToken: 'publicToken',
   status: 'status',
+  title: 'title',
+  description: 'description',
   subtotal: 'subtotal',
   tax: 'tax',
+  taxBps: 'taxBps',
   discount: 'discount',
   total: 'total',
   currency: 'currency',
   validUntil: 'validUntil',
+  sentAt: 'sentAt',
+  viewedAt: 'viewedAt',
+  acceptedAt: 'acceptedAt',
+  rejectedAt: 'rejectedAt',
+  expiredAt: 'expiredAt',
+  revokedAt: 'revokedAt',
+  rejectionReason: 'rejectionReason',
+  autoMoveDealOnAccept: 'autoMoveDealOnAccept',
   notes: 'notes',
+  terms: 'terms',
+  tags: 'tags',
+  createdByUserId: 'createdByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -886,10 +901,26 @@ exports.Prisma.QuoteLineItemScalarFieldEnum = {
   id: 'id',
   quoteId: 'quoteId',
   productId: 'productId',
+  sortOrder: 'sortOrder',
   name: 'name',
+  description: 'description',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
+  discountBps: 'discountBps',
   total: 'total'
+};
+
+exports.Prisma.QuoteActivityScalarFieldEnum = {
+  id: 'id',
+  quoteId: 'quoteId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.InvoiceScalarFieldEnum = {
@@ -1764,6 +1795,37 @@ exports.ProductActivityType = exports.$Enums.ProductActivityType = {
   CUSTOM: 'CUSTOM'
 };
 
+exports.QuoteStatus = exports.$Enums.QuoteStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  VIEWED: 'VIEWED',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED'
+};
+
+exports.QuoteActivityType = exports.$Enums.QuoteActivityType = {
+  CREATED: 'CREATED',
+  RENAMED: 'RENAMED',
+  LINE_ITEM_ADDED: 'LINE_ITEM_ADDED',
+  LINE_ITEM_REMOVED: 'LINE_ITEM_REMOVED',
+  LINE_ITEM_UPDATED: 'LINE_ITEM_UPDATED',
+  TOTALS_RECALCULATED: 'TOTALS_RECALCULATED',
+  FIELD_UPDATED: 'FIELD_UPDATED',
+  SENT: 'SENT',
+  VIEWED_BY_CUSTOMER: 'VIEWED_BY_CUSTOMER',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED',
+  NOTE_ADDED: 'NOTE_ADDED',
+  DUPLICATED: 'DUPLICATED',
+  DEAL_LINKED: 'DEAL_LINKED',
+  DEAL_MOVED_TO_WON: 'DEAL_MOVED_TO_WON',
+  ERROR: 'ERROR'
+};
+
 exports.CampaignChannel = exports.$Enums.CampaignChannel = {
   WHATSAPP: 'WHATSAPP',
   EMAIL: 'EMAIL',
@@ -1906,6 +1968,7 @@ exports.Prisma.ModelName = {
   ProductActivity: 'ProductActivity',
   Quote: 'Quote',
   QuoteLineItem: 'QuoteLineItem',
+  QuoteActivity: 'QuoteActivity',
   Invoice: 'Invoice',
   InvoiceLineItem: 'InvoiceLineItem',
   Campaign: 'Campaign',

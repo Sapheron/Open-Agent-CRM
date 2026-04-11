@@ -37,6 +37,15 @@ import type {
   AutoActionsConfig,
   ListFormsFilters,
 } from '../forms/forms.types';
+import { QuotesService } from '../quotes/quotes.service';
+import type {
+  QuoteActor,
+  CreateQuoteDto,
+  UpdateQuoteDto,
+  LineItemInput,
+  ListQuotesFilters,
+} from '../quotes/quotes.types';
+import { formatMinor } from '../quotes/quotes.calc';
 import { Queue } from 'bullmq';
 import { QUEUES } from '@wacrm/shared';
 import type { ChatAttachment } from './attachments';
@@ -57,6 +66,7 @@ const campaignsService = new CampaignsService();
 // instantiate a local LeadsService without DI hookup — all LeadsService
 // methods used by FormsService.submit are plain prisma reads/writes.
 const formsService = new FormsService(new FormsLeadsShim());
+const quotesService = new QuotesService();
 
 // BroadcastService takes a BullMQ Queue. We construct one here so the AI
 // tools can drive the same single-write-path service the controller uses.
@@ -73,6 +83,7 @@ const AI_BROADCAST_ACTOR: BroadcastActor = { type: 'ai' };
 const AI_TEMPLATE_ACTOR: TemplateActor = { type: 'ai' };
 const AI_CAMPAIGN_ACTOR: CampaignActor = { type: 'ai' };
 const AI_FORM_ACTOR: FormActor = { type: 'ai' };
+const AI_QUOTE_ACTOR: QuoteActor = { type: 'ai' };
 
 /**
  * Per-call execution context — anything that isn't part of the AI's tool args
@@ -4264,21 +4275,490 @@ const tools: AdminTool[] = [
     },
   },
 
-  // ── Quotes ────────────────────────────────────────────────────────────────
+  // ── Quotes (full lifecycle — 22 tools) ───────────────────────────────────
   {
-    definition: { name: 'create_quote', description: 'Create a quote with line items.', parameters: { type: 'object', properties: { contactId: { type: 'string' }, items: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'number' }, unitPrice: { type: 'number' } } } }, notes: { type: 'string' } }, required: ['items'] } },
-    execute: async (args, companyId) => {
-      const items = (args.items as Array<{ name: string; quantity?: number; unitPrice: number }>) || [];
-      const total = items.reduce((s, i) => s + (i.quantity || 1) * i.unitPrice, 0);
-      const q = await prisma.quote.create({
-        data: {
-          companyId, contactId: (args.contactId as string) || undefined,
-          quoteNumber: `Q-${Date.now().toString(36).toUpperCase()}`,
-          subtotal: total, total, notes: (args.notes as string) || undefined,
-          lineItems: { create: items.map((i) => ({ name: i.name, quantity: i.quantity || 1, unitPrice: i.unitPrice, total: (i.quantity || 1) * i.unitPrice })) },
+    definition: {
+      name: 'list_quotes',
+      description: 'List quotes with filters. Money is in minor units (paise/cents). Use get_quote for detail.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Comma-separated: DRAFT, SENT, VIEWED, ACCEPTED, REJECTED, EXPIRED, REVOKED' },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          tag: { type: 'string' },
+          search: { type: 'string' },
+          sort: { type: 'string', enum: ['recent', 'total', 'number', 'valid_until'] },
+          page: { type: 'number' },
+          limit: { type: 'number' },
         },
-      });
-      return `Created quote ${q.quoteNumber} — ₹${total / 100} (${items.length} items)`;
+      },
+    },
+    execute: async (args, companyId) => {
+      const filters: ListQuotesFilters = {
+        status: args.status ? (String(args.status).split(',') as never) : undefined,
+        contactId: args.contactId as string | undefined,
+        dealId: args.dealId as string | undefined,
+        tag: args.tag as string | undefined,
+        search: args.search as string | undefined,
+        sort: args.sort as ListQuotesFilters['sort'],
+        page: typeof args.page === 'number' ? args.page : undefined,
+        limit: typeof args.limit === 'number' ? args.limit : undefined,
+      };
+      const { items, total } = await quotesService.list(companyId, filters);
+      if (items.length === 0) return 'No quotes match.';
+      return `${items.length}/${total} quotes:\n` + items
+        .map((q) => `- [${q.status}] ${q.quoteNumber} · ${formatMinor(q.total, q.currency)} · ${q.lineItems.length} items${q.validUntil ? ' · valid until ' + new Date(q.validUntil).toLocaleDateString() : ''} (id: ${q.id})`)
+        .join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_quote',
+      description: 'Get full quote details including line items, totals, and recent activity.',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.get(companyId, args.quoteId as string);
+      return JSON.stringify({
+        id: q.id,
+        quoteNumber: q.quoteNumber,
+        title: q.title,
+        status: q.status,
+        contactId: q.contactId,
+        dealId: q.dealId,
+        currency: q.currency,
+        subtotal: q.subtotal,
+        tax: q.tax,
+        taxBps: q.taxBps,
+        discount: q.discount,
+        total: q.total,
+        totalFormatted: formatMinor(q.total, q.currency),
+        validUntil: q.validUntil,
+        sentAt: q.sentAt,
+        viewedAt: q.viewedAt,
+        acceptedAt: q.acceptedAt,
+        rejectedAt: q.rejectedAt,
+        autoMoveDealOnAccept: q.autoMoveDealOnAccept,
+        lineItems: q.lineItems.map((li) => ({
+          id: li.id,
+          name: li.name,
+          quantity: li.quantity,
+          unitPrice: li.unitPrice,
+          discountBps: li.discountBps,
+          total: li.total,
+          totalFormatted: formatMinor(li.total, q.currency),
+        })),
+        publicUrl: `/public/quotes/${q.publicToken}`,
+        recentActivity: q.activities.map((a) => `[${a.createdAt.toISOString()}] ${a.type} — ${a.title}`),
+      }, null, 2);
+    },
+  },
+  {
+    definition: {
+      name: 'create_quote',
+      description: 'Create a quote in DRAFT status. Money is in minor units (e.g. 50000 = ₹500.00). You can pass initial lineItems OR call add_quote_line_item afterwards. The quoteNumber is auto-generated unless provided.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          title: { type: 'string' },
+          description: { type: 'string' },
+          currency: { type: 'string', description: 'ISO code, default INR' },
+          taxBps: { type: 'number', description: 'Tax percent in basis points 0-10000 (e.g. 1800 = 18%)' },
+          discount: { type: 'number', description: 'Quote-level flat discount in minor units' },
+          validUntil: { type: 'string', description: 'ISO-8601 date' },
+          notes: { type: 'string' },
+          terms: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          autoMoveDealOnAccept: { type: 'boolean', description: 'When true, linked Deal auto-moves to WON on customer acceptance' },
+          lineItems: {
+            type: 'array',
+            description: 'Initial line items. Each: {name, quantity, unitPrice (minor units), discountBps?}',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                description: { type: 'string' },
+                quantity: { type: 'number' },
+                unitPrice: { type: 'number' },
+                discountBps: { type: 'number' },
+                productId: { type: 'string' },
+              },
+              required: ['name'],
+            },
+          },
+        },
+      },
+    },
+    execute: async (args, companyId) => {
+      const dto: CreateQuoteDto = {
+        contactId: args.contactId as string | undefined,
+        dealId: args.dealId as string | undefined,
+        title: args.title as string | undefined,
+        description: args.description as string | undefined,
+        currency: args.currency as string | undefined,
+        taxBps: typeof args.taxBps === 'number' ? args.taxBps : undefined,
+        discount: typeof args.discount === 'number' ? args.discount : undefined,
+        validUntil: args.validUntil as string | undefined,
+        notes: args.notes as string | undefined,
+        terms: args.terms as string | undefined,
+        tags: (args.tags as string[] | undefined) ?? undefined,
+        autoMoveDealOnAccept: args.autoMoveDealOnAccept as boolean | undefined,
+        lineItems: (args.lineItems as LineItemInput[] | undefined) ?? [],
+      };
+      const q = await quotesService.create(companyId, AI_QUOTE_ACTOR, dto);
+      return `Created quote ${q.quoteNumber} (DRAFT) — total ${formatMinor(q.total, q.currency)}. id: ${q.id}`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_quote',
+      description: 'Update quote metadata (title, tax, discount, validUntil, etc). Only works on DRAFT or SENT quotes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          title: { type: 'string' },
+          description: { type: 'string' },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          taxBps: { type: 'number' },
+          discount: { type: 'number' },
+          currency: { type: 'string' },
+          validUntil: { type: 'string' },
+          notes: { type: 'string' },
+          terms: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          autoMoveDealOnAccept: { type: 'boolean' },
+        },
+        required: ['quoteId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { quoteId, ...rest } = args;
+      const q = await quotesService.update(
+        companyId,
+        quoteId as string,
+        AI_QUOTE_ACTOR,
+        rest as UpdateQuoteDto,
+      );
+      return `Updated quote ${q.quoteNumber} — total ${formatMinor(q.total, q.currency)}`;
+    },
+  },
+  {
+    definition: {
+      name: 'add_quote_line_item',
+      description: 'Append a line item to a DRAFT or SENT quote. Recomputes totals automatically. Money in minor units.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          quantity: { type: 'number' },
+          unitPrice: { type: 'number', description: 'Minor units (e.g. 50000 = ₹500.00)' },
+          discountBps: { type: 'number', description: 'Per-line discount bps 0-10000' },
+          productId: { type: 'string' },
+        },
+        required: ['quoteId', 'name'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { quoteId, ...item } = args;
+      const q = await quotesService.addLineItem(
+        companyId,
+        quoteId as string,
+        AI_QUOTE_ACTOR,
+        item as unknown as LineItemInput,
+      );
+      return `Added "${item.name as string}" — new total ${formatMinor(q.total, q.currency)}`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_quote_line_item',
+      description: 'Update a line item on a quote. Pass only the fields you want to change.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          lineItemId: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          quantity: { type: 'number' },
+          unitPrice: { type: 'number' },
+          discountBps: { type: 'number' },
+        },
+        required: ['quoteId', 'lineItemId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { quoteId, lineItemId, ...patch } = args;
+      const q = await quotesService.updateLineItem(
+        companyId,
+        quoteId as string,
+        AI_QUOTE_ACTOR,
+        lineItemId as string,
+        patch as Partial<LineItemInput>,
+      );
+      return `Updated line item — new total ${formatMinor(q.total, q.currency)}`;
+    },
+  },
+  {
+    definition: {
+      name: 'remove_quote_line_item',
+      description: 'Remove a line item from a quote.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          lineItemId: { type: 'string' },
+        },
+        required: ['quoteId', 'lineItemId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.removeLineItem(
+        companyId,
+        args.quoteId as string,
+        AI_QUOTE_ACTOR,
+        args.lineItemId as string,
+      );
+      return `Removed line item — new total ${formatMinor(q.total, q.currency)}`;
+    },
+  },
+  {
+    definition: {
+      name: 'send_quote',
+      description: 'Transition a DRAFT quote to SENT. After sending, you can share the public URL returned by get_quote so the customer can view/accept/reject it.',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.send(companyId, args.quoteId as string, AI_QUOTE_ACTOR);
+      return `Sent ${q.quoteNumber}. Public URL path: /public/quotes/${q.publicToken}`;
+    },
+  },
+  {
+    definition: {
+      name: 'accept_quote',
+      description: 'Accept a SENT or VIEWED quote on behalf of the customer (rare — usually the customer clicks Accept on the public URL).',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.accept(companyId, args.quoteId as string, AI_QUOTE_ACTOR);
+      return `Accepted ${q.quoteNumber}${q.autoMoveDealOnAccept && q.dealId ? ' — linked deal moved to WON' : ''}`;
+    },
+  },
+  {
+    definition: {
+      name: 'reject_quote',
+      description: 'Reject a SENT or VIEWED quote. Always pass a reason.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          reason: { type: 'string' },
+        },
+        required: ['quoteId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.reject(
+        companyId,
+        args.quoteId as string,
+        AI_QUOTE_ACTOR,
+        args.reason as string | undefined,
+      );
+      return `Rejected ${q.quoteNumber}`;
+    },
+  },
+  {
+    definition: {
+      name: 'revoke_quote',
+      description: 'Revoke an active quote — the customer will no longer be able to view it via the public URL. Cannot undo.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          reason: { type: 'string' },
+        },
+        required: ['quoteId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.revoke(
+        companyId,
+        args.quoteId as string,
+        AI_QUOTE_ACTOR,
+        args.reason as string | undefined,
+      );
+      return `Revoked ${q.quoteNumber}`;
+    },
+  },
+  {
+    definition: {
+      name: 'expire_quote',
+      description: 'Manually mark a quote as EXPIRED. Useful when the validUntil has passed and nobody cleaned it up.',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.expire(companyId, args.quoteId as string, AI_QUOTE_ACTOR);
+      return `${q.quoteNumber} → EXPIRED`;
+    },
+  },
+  {
+    definition: {
+      name: 'duplicate_quote',
+      description: 'Clone a quote as a new DRAFT with the same line items and terms. Useful for creating variations.',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.duplicate(companyId, args.quoteId as string, AI_QUOTE_ACTOR);
+      return `Duplicated — new quote ${q.quoteNumber} (DRAFT). id: ${q.id}`;
+    },
+  },
+  {
+    definition: {
+      name: 'add_quote_note',
+      description: 'Drop a note on the quote timeline.',
+      parameters: {
+        type: 'object',
+        properties: { quoteId: { type: 'string' }, body: { type: 'string' } },
+        required: ['quoteId', 'body'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await quotesService.addNote(
+        companyId,
+        args.quoteId as string,
+        AI_QUOTE_ACTOR,
+        args.body as string,
+      );
+      return `Note added`;
+    },
+  },
+  {
+    definition: {
+      name: 'delete_quote',
+      description: 'Permanently delete a quote. Only DRAFT, REVOKED, or EXPIRED quotes can be deleted.',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      await quotesService.remove(companyId, args.quoteId as string);
+      return `Deleted`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_quote_stats',
+      description: 'Get aggregate quote stats across all quotes created in the last N days — value, acceptance rate, by status.',
+      parameters: {
+        type: 'object',
+        properties: { days: { type: 'number', description: 'Lookback window. Default 30.' } },
+      },
+    },
+    execute: async (args, companyId) => {
+      const s = await quotesService.stats(
+        companyId,
+        typeof args.days === 'number' ? args.days : 30,
+      );
+      return `Quotes (${s.rangeDays}d): ${s.totalQuotes} total. Value ${formatMinor(s.totalValue)} · Accepted ${formatMinor(s.acceptedValue)}\n` +
+        `Acceptance rate: ${s.acceptanceRate ?? 'n/a'}% · Average: ${s.averageValue !== null ? formatMinor(s.averageValue) : 'n/a'}\n` +
+        `By status: ${Object.entries(s.byStatus).map(([k, v]) => `${k}=${v}`).join(' · ') || '(none)'}`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_quote_timeline',
+      description: 'Fetch the activity timeline for a quote (most recent first).',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteId: { type: 'string' },
+          limit: { type: 'number' },
+        },
+        required: ['quoteId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const events = await quotesService.getTimeline(
+        companyId,
+        args.quoteId as string,
+        typeof args.limit === 'number' ? args.limit : 30,
+      );
+      if (events.length === 0) return 'No activity.';
+      return events
+        .map((e) => `[${e.createdAt.toISOString()}] ${e.type} (${e.actorType}) — ${e.title}${e.body ? '\n  ' + e.body : ''}`)
+        .join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_quote_public_url',
+      description: 'Get the hosted public URL for a quote — the link to share with the customer so they can view and accept/reject.',
+      parameters: { type: 'object', properties: { quoteId: { type: 'string' } }, required: ['quoteId'] },
+    },
+    execute: async (args, companyId) => {
+      const q = await quotesService.get(companyId, args.quoteId as string);
+      if (q.status === 'DRAFT') {
+        return `MEMORY_SEARCH_UNAVAILABLE: quote is still in DRAFT. Call send_quote first.`;
+      }
+      const publicUrl = process.env.API_PUBLIC_URL?.replace(/\/$/, '');
+      if (!publicUrl) {
+        return `/public/quotes/${q.publicToken} (API_PUBLIC_URL env var is not set — absolute URL not available; share the relative path)`;
+      }
+      return `${publicUrl}/public/quotes/${q.publicToken}`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_send_quotes',
+      description: 'Send multiple DRAFT quotes at once.',
+      parameters: { type: 'object', properties: { quoteIds: { type: 'array', items: { type: 'string' } } }, required: ['quoteIds'] },
+    },
+    execute: async (args, companyId) => {
+      const r = await quotesService.bulkSend(
+        companyId,
+        args.quoteIds as string[],
+        AI_QUOTE_ACTOR,
+      );
+      return `Sent ${r.updated}, failed ${r.failed}.`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_revoke_quotes',
+      description: 'Revoke multiple quotes at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          quoteIds: { type: 'array', items: { type: 'string' } },
+          reason: { type: 'string' },
+        },
+        required: ['quoteIds'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await quotesService.bulkRevoke(
+        companyId,
+        args.quoteIds as string[],
+        AI_QUOTE_ACTOR,
+        args.reason as string | undefined,
+      );
+      return `Revoked ${r.updated}, failed ${r.failed}.`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_delete_quotes',
+      description: 'Permanently delete multiple quotes. Only DRAFT/REVOKED/EXPIRED will actually be removed.',
+      parameters: { type: 'object', properties: { quoteIds: { type: 'array', items: { type: 'string' } } }, required: ['quoteIds'] },
+    },
+    execute: async (args, companyId) => {
+      const r = await quotesService.bulkDelete(companyId, args.quoteIds as string[]);
+      return `Deleted ${r.updated}, failed ${r.failed}.`;
     },
   },
 
@@ -5637,6 +6117,9 @@ const CORE_TOOL_NAMES = new Set([
   // Forms (full lifecycle — 24 tools total, 8 exposed by default)
   'list_forms', 'get_form', 'create_form', 'add_form_field',
   'set_form_auto_actions', 'publish_form', 'list_form_submissions', 'get_form_stats',
+  // Quotes (full lifecycle — 22 tools total, 7 exposed by default)
+  'list_quotes', 'get_quote', 'create_quote', 'add_quote_line_item',
+  'send_quote', 'accept_quote', 'get_quote_stats',
   // Communication
   'send_whatsapp', 'list_conversations',
   // Analytics

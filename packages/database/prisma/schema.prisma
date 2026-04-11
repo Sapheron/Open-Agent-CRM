@@ -1624,40 +1624,125 @@ model ProductActivity {
   @@index([companyId, type])
 }
 
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum QuoteActivityType {
+  CREATED
+  RENAMED
+  LINE_ITEM_ADDED
+  LINE_ITEM_REMOVED
+  LINE_ITEM_UPDATED
+  TOTALS_RECALCULATED
+  FIELD_UPDATED
+  SENT
+  VIEWED_BY_CUSTOMER
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  REVOKED
+  NOTE_ADDED
+  DUPLICATED
+  DEAL_LINKED
+  DEAL_MOVED_TO_WON
+  ERROR
+}
+
 model Quote {
-  id          String      @id @default(cuid())
-  companyId   String
-  contactId   String?
-  dealId      String?
-  quoteNumber String
-  status      String      @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
-  subtotal    Int         @default(0)
-  tax         Int         @default(0)
-  discount    Int         @default(0)
-  total       Int         @default(0)
-  currency    String      @default("INR")
-  validUntil  DateTime?
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id              String       @id @default(cuid())
+  companyId       String
+  contactId       String?
+  dealId          String?
+  quoteNumber     String
+  /// Public URL token for customer view + accept/reject flow.
+  /// Random 32-char hex, generated on create. Customers see `/public/quotes/:token`.
+  publicToken     String       @unique
+  status          QuoteStatus  @default(DRAFT)
+  title           String?
+  description     String?
 
-  lineItems QuoteLineItem[]
+  /// Currency amounts are stored in minor units (paise/cents).
+  subtotal        Int          @default(0)
+  tax             Int          @default(0)
+  /// Tax percent 0–10000 (2 decimal bps, e.g. 1800 = 18.00%)
+  taxBps          Int          @default(0)
+  discount        Int          @default(0)
+  total           Int          @default(0)
+  currency        String       @default("INR")
 
+  validUntil      DateTime?
+  sentAt          DateTime?
+  viewedAt        DateTime?
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  expiredAt       DateTime?
+  revokedAt       DateTime?
+  rejectionReason String?
+
+  /// If true, auto-move the linked Deal to WON when the customer accepts.
+  autoMoveDealOnAccept Boolean @default(false)
+
+  notes           String?
+  terms           String?
+  tags            String[]     @default([])
+  createdByUserId String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  lineItems  QuoteLineItem[]
+  activities QuoteActivity[]
+
+  @@unique([companyId, quoteNumber])
   @@index([companyId])
+  @@index([companyId, status])
+  @@index([companyId, contactId])
+  @@index([companyId, dealId])
 }
 
 model QuoteLineItem {
-  id        String @id @default(cuid())
-  quoteId   String
-  productId String?
-  name      String
-  quantity  Int    @default(1)
-  unitPrice Int    @default(0)
-  total     Int    @default(0)
+  id          String  @id @default(cuid())
+  quoteId     String
+  productId   String?
+  /// Stable ordering key within a quote (1-based, dense).
+  sortOrder   Int     @default(0)
+  name        String
+  description String?
+  quantity    Int     @default(1)
+  unitPrice   Int     @default(0)
+  /// Discount bps applied per-line (0–10000).
+  discountBps Int     @default(0)
+  total       Int     @default(0)
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@index([quoteId])
+  @@index([quoteId, sortOrder])
+}
+
+model QuoteActivity {
+  id        String             @id @default(cuid())
+  quoteId   String
+  companyId String
+  type      QuoteActivityType
+  actorType String             // "user" | "ai" | "system" | "worker" | "public"
+  actorId   String?
+  title     String
+  body      String?
+  metadata  Json               @default("{}")
+  createdAt DateTime           @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId, createdAt])
+  @@index([companyId, type, createdAt])
 }
 
 model Invoice {
