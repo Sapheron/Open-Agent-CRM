@@ -54,6 +54,15 @@ import type {
   ListInvoicesFilters,
   LineItemInput as InvoiceLineItemInput,
 } from '../invoices/invoices.types';
+import { PaymentsService } from '../payments/payments.service';
+import type {
+  PaymentActor,
+  CreatePaymentLinkDto,
+  RecordManualPaymentDto,
+  UpdatePaymentDto,
+  RefundPaymentDto,
+  ListPaymentsFilters,
+} from '../payments/payments.types';
 import { Queue } from 'bullmq';
 import { QUEUES } from '@wacrm/shared';
 import type { ChatAttachment } from './attachments';
@@ -76,6 +85,9 @@ const campaignsService = new CampaignsService();
 const formsService = new FormsService(new FormsLeadsShim());
 const quotesService = new QuotesService();
 const invoicesService = new InvoicesService();
+// PaymentsService needs an InvoicesService for auto-reconciliation.
+// Reuse the same singleton so the activity log is consistent.
+const paymentsService = new PaymentsService(invoicesService);
 
 // BroadcastService takes a BullMQ Queue. We construct one here so the AI
 // tools can drive the same single-write-path service the controller uses.
@@ -94,6 +106,7 @@ const AI_CAMPAIGN_ACTOR: CampaignActor = { type: 'ai' };
 const AI_FORM_ACTOR: FormActor = { type: 'ai' };
 const AI_QUOTE_ACTOR: QuoteActor = { type: 'ai' };
 const AI_INVOICE_ACTOR: InvoiceActor = { type: 'ai' };
+const AI_PAYMENT_ACTOR: PaymentActor = { type: 'ai' };
 
 /**
  * Per-call execution context — anything that isn't part of the AI's tool args
@@ -2598,26 +2611,433 @@ const tools: AdminTool[] = [
     },
   },
 
-  // ── Payments ──────────────────────────────────────────────────────────────
+  // ── Payments (full lifecycle — 18 tools) ─────────────────────────────────
   {
     definition: {
       name: 'list_payments',
-      description: 'List payment records.',
+      description: 'List payment records with rich filters. Money is in minor units (paise/cents).',
       parameters: {
         type: 'object',
         properties: {
-          status: { type: 'string', enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED', 'EXPIRED'] },
+          status: { type: 'string', description: 'Comma-separated: PENDING, PAID, FAILED, REFUNDED, EXPIRED' },
+          provider: { type: 'string', description: 'Comma-separated: RAZORPAY, STRIPE, CASHFREE, PHONEPE, PAYU, NONE (manual)' },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          invoiceId: { type: 'string' },
+          tag: { type: 'string' },
+          search: { type: 'string' },
+          sort: { type: 'string', enum: ['recent', 'amount', 'paid_at'] },
+          page: { type: 'number' },
           limit: { type: 'number' },
         },
-        required: [],
       },
     },
     execute: async (args, companyId) => {
-      const where: Record<string, unknown> = { companyId };
-      if (args.status) where.status = args.status;
-      const payments = await prisma.payment.findMany({ where: where as any, take: (args.limit as number) || 10, orderBy: { createdAt: 'desc' } });
-      if (!payments.length) return 'No payments found';
-      return payments.map((p) => `- ₹${p.amount / 100} | ${p.status} | ${p.description || 'no desc'} | ${p.createdAt.toISOString().split('T')[0]}`).join('\n');
+      const filters: ListPaymentsFilters = {
+        status: args.status ? (String(args.status).split(',') as never) : undefined,
+        provider: args.provider ? (String(args.provider).split(',') as never) : undefined,
+        contactId: args.contactId as string | undefined,
+        dealId: args.dealId as string | undefined,
+        invoiceId: args.invoiceId as string | undefined,
+        tag: args.tag as string | undefined,
+        search: args.search as string | undefined,
+        sort: args.sort as ListPaymentsFilters['sort'],
+        page: typeof args.page === 'number' ? args.page : undefined,
+        limit: typeof args.limit === 'number' ? args.limit : undefined,
+      };
+      const { items, total } = await paymentsService.list(companyId, filters);
+      if (items.length === 0) return 'No payments match.';
+      return `${items.length}/${total} payments:\n` + items
+        .map((p) => `- [${p.status}] ${formatMinor(p.amount, p.currency)} · ${p.provider}${p.method ? `/${p.method}` : ''} · ${p.description ?? '(no desc)'} · ${new Date(p.createdAt).toLocaleDateString()} (id: ${p.id})`)
+        .join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_payment',
+      description: 'Get full payment details including linked contact/deal/invoice and recent activity.',
+      parameters: { type: 'object', properties: { paymentId: { type: 'string' } }, required: ['paymentId'] },
+    },
+    execute: async (args, companyId) => {
+      const p = await paymentsService.get(companyId, args.paymentId as string);
+      return JSON.stringify({
+        id: p.id,
+        status: p.status,
+        provider: p.provider,
+        method: p.method,
+        amount: p.amount,
+        amountFormatted: formatMinor(p.amount, p.currency),
+        refundedAmount: p.refundedAmount,
+        refundedAmountFormatted: formatMinor(p.refundedAmount, p.currency),
+        currency: p.currency,
+        description: p.description,
+        externalId: p.externalId,
+        linkUrl: p.linkUrl,
+        refundId: p.refundId,
+        contactId: p.contactId,
+        dealId: p.dealId,
+        invoiceId: p.invoiceId,
+        paidAt: p.paidAt,
+        refundedAt: p.refundedAt,
+        recentActivity: p.activities.map((a) => `[${a.createdAt.toISOString()}] ${a.type} — ${a.title}`),
+      }, null, 2);
+    },
+  },
+  {
+    definition: {
+      name: 'create_payment_link',
+      description: 'Create a gateway payment link (Razorpay/Stripe/etc) for a contact. Amount is in minor units. Optionally link to an invoice so the payment auto-reconciles.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contactId: { type: 'string' },
+          amount: { type: 'number', description: 'Minor units (e.g. 50000 = ₹500.00)' },
+          description: { type: 'string' },
+          currency: { type: 'string', description: 'Defaults to the company config currency' },
+          dealId: { type: 'string' },
+          invoiceId: { type: 'string', description: 'If set, the invoice auto-marks PAID when this payment is received' },
+          notes: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['contactId', 'amount', 'description'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const dto: CreatePaymentLinkDto = {
+        contactId: args.contactId as string,
+        amount: args.amount as number,
+        description: args.description as string,
+        currency: args.currency as string | undefined,
+        dealId: args.dealId as string | undefined,
+        invoiceId: args.invoiceId as string | undefined,
+        notes: args.notes as string | undefined,
+        tags: (args.tags as string[] | undefined) ?? undefined,
+      };
+      const p = await paymentsService.createLink(companyId, AI_PAYMENT_ACTOR, dto);
+      return `Created payment link — ${formatMinor(p.amount, p.currency)} via ${p.provider}. URL: ${p.linkUrl}. Status: ${p.status}. id: ${p.id}`;
+    },
+  },
+  {
+    definition: {
+      name: 'record_manual_payment',
+      description: 'Record a payment that happened outside the gateway (cash, bank transfer, cheque, UPI). Creates a Payment row with provider=NONE and status=PAID immediately. If linked to an invoice, the invoice auto-updates.',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: { type: 'number', description: 'Minor units' },
+          description: { type: 'string' },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          invoiceId: { type: 'string' },
+          method: { type: 'string', enum: ['cash', 'bank_transfer', 'cheque', 'upi', 'other'] },
+          currency: { type: 'string' },
+          paidAt: { type: 'string', description: 'ISO date, defaults to now' },
+          notes: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['amount', 'description'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const dto: RecordManualPaymentDto = {
+        amount: args.amount as number,
+        description: args.description as string,
+        contactId: args.contactId as string | undefined,
+        dealId: args.dealId as string | undefined,
+        invoiceId: args.invoiceId as string | undefined,
+        method: args.method as string | undefined,
+        currency: args.currency as string | undefined,
+        paidAt: args.paidAt as string | undefined,
+        notes: args.notes as string | undefined,
+        tags: (args.tags as string[] | undefined) ?? undefined,
+      };
+      const p = await paymentsService.recordManualPayment(companyId, AI_PAYMENT_ACTOR, dto);
+      return `Recorded manual payment — ${formatMinor(p.amount, p.currency)} (${dto.method ?? 'other'}). Status: PAID. id: ${p.id}`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_payment',
+      description: 'Update payment metadata (description, notes, tags, linked invoice/deal).',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentId: { type: 'string' },
+          description: { type: 'string' },
+          notes: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          invoiceId: { type: 'string' },
+          dealId: { type: 'string' },
+        },
+        required: ['paymentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { paymentId, ...rest } = args;
+      await paymentsService.update(
+        companyId,
+        paymentId as string,
+        AI_PAYMENT_ACTOR,
+        rest as UpdatePaymentDto,
+      );
+      return `Updated payment`;
+    },
+  },
+  {
+    definition: {
+      name: 'refund_payment',
+      description: 'Refund a PAID payment. Defaults to a full refund if no amount is given. Razorpay + Stripe call the gateway API; other providers require refunding through the provider dashboard.',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentId: { type: 'string' },
+          amount: { type: 'number', description: 'Optional — defaults to full refund. Minor units.' },
+          reason: { type: 'string' },
+        },
+        required: ['paymentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const dto: RefundPaymentDto = {
+        amount: typeof args.amount === 'number' ? args.amount : undefined,
+        reason: args.reason as string | undefined,
+      };
+      const p = await paymentsService.refund(
+        companyId,
+        args.paymentId as string,
+        AI_PAYMENT_ACTOR,
+        dto,
+      );
+      return `Refunded ${formatMinor(p.refundedAmount, p.currency)}. Status: ${p.status}.`;
+    },
+  },
+  {
+    definition: {
+      name: 'cancel_payment',
+      description: 'Cancel a PENDING payment link (marks it EXPIRED). Cannot cancel PAID or REFUNDED — use refund_payment instead.',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentId: { type: 'string' },
+          reason: { type: 'string' },
+        },
+        required: ['paymentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const p = await paymentsService.cancel(
+        companyId,
+        args.paymentId as string,
+        AI_PAYMENT_ACTOR,
+        args.reason as string | undefined,
+      );
+      return `Cancelled payment. Status: ${p.status}.`;
+    },
+  },
+  {
+    definition: {
+      name: 'link_payment_to_invoice',
+      description: 'Link or relink a payment to an invoice. When the payment is PAID, the invoice auto-updates its amountPaid. Useful for manual payments recorded before the invoice existed.',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentId: { type: 'string' },
+          invoiceId: { type: 'string' },
+        },
+        required: ['paymentId', 'invoiceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await paymentsService.update(
+        companyId,
+        args.paymentId as string,
+        AI_PAYMENT_ACTOR,
+        { invoiceId: args.invoiceId as string },
+      );
+      return `Linked payment to invoice`;
+    },
+  },
+  {
+    definition: {
+      name: 'link_payment_to_deal',
+      description: 'Link or relink a payment to a deal. When the payment is PAID, the deal can auto-move to WON (depending on company config).',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentId: { type: 'string' },
+          dealId: { type: 'string' },
+        },
+        required: ['paymentId', 'dealId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await paymentsService.update(
+        companyId,
+        args.paymentId as string,
+        AI_PAYMENT_ACTOR,
+        { dealId: args.dealId as string },
+      );
+      return `Linked payment to deal`;
+    },
+  },
+  {
+    definition: {
+      name: 'add_payment_note',
+      description: 'Drop a note on the payment timeline.',
+      parameters: {
+        type: 'object',
+        properties: { paymentId: { type: 'string' }, body: { type: 'string' } },
+        required: ['paymentId', 'body'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await paymentsService.addNote(
+        companyId,
+        args.paymentId as string,
+        AI_PAYMENT_ACTOR,
+        args.body as string,
+      );
+      return `Note added`;
+    },
+  },
+  {
+    definition: {
+      name: 'delete_payment',
+      description: 'Permanently delete a payment. Cannot delete PAID or REFUNDED payments — they are part of the financial record.',
+      parameters: { type: 'object', properties: { paymentId: { type: 'string' } }, required: ['paymentId'] },
+    },
+    execute: async (args, companyId) => {
+      await paymentsService.remove(companyId, args.paymentId as string);
+      return `Deleted`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_payment_stats',
+      description: 'Aggregate payment stats for the last N days — received, pending, refunded, success rate, by status, by provider.',
+      parameters: {
+        type: 'object',
+        properties: { days: { type: 'number', description: 'Lookback window. Default 30.' } },
+      },
+    },
+    execute: async (args, companyId) => {
+      const s = await paymentsService.stats(
+        companyId,
+        typeof args.days === 'number' ? args.days : 30,
+      );
+      return `Payments (${s.rangeDays}d): ${s.totalPayments} total\n` +
+        `Received: ${formatMinor(s.totalReceived)} · Pending: ${formatMinor(s.totalPending)} · Refunded: ${formatMinor(s.totalRefunded)}\n` +
+        `Success rate: ${s.successRate ?? 'n/a'}% · Average: ${s.averageAmount !== null ? formatMinor(s.averageAmount) : 'n/a'}\n` +
+        `By status: ${Object.entries(s.byStatus).map(([k, v]) => `${k}=${v}`).join(' · ') || '(none)'}\n` +
+        `By provider: ${Object.entries(s.byProvider).map(([k, v]) => `${k}=${v}`).join(' · ') || '(none)'}`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_payment_timeline',
+      description: 'Fetch the activity timeline for a payment (most recent first).',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentId: { type: 'string' },
+          limit: { type: 'number' },
+        },
+        required: ['paymentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const events = await paymentsService.getTimeline(
+        companyId,
+        args.paymentId as string,
+        typeof args.limit === 'number' ? args.limit : 30,
+      );
+      if (events.length === 0) return 'No activity.';
+      return events
+        .map((e) => `[${e.createdAt.toISOString()}] ${e.type} (${e.actorType}) — ${e.title}${e.body ? '\n  ' + e.body : ''}`)
+        .join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_payment_link_url',
+      description: 'Get the gateway-hosted payment URL for a payment. Useful for sharing via WhatsApp/email.',
+      parameters: { type: 'object', properties: { paymentId: { type: 'string' } }, required: ['paymentId'] },
+    },
+    execute: async (args, companyId) => {
+      const p = await paymentsService.get(companyId, args.paymentId as string);
+      if (!p.linkUrl) {
+        return `MEMORY_SEARCH_UNAVAILABLE: no gateway URL — this is a ${p.provider === 'NONE' ? 'manual (provider=NONE)' : 'pending'} payment without a hosted link`;
+      }
+      return p.linkUrl;
+    },
+  },
+  {
+    definition: {
+      name: 'list_payments_for_invoice',
+      description: 'List all payments linked to a specific invoice. Useful for seeing partial-payment history.',
+      parameters: {
+        type: 'object',
+        properties: { invoiceId: { type: 'string' } },
+        required: ['invoiceId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { items, total } = await paymentsService.list(companyId, {
+        invoiceId: args.invoiceId as string,
+        limit: 50,
+      });
+      if (items.length === 0) return 'No payments linked to this invoice.';
+      return `${items.length}/${total} payments:\n` + items
+        .map((p) => `- [${p.status}] ${formatMinor(p.amount, p.currency)} · ${p.provider}${p.method ? `/${p.method}` : ''} · ${p.paidAt ? 'paid ' + new Date(p.paidAt).toLocaleDateString() : 'pending'} (id: ${p.id})`)
+        .join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'list_payments_for_contact',
+      description: 'List all payments received from a contact across all invoices and deals.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contactId: { type: 'string' },
+          status: { type: 'string', description: 'Optional status filter' },
+        },
+        required: ['contactId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { items, total } = await paymentsService.list(companyId, {
+        contactId: args.contactId as string,
+        status: args.status ? (String(args.status).split(',') as never) : undefined,
+        limit: 50,
+      });
+      if (items.length === 0) return 'No payments from this contact.';
+      return `${items.length}/${total} payments:\n` + items
+        .map((p) => `- [${p.status}] ${formatMinor(p.amount, p.currency)} · ${p.description ?? ''} · ${new Date(p.createdAt).toLocaleDateString()}`)
+        .join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_cancel_payments',
+      description: 'Cancel multiple PENDING payments at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          paymentIds: { type: 'array', items: { type: 'string' } },
+          reason: { type: 'string' },
+        },
+        required: ['paymentIds'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await paymentsService.bulkCancel(
+        companyId,
+        args.paymentIds as string[],
+        AI_PAYMENT_ACTOR,
+        args.reason as string | undefined,
+      );
+      return `Cancelled ${r.updated}, failed ${r.failed}.`;
     },
   },
 
@@ -6641,6 +7061,9 @@ const CORE_TOOL_NAMES = new Set([
   // Invoices (full lifecycle — 22 tools total, 8 exposed by default)
   'list_invoices', 'get_invoice', 'create_invoice', 'add_invoice_line_item',
   'send_invoice', 'record_invoice_payment', 'create_invoice_from_quote', 'get_invoice_stats',
+  // Payments (full lifecycle — 18 tools total, 7 exposed by default)
+  'list_payments', 'get_payment', 'create_payment_link', 'record_manual_payment',
+  'refund_payment', 'get_payment_stats', 'list_payments_for_invoice',
   // Communication
   'send_whatsapp', 'list_conversations',
   // Analytics

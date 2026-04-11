@@ -523,16 +523,36 @@ exports.Prisma.PaymentScalarFieldEnum = {
   provider: 'provider',
   externalId: 'externalId',
   linkUrl: 'linkUrl',
+  refundId: 'refundId',
+  refundedAmount: 'refundedAmount',
+  refundReason: 'refundReason',
+  method: 'method',
   amount: 'amount',
   currency: 'currency',
   description: 'description',
+  notes: 'notes',
+  tags: 'tags',
   status: 'status',
   paidAt: 'paidAt',
   refundedAt: 'refundedAt',
   webhookPayload: 'webhookPayload',
   idempotencyKey: 'idempotencyKey',
+  createdByUserId: 'createdByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaymentActivityScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.BroadcastScalarFieldEnum = {
@@ -1669,6 +1689,27 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
   EXPIRED: 'EXPIRED'
 };
 
+exports.PaymentActivityType = exports.$Enums.PaymentActivityType = {
+  CREATED: 'CREATED',
+  LINK_GENERATED: 'LINK_GENERATED',
+  SENT_TO_CUSTOMER: 'SENT_TO_CUSTOMER',
+  VIEWED_BY_CUSTOMER: 'VIEWED_BY_CUSTOMER',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED',
+  REFUND_INITIATED: 'REFUND_INITIATED',
+  REFUND_FAILED: 'REFUND_FAILED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
+  MANUAL_RECORDED: 'MANUAL_RECORDED',
+  WEBHOOK_RECEIVED: 'WEBHOOK_RECEIVED',
+  FIELD_UPDATED: 'FIELD_UPDATED',
+  NOTE_ADDED: 'NOTE_ADDED',
+  LINKED_TO_INVOICE: 'LINKED_TO_INVOICE',
+  LINKED_TO_DEAL: 'LINKED_TO_DEAL',
+  ERROR: 'ERROR'
+};
+
 exports.BroadcastStatus = exports.$Enums.BroadcastStatus = {
   DRAFT: 'DRAFT',
   SCHEDULED: 'SCHEDULED',
@@ -2010,6 +2051,7 @@ exports.Prisma.ModelName = {
   AiContextCache: 'AiContextCache',
   PaymentConfig: 'PaymentConfig',
   Payment: 'Payment',
+  PaymentActivity: 'PaymentActivity',
   Broadcast: 'Broadcast',
   BroadcastRecipient: 'BroadcastRecipient',
   BroadcastActivity: 'BroadcastActivity',

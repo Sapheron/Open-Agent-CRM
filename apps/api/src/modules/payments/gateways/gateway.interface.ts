@@ -23,6 +23,26 @@ export interface WebhookVerifyResult {
   paidAt?: Date;
 }
 
+export interface RefundOptions {
+  /** Gateway's payment id (externalId on our Payment row). */
+  externalId: string;
+  /** Optional — defaults to a full refund when omitted. Minor units. */
+  amount?: number;
+  /** Human-readable reason passed through to the gateway where supported. */
+  reason?: string;
+  /** Used to prevent double-refunds on retry. */
+  idempotencyKey: string;
+}
+
+export interface RefundResult {
+  /** Gateway's refund id. */
+  refundId: string;
+  /** Amount actually refunded in minor units. */
+  amount: number;
+  /** Most gateways return 'processed' / 'pending' — we treat either as success. */
+  status: 'processed' | 'pending';
+}
+
 export interface PaymentGateway {
   readonly provider: string;
 
@@ -34,4 +54,12 @@ export interface PaymentGateway {
 
   /** Test connection with current credentials */
   testConnection(): Promise<{ ok: boolean; error?: string }>;
+
+  /**
+   * Issue a refund through the gateway. Optional — providers that don't
+   * expose a refund API (or that we haven't wired in Phase 1) leave this
+   * undefined, and the service throws a helpful error when the user tries
+   * to refund through the CRM.
+   */
+  refund?(opts: RefundOptions): Promise<RefundResult>;
 }

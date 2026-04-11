@@ -1,5 +1,12 @@
 import { createHmac } from 'crypto';
-import type { PaymentGateway, CreatePaymentLinkOptions, PaymentLinkResult, WebhookVerifyResult } from './gateway.interface';
+import type {
+  PaymentGateway,
+  CreatePaymentLinkOptions,
+  PaymentLinkResult,
+  WebhookVerifyResult,
+  RefundOptions,
+  RefundResult,
+} from './gateway.interface';
 
 export class RazorpayGateway implements PaymentGateway {
   readonly provider = 'razorpay';
@@ -82,5 +89,55 @@ export class RazorpayGateway implements PaymentGateway {
     } catch (e: unknown) {
       return { ok: false, error: (e as Error).message };
     }
+  }
+
+  async refund(opts: RefundOptions): Promise<RefundResult> {
+    // Razorpay requires the underlying payment id (not payment_link id). We
+    // assume externalId here is the payment_link id — look up the linked
+    // payment first, then issue the refund.
+    const linkRes = await fetch(
+      `https://api.razorpay.com/v1/payment_links/${opts.externalId}`,
+      { headers: { Authorization: this.authHeader } },
+    );
+    if (!linkRes.ok) {
+      throw new Error(`Razorpay: could not resolve payment link ${opts.externalId}`);
+    }
+    const linkData = (await linkRes.json()) as {
+      payments?: Array<{ payment_id: string; status: string }>;
+    };
+    const paidPayment = linkData.payments?.find((p) => p.status === 'captured');
+    if (!paidPayment?.payment_id) {
+      throw new Error(`Razorpay: no captured payment found on link ${opts.externalId}`);
+    }
+
+    const res = await fetch(
+      `https://api.razorpay.com/v1/payments/${paidPayment.payment_id}/refund`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: this.authHeader,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': opts.idempotencyKey,
+        },
+        body: JSON.stringify({
+          amount: opts.amount,
+          notes: opts.reason ? { reason: opts.reason } : undefined,
+        }),
+      },
+    );
+    if (!res.ok) {
+      const err = (await res.json()) as { error?: { description?: string } };
+      throw new Error(err.error?.description ?? 'Razorpay refund failed');
+    }
+    const data = (await res.json()) as {
+      id: string;
+      amount: number;
+      status: 'processed' | 'pending';
+    };
+    return {
+      refundId: data.id,
+      amount: data.amount,
+      status: data.status,
+    };
   }
 }

@@ -1,5 +1,12 @@
 import { createHmac } from 'crypto';
-import type { PaymentGateway, CreatePaymentLinkOptions, PaymentLinkResult, WebhookVerifyResult } from './gateway.interface';
+import type {
+  PaymentGateway,
+  CreatePaymentLinkOptions,
+  PaymentLinkResult,
+  WebhookVerifyResult,
+  RefundOptions,
+  RefundResult,
+} from './gateway.interface';
 
 export class StripeGateway implements PaymentGateway {
   readonly provider = 'stripe';
@@ -85,5 +92,36 @@ export class StripeGateway implements PaymentGateway {
     } catch (e: unknown) {
       return { ok: false, error: (e as Error).message };
     }
+  }
+
+  async refund(opts: RefundOptions): Promise<RefundResult> {
+    // externalId is the Checkout Session id. Stripe refunds operate on a
+    // PaymentIntent, so we look up the session first to find it.
+    const sessionRes = await fetch(
+      `https://api.stripe.com/v1/checkout/sessions/${opts.externalId}`,
+      { headers: { Authorization: this.authHeader } },
+    );
+    if (!sessionRes.ok) {
+      throw new Error(`Stripe: could not resolve checkout session ${opts.externalId}`);
+    }
+    const session = (await sessionRes.json()) as { payment_intent?: string };
+    if (!session.payment_intent) {
+      throw new Error('Stripe: session has no payment_intent — cannot refund');
+    }
+    const body: Record<string, string> = {
+      payment_intent: session.payment_intent,
+    };
+    if (opts.amount !== undefined) body.amount = String(opts.amount);
+    if (opts.reason) body['metadata[reason]'] = opts.reason;
+    const data = (await this.stripePost('/refunds', body)) as {
+      id: string;
+      amount: number;
+      status: string;
+    };
+    return {
+      refundId: data.id,
+      amount: data.amount,
+      status: data.status === 'succeeded' ? 'processed' : 'pending',
+    };
   }
 }

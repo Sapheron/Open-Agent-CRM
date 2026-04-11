@@ -964,38 +964,91 @@ model PaymentConfig {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+enum PaymentActivityType {
+  CREATED
+  LINK_GENERATED
+  SENT_TO_CUSTOMER
+  VIEWED_BY_CUSTOMER
+  PAID
+  FAILED
+  REFUNDED
+  REFUND_INITIATED
+  REFUND_FAILED
+  CANCELLED
+  EXPIRED
+  MANUAL_RECORDED
+  WEBHOOK_RECEIVED
+  FIELD_UPDATED
+  NOTE_ADDED
+  LINKED_TO_INVOICE
+  LINKED_TO_DEAL
+  ERROR
+}
+
 model Payment {
-  id             String          @id @default(cuid())
-  companyId      String
-  contactId      String?
-  dealId         String?
+  id              String          @id @default(cuid())
+  companyId       String
+  contactId       String?
+  dealId          String?
   /// Link to an Invoice for reconciliation. When a payment webhook fires
   /// and this is set, InvoicesService.recordPayment is called to bump the
   /// invoice's amountPaid and transition status when fully paid.
-  invoiceId      String?
-  provider       PaymentProvider
-  externalId     String?
-  linkUrl        String?
-  amount         Int
-  currency       String          @default("INR")
-  description    String?
-  status         PaymentStatus   @default(PENDING)
-  paidAt         DateTime?
-  refundedAt     DateTime?
-  webhookPayload Json?
-  idempotencyKey String          @unique
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  invoiceId       String?
+  provider        PaymentProvider
+  externalId      String?
+  linkUrl         String?
+  /// Gateway-specific refund id returned by the provider when a refund succeeds.
+  refundId        String?
+  /// Amount actually refunded (minor units). May be less than total for partial refunds.
+  refundedAmount  Int             @default(0)
+  refundReason    String?
+  /// Payment method used — card, upi, netbanking, cash, bank_transfer, etc.
+  /// For manual (provider=NONE) payments this is filled by the admin.
+  method          String?
+  amount          Int
+  currency        String          @default("INR")
+  description     String?
+  notes           String?
+  tags            String[]        @default([])
+  status          PaymentStatus   @default(PENDING)
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  webhookPayload  Json?
+  idempotencyKey  String          @unique
+  createdByUserId String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  contact Contact? @relation(fields: [contactId], references: [id])
-  deal    Deal?    @relation(fields: [dealId], references: [id])
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact    Contact?          @relation(fields: [contactId], references: [id])
+  deal       Deal?             @relation(fields: [dealId], references: [id])
+  activities PaymentActivity[]
 
   @@index([companyId])
   @@index([externalId])
   @@index([status])
   @@index([idempotencyKey])
   @@index([invoiceId])
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+}
+
+model PaymentActivity {
+  id        String              @id @default(cuid())
+  paymentId String
+  companyId String
+  type      PaymentActivityType
+  actorType String // "user" | "ai" | "system" | "worker" | "webhook"
+  actorId   String?
+  title     String
+  body      String?
+  metadata  Json                @default("{}")
+  createdAt DateTime            @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, createdAt])
+  @@index([companyId, type, createdAt])
 }
 
 // ─── BROADCAST ────────────────────────────────────────────────────────────────
