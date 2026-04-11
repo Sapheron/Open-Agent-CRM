@@ -4448,12 +4448,22 @@ const tools: AdminTool[] = [
       },
     },
     execute: async (args, companyId) => {
-      const hits = await memoryService.search(companyId, args.query as string, {
+      const result = await memoryService.searchWithStatus(companyId, args.query as string, {
         maxResults: typeof args.maxResults === 'number' ? args.maxResults : 10,
         minScore: typeof args.minScore === 'number' ? args.minScore : undefined,
       });
-      if (hits.length === 0) return 'No memory hits.';
-      return hits
+      if (result.unavailable) {
+        // Distinct from "no hits" — the AI should explain to the user that
+        // memory search is broken instead of asserting absence.
+        return `MEMORY_SEARCH_UNAVAILABLE: ${result.unavailable.reason}. Tell the user you couldn't search memory; do NOT assert that the requested fact does not exist.`;
+      }
+      if (result.hits.length === 0) {
+        // Soft empty — the AI may still have the answer in MEMORY.md (which is
+        // implicitly available through memory_get). Suggest that path instead
+        // of refusing.
+        return 'No matching chunks. If you suspect the fact may exist in MEMORY.md, call `memory_get` with path="MEMORY.md" to read it directly before answering.';
+      }
+      return result.hits
         .map(
           (h, i) =>
             `${i + 1}. [score=${h.score.toFixed(3)}] ${h.path}:${h.startLine}-${h.endLine}\n${h.text.slice(0, 300)}`,
