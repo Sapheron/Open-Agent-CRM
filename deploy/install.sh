@@ -486,7 +486,7 @@ const slug = rawName.toLowerCase().replace(/[^a-z0-9]/g, "-");
   res = await db.query('SELECT id FROM "PaymentConfig" WHERE "companyId"=$1', [companyId]);
   if (res.rows.length === 0) {
     await db.query(
-      'INSERT INTO "PaymentConfig" (id,"companyId","createdAt","updatedAt") VALUES ($1,$2,NOW(),NOW())',
+      'INSERT INTO "PaymentConfig" (id,"companyId","updatedAt") VALUES ($1,$2,NOW())',
       [randomUUID(), companyId]
     );
   }
