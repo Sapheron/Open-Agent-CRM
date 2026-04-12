@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Users, UserPlus, Trash2, Crown, Shield, User, Check } from 'lucide-react';
+import { Users, UserPlus, Trash2, Crown, Shield, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PERMISSION_GROUPS, PERMISSION_LABELS, type Permission } from '@wacrm/shared';
 
@@ -317,8 +317,6 @@ export default function TeamSettingsPage() {
           members.map((member) => {
             const _RoleIcon = ROLE_ICONS[member.role] ?? User;
             const isStaff = member.role === 'AGENT';
-            const isAdmin = member.role === 'ADMIN' || member.role === 'SUPER_ADMIN';
-
             return (
               <div key={member.id} className="p-4">
                 <div className="flex items-center gap-4">
