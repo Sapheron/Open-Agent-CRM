@@ -14,9 +14,6 @@ interface WaAccount {
   phoneNumber: string;
   displayName?: string;
   status: string;
-  warmupStage: number;
-  messagesSentToday: number;
-  dailyMessageLimit: number;
   lastConnectedAt?: string;
   userId?: string;
   user?: { id: string; firstName: string; lastName: string; email: string };
@@ -116,21 +113,6 @@ function AccountCard({
           <p className="text-sm text-violet-600 font-medium">WhatsApp connected successfully!</p>
         </div>
       )}
-
-      <div className="grid grid-cols-3 gap-3 text-center mb-4">
-        <div className="bg-gray-50 rounded-lg p-2">
-          <p className="text-lg font-bold text-gray-900">{account.warmupStage}/5</p>
-          <p className="text-xs text-gray-500">Warmup stage</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-2">
-          <p className="text-lg font-bold text-gray-900">{account.messagesSentToday}</p>
-          <p className="text-xs text-gray-500">Sent today</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-2">
-          <p className="text-lg font-bold text-gray-900">{account.dailyMessageLimit}</p>
-          <p className="text-xs text-gray-500">Daily limit</p>
-        </div>
-      </div>
 
       <div className="flex gap-2">
         <button

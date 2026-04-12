@@ -30,17 +30,13 @@ export class WhatsAppSettingsService {
         phoneNumber: true,
         displayName: true,
         status: true,
-        provider: true,
-        warmupStage: true,
-        dailyMessageLimit: true,
-        messagesSentToday: true,
         lastConnectedAt: true,
-        lastErrorAt: true,
         userId: true,
         user: isAdmin
           ? { select: { id: true, firstName: true, lastName: true, email: true } }
           : false,
-        // Never return sessionDataEnc or accessTokenEnc
+        // Never return sessionDataEnc, accessTokenEnc, or warmup stats
+        // (warmup is only relevant for bulk broadcasts, not AI chat)
       },
       orderBy: { createdAt: 'desc' },
     });
