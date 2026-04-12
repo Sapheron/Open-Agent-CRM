@@ -397,6 +397,8 @@ export class AiChatService {
     companyId: string,
     userMessages: { role: string; content: string; attachments?: ChatAttachment[] }[],
     _conversationId?: string,
+    userPermissions: string[] = [],
+    userRole: string = 'AGENT',
   ) {
     const config = await prisma.aiConfig.findUnique({ where: { companyId } });
     if (!config || !config.apiKeyEncrypted) {
@@ -404,7 +406,7 @@ export class AiChatService {
     }
 
     const apiKey = decrypt(config.apiKeyEncrypted);
-    const tools = getAdminToolDefinitions();
+    const tools = getAdminToolDefinitions(userPermissions, userRole);
     const actions: ToolAction[] = [];
     const start = Date.now();
     const supportsImages = modelSupportsImages(config.model);
@@ -493,6 +495,8 @@ export class AiChatService {
 
           const result = await executeAdminTool(tc.function.name, args, companyId, {
             attachments: latestUserAttachments,
+            userPermissions,
+            userRole,
           });
           actions.push({ tool: tc.function.name, args, result });
 

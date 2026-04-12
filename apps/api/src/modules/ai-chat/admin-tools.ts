@@ -126,6 +126,9 @@ const AI_PAYMENT_ACTOR: PaymentActor = { type: 'ai' };
 const AI_TICKET_ACTOR: TicketActor = { type: 'ai' };
 const AI_KB_ACTOR: KBArticleActor = { type: 'ai' };
 
+// Import permission helpers for RBAC
+import { getToolPermission } from '@wacrm/shared';
+
 /**
  * Per-call execution context — anything that isn't part of the AI's tool args
  * but is needed to fulfill the call. Currently used to surface the user's
@@ -134,6 +137,8 @@ const AI_KB_ACTOR: KBArticleActor = { type: 'ai' };
  */
 export interface ToolContext {
   attachments?: ChatAttachment[];
+  userPermissions?: string[];
+  userRole?: string;
 }
 
 const redis = new Redis((process.env.REDIS_URL || '').trim());
@@ -7613,10 +7618,23 @@ const CORE_TOOL_NAMES = new Set([
 
 // ── Exports ─────────────────────────────────────────────────────────────────
 
-export function getAdminToolDefinitions(): ToolDefinition[] {
-  // Only send core tools to AI to prevent token overflow
+export function getAdminToolDefinitions(userPermissions: string[] = [], userRole: string = 'AGENT'): ToolDefinition[] {
+  // Admins get all tools. Staff only get tools for features they have permission to access.
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
+  const permissionSet = new Set(userPermissions);
+
   return tools
-    .filter((t) => CORE_TOOL_NAMES.has(t.definition.name))
+    .filter((t) => {
+      // First filter: must be in CORE_TOOL_NAMES (token limit)
+      if (!CORE_TOOL_NAMES.has(t.definition.name)) return false;
+
+      // Second filter: staff must have permission for this tool's feature
+      if (!isAdmin) {
+        const requiredPerm = getToolPermission(t.definition.name);
+        if (requiredPerm && !permissionSet.has(requiredPerm)) return false;
+      }
+      return true;
+    })
     .map((t) => t.definition);
 }
 
@@ -7669,14 +7687,25 @@ export interface CatalogEntry {
  * category attached, ready to be rendered as a docs page or pulled into a
  * GUI tool palette.
  */
-export function getAdminToolCatalog(): CatalogEntry[] {
-  return tools.map((t) => ({
-    name: t.definition.name,
-    description: t.definition.description,
-    category: categorizeTool(t.definition.name),
-    core: CORE_TOOL_NAMES.has(t.definition.name),
-    parameters: t.definition.parameters,
-  }));
+export function getAdminToolCatalog(userPermissions: string[] = [], userRole: string = 'AGENT'): CatalogEntry[] {
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
+  const permissionSet = new Set(userPermissions);
+
+  return tools
+    .filter((t) => {
+      if (!isAdmin) {
+        const requiredPerm = getToolPermission(t.definition.name);
+        if (requiredPerm && !permissionSet.has(requiredPerm)) return false;
+      }
+      return true;
+    })
+    .map((t) => ({
+      name: t.definition.name,
+      description: t.definition.description,
+      category: categorizeTool(t.definition.name),
+      core: CORE_TOOL_NAMES.has(t.definition.name),
+      parameters: t.definition.parameters,
+    }));
 }
 
 export async function executeAdminTool(
@@ -7687,6 +7716,19 @@ export async function executeAdminTool(
 ): Promise<string> {
   const tool = tools.find((t) => t.definition.name === name);
   if (!tool) return `Unknown tool: ${name}`;
+
+  // Permission check: staff must have permission for this tool's feature
+  const userRole = context.userRole ?? 'AGENT';
+  const userPermissions = context.userPermissions ?? [];
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
+
+  if (!isAdmin) {
+    const requiredPerm = getToolPermission(name);
+    if (requiredPerm && !userPermissions.includes(requiredPerm)) {
+      return `Permission denied: you do not have access to the "${requiredPerm}" feature required for this tool.`;
+    }
+  }
+
   try {
     return await tool.execute(args, companyId, context);
   } catch (err: unknown) {

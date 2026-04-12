@@ -3,12 +3,14 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatConversationsService } from './chat-conversations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '@wacrm/database';
 
 @ApiTags('chat-conversations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('ai_chat')
 @Controller('chat/conversations')
 export class ChatConversationsController {
   constructor(private readonly svc: ChatConversationsService) {}

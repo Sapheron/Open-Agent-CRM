@@ -20,6 +20,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ApiKeyAuthGuard } from '../../common/guards/api-key-auth.guard';
 import { RequireScope } from '../../common/decorators/require-scope.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { FormsService } from './forms.service';
 import type { SubmissionMeta } from './forms.types';
 
@@ -31,6 +32,7 @@ interface ApiKeyRequest extends Request {
 @ApiTags('form-webhooks')
 @ApiBearerAuth()
 @Controller('webhooks/forms')
+@Public()
 @UseGuards(ApiKeyAuthGuard)
 export class FormsWebhookController {
   constructor(private readonly svc: FormsService) {}

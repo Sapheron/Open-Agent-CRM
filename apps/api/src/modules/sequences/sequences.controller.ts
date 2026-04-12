@@ -13,6 +13,7 @@ import { SequencesService } from './sequences.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User } from '@wacrm/database';
 import type {
   CreateSequenceDto,
@@ -26,6 +27,7 @@ import type {
 @ApiTags('sequences')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('sequences')
 @Controller('sequences')
 export class SequencesController {
   constructor(private readonly svc: SequencesService) {}

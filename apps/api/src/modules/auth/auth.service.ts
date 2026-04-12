@@ -16,6 +16,7 @@ export interface JwtPayload {
   cid: string;       // companyId
   role: UserRole;
   email: string;
+  perms: string[];   // permissions
 }
 
 export interface AuthTokens {
@@ -27,6 +28,7 @@ export interface AuthTokens {
     firstName: string;
     lastName: string;
     role: UserRole;
+    permissions: string[];
     companyId: string;
   };
 }
@@ -144,11 +146,13 @@ export class AuthService {
   // ── Private helpers ────────────────────────────────────────────────────────
 
   private async issueTokens(user: User): Promise<AuthTokens> {
+    const permissions = user.permissions ?? [];
     const payload: JwtPayload = {
       sub: user.id,
       cid: user.companyId,
       role: user.role,
       email: user.email,
+      perms: permissions,
     };
 
     const accessToken = this.jwt.sign<JwtPayload>(payload, {
@@ -176,6 +180,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        permissions,
         companyId: user.companyId,
       },
     };

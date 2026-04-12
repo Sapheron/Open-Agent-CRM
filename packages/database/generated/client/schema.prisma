@@ -391,22 +391,24 @@ model User {
   lastName         String
   avatarUrl        String?
   role             UserRole  @default(AGENT)
+  permissions      String[]  @default([])
   isActive         Boolean   @default(true)
   refreshTokenHash String?
   lastLoginAt      DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignedConvs     Conversation[] @relation("AssignedAgent")
-  assignedLeads     Lead[]         @relation("AssignedAgent")
-  assignedDeals     Deal[]         @relation("AssignedAgent")
-  assignedTasks     Task[]         @relation("AssignedAgent")
-  createdTasks      Task[]         @relation("CreatedBy")
-  createdBroadcasts Broadcast[]    @relation("BroadcastCreatedBy")
-  createdSequences  Sequence[]     @relation("SequenceCreator")
-  createdTemplates  Template[]     @relation("TemplateCreator")
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedConvs     Conversation[]    @relation("AssignedAgent")
+  assignedLeads     Lead[]            @relation("AssignedAgent")
+  assignedDeals     Deal[]            @relation("AssignedAgent")
+  assignedTasks     Task[]            @relation("AssignedAgent")
+  createdTasks      Task[]            @relation("CreatedBy")
+  createdBroadcasts Broadcast[]       @relation("BroadcastCreatedBy")
+  createdSequences  Sequence[]        @relation("SequenceCreator")
+  createdTemplates  Template[]        @relation("TemplateCreator")
   auditLogs         AuditLog[]
+  whatsappAccounts  WhatsAppAccount[] @relation("UserWhatsApp")
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -418,6 +420,7 @@ model User {
 model WhatsAppAccount {
   id                String          @id @default(cuid())
   companyId         String
+  userId            String?
   phoneNumber       String
   displayName       String?
   status            WaAccountStatus @default(DISCONNECTED)
@@ -438,11 +441,13 @@ model WhatsAppAccount {
   updatedAt         DateTime        @updatedAt
 
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user          User?          @relation("UserWhatsApp", fields: [userId], references: [id], onDelete: SetNull)
   conversations Conversation[]
   messages      Message[]
 
   @@unique([companyId, phoneNumber])
   @@index([companyId])
+  @@index([userId])
   @@index([status])
 }
 

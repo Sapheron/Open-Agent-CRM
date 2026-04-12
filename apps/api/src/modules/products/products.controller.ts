@@ -14,6 +14,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User } from '@wacrm/database';
 
 class AdjustStockBody {
@@ -55,6 +56,7 @@ function userActor(user: User): ProductActor {
 @ApiTags('products')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly svc: ProductsService) {}

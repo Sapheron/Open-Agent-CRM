@@ -7,6 +7,7 @@ import { ChatConversationsService } from '../chat-conversations/chat-conversatio
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User } from '@wacrm/database';
 import { normalizeAttachments, type ChatAttachment } from './attachments';
 import { getAdminToolCatalog } from './admin-tools';
@@ -44,6 +45,7 @@ class AiChatBody {
 @ApiTags('ai-chat')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('ai_chat')
 @Controller('ai/chat')
 export class AiChatController {
   constructor(
@@ -53,8 +55,8 @@ export class AiChatController {
 
   @Get('tools')
   @ApiOperation({ summary: 'List all AI admin tools (for the docs page)' })
-  listTools() {
-    return getAdminToolCatalog();
+  listTools(@CurrentUser() user: User) {
+    return getAdminToolCatalog(user.permissions ?? [], user.role);
   }
 
   @Post()
@@ -85,7 +87,13 @@ export class AiChatController {
       }
     }
 
-    const result = await this.svc.chat(user.companyId, normalized, body.conversationId);
+    const result = await this.svc.chat(
+      user.companyId,
+      normalized,
+      body.conversationId,
+      user.permissions ?? [],
+      user.role,
+    );
 
     // Save assistant response to conversation
     if (body.conversationId) {

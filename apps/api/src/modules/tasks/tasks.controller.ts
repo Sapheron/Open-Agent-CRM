@@ -15,6 +15,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   User,
   TaskStatus,
@@ -108,6 +109,7 @@ function userActor(user: User): TaskActor {
 @ApiTags('tasks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('tasks')
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly svc: TasksService) {}

@@ -18,6 +18,7 @@ import type { KBArticleStatus, User } from '@wacrm/database';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type {
   CreateKBArticleDto,
@@ -32,6 +33,7 @@ function userActor(user: User): KBArticleActor {
 @ApiTags('knowledge-base')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('kb')
 @Controller('kb')
 export class KnowledgeBaseController {
   constructor(private readonly svc: KnowledgeBaseService) {}

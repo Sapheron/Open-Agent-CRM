@@ -12,10 +12,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Public } from '../../common/decorators/public.decorator';
 import { KnowledgeBaseService } from './knowledge-base.service';
 
 @ApiTags('public-kb')
 @Controller('public/kb')
+@Public()
 export class PublicKBController {
   constructor(private readonly svc: KnowledgeBaseService) {}
 

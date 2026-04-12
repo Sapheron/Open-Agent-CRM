@@ -26,6 +26,7 @@ import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   CreatePaymentLinkDto,
   PaymentActor,
@@ -41,6 +42,7 @@ function userActor(user: User): PaymentActor {
 @ApiTags('payments')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(

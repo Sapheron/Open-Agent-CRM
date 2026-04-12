@@ -4,11 +4,13 @@ import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User } from '@wacrm/database';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('analytics')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly svc: AnalyticsService) {}

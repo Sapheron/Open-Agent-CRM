@@ -16,10 +16,12 @@ import {
   Param,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Public } from '../../common/decorators/public.decorator';
 import { InvoicesService } from './invoices.service';
 
 @ApiTags('public-invoices')
 @Controller('public/invoices')
+@Public()
 export class PublicInvoiceController {
   constructor(private readonly svc: InvoicesService) {}
 

@@ -5,11 +5,13 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { prisma } from '@wacrm/database';
 import { decrypt } from '@wacrm/shared';
+import { Public } from '../../common/decorators/public.decorator';
 import { GatewayFactory } from './gateways/gateway.factory';
 import { PaymentsService } from './payments.service';
 
 @ApiTags('webhooks')
 @Controller('webhooks/payment')
+@Public()
 export class PaymentsWebhookController {
   constructor(private readonly paymentsService: PaymentsService) {}
 

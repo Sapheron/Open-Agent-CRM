@@ -3,12 +3,14 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { IntegrationsService } from './integrations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '@wacrm/database';
 
 @ApiTags('integrations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('integrations')
 @Controller('integrations')
 export class IntegrationsController {
   constructor(private readonly svc: IntegrationsService) {}

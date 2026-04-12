@@ -10,6 +10,8 @@ export interface CreateMemberDto {
   /** Admin sets the password directly — no invite flow. */
   password: string;
   role?: UserRole;
+  /** For AGENT role, the specific feature permissions to grant. Ignored for ADMIN/SUPER_ADMIN. */
+  permissions?: string[];
 }
 
 @Injectable()
@@ -24,6 +26,7 @@ export class TeamService {
         lastName: true,
         avatarUrl: true,
         role: true,
+        permissions: true,
         lastLoginAt: true,
         createdAt: true,
       },
@@ -73,6 +76,9 @@ export class TeamService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
+    const role = dto.role ?? 'AGENT';
+    const permissions = (role === 'AGENT' || role === 'MANAGER') ? (dto.permissions ?? []) : [];
+
     return prisma.user.create({
       data: {
         companyId,
@@ -80,7 +86,8 @@ export class TeamService {
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
         passwordHash,
-        role: dto.role ?? 'AGENT',
+        role,
+        permissions,
       },
       select: {
         id: true,
@@ -88,6 +95,7 @@ export class TeamService {
         firstName: true,
         lastName: true,
         role: true,
+        permissions: true,
         createdAt: true,
       },
     });
@@ -101,7 +109,23 @@ export class TeamService {
     return prisma.user.update({
       where: { id: targetUserId },
       data: { role },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, permissions: true },
+    });
+  }
+
+  async updatePermissions(companyId: string, targetUserId: string, permissions: string[], requestingUserId: string) {
+    if (targetUserId === requestingUserId) {
+      throw new ForbiddenException('Cannot change your own permissions');
+    }
+    const user = await this.get(companyId, targetUserId);
+    // Only AGENT and MANAGER roles can have custom permissions. ADMIN/SUPER_ADMIN bypass permission checks entirely.
+    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      throw new ForbiddenException('Cannot set permissions on admin users');
+    }
+    return prisma.user.update({
+      where: { id: targetUserId },
+      data: { permissions },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, permissions: true },
     });
   }
 

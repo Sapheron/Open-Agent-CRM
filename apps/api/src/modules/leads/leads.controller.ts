@@ -14,6 +14,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User, LeadStatus, LeadSource, LeadPriority, LeadActivityType } from '@wacrm/database';
 
 const LEAD_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATING', 'WON', 'LOST', 'DISQUALIFIED'] as const;
@@ -74,6 +75,7 @@ function userActor(user: User): LeadActor {
 @ApiTags('leads')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('leads')
 @Controller('leads')
 export class LeadsController {
   constructor(private readonly svc: LeadsService) {}

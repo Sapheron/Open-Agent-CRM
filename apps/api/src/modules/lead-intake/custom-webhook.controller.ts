@@ -12,6 +12,7 @@ import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiKeyAuthGuard } from '../../common/guards/api-key-auth.guard';
 import { RequireScope } from '../../common/decorators/require-scope.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { LeadIntakeService } from './lead-intake.service';
 import type { CreateLeadDto } from '../leads/leads.types';
 
@@ -21,6 +22,7 @@ interface ApiKeyRequest extends Request {
 }
 
 @Controller('webhooks/leads/custom')
+@Public()
 @UseGuards(ApiKeyAuthGuard)
 export class CustomLeadsWebhookController {
   constructor(private readonly intake: LeadIntakeService) {}

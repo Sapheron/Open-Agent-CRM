@@ -20,6 +20,7 @@ import { QuotesService } from './quotes.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   CreateQuoteDto,
   LineItemInput,
@@ -35,6 +36,7 @@ function userActor(user: User): QuoteActor {
 @ApiTags('quotes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('quotes')
 @Controller('quotes')
 export class QuotesController {
   constructor(private readonly svc: QuotesService) {}

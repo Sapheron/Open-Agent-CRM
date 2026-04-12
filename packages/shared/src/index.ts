@@ -10,6 +10,7 @@ export * from './fsm/conversation.fsm';
 export * from './constants/ws-events';
 export * from './constants/queue-names';
 export * from './constants/deal-stages';
+export * from './constants/permissions';
 
 // Validators
 export * from './validators/contact.schema';

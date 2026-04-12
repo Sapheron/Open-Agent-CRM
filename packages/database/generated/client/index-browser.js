@@ -145,6 +145,7 @@ exports.Prisma.UserScalarFieldEnum = {
   lastName: 'lastName',
   avatarUrl: 'avatarUrl',
   role: 'role',
+  permissions: 'permissions',
   isActive: 'isActive',
   refreshTokenHash: 'refreshTokenHash',
   lastLoginAt: 'lastLoginAt',
@@ -155,6 +156,7 @@ exports.Prisma.UserScalarFieldEnum = {
 exports.Prisma.WhatsAppAccountScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
+  userId: 'userId',
   phoneNumber: 'phoneNumber',
   displayName: 'displayName',
   status: 'status',

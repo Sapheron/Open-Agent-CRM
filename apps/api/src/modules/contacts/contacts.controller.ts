@@ -6,12 +6,14 @@ import { ContactsService, CreateContactDto } from './contacts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User } from '@wacrm/database';
 import type { Response } from 'express';
 
 @ApiTags('contacts')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('contacts')
 @Controller('contacts')
 export class ContactsController {
   constructor(private readonly svc: ContactsService) {}

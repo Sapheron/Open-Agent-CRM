@@ -4,6 +4,7 @@ import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { AiMemoryService } from './ai-memory.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '@wacrm/database';
 
@@ -23,6 +24,7 @@ class UpdateMemoryDto {
 @ApiTags('ai-memory')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('memory')
 @Controller('ai/memory')
 export class AiMemoryController {
   constructor(private readonly svc: AiMemoryService) {}

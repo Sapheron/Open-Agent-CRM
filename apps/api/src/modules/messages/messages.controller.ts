@@ -4,6 +4,7 @@ import { IsString, IsOptional } from 'class-validator';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { prisma } from '@wacrm/database';
 import { NotFoundException } from '@nestjs/common';
@@ -19,6 +20,7 @@ class SendMessageBody {
 @ApiTags('messages')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('whatsapp')
 @Controller('messages')
 export class MessagesController {
   private readonly redis: Redis;

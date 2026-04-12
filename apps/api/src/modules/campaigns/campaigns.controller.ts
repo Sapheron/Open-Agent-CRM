@@ -28,6 +28,7 @@ import { CampaignsService } from './campaigns.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   CampaignActor,
   CampaignAudienceFilter,
@@ -42,6 +43,7 @@ function userActor(user: User): CampaignActor {
 @ApiTags('campaigns')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('campaigns')
 @Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly svc: CampaignsService) {}

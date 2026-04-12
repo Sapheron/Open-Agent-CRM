@@ -23,11 +23,13 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { prisma } from '@wacrm/database';
+import { Public } from '../../common/decorators/public.decorator';
 import { FormsService } from './forms.service';
 import type { SubmissionMeta } from './forms.types';
 
 @ApiTags('public-forms')
 @Controller('public/forms')
+@Public()
 export class PublicFormController {
   constructor(private readonly svc: FormsService) {}
 

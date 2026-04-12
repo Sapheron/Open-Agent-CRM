@@ -20,6 +20,7 @@ import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   CreateInvoiceDto,
   InvoiceActor,
@@ -35,6 +36,7 @@ function userActor(user: User): InvoiceActor {
 @ApiTags('invoices')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('invoices')
 @Controller('invoices')
 export class InvoicesController {
   constructor(private readonly svc: InvoicesService) {}

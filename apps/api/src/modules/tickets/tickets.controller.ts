@@ -23,6 +23,7 @@ import { TicketsService } from './tickets.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   CreateTicketDto,
   TicketActor,
@@ -36,6 +37,7 @@ function userActor(user: User): TicketActor {
 @ApiTags('tickets')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('tickets')
 @Controller('tickets')
 export class TicketsController {
   constructor(private readonly svc: TicketsService) {}

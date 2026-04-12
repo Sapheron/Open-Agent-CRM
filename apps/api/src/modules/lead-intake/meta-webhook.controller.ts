@@ -20,6 +20,7 @@ import type { RawBodyRequest } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { LeadIntakeService } from './lead-intake.service';
+import { Public } from '../../common/decorators/public.decorator';
 
 interface MetaWebhookPayload {
   object?: string;
@@ -41,6 +42,7 @@ interface MetaWebhookPayload {
 }
 
 @Controller('webhooks/leads/meta')
+@Public()
 export class MetaLeadsWebhookController {
   constructor(private readonly intake: LeadIntakeService) {}
 

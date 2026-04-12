@@ -16,6 +16,7 @@ import type {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User, TemplateType, TemplateCategory, TemplateStatus } from '@wacrm/database';
 import { prisma } from '@wacrm/database';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
@@ -33,6 +34,7 @@ function userActor(user: User): TemplateActor {
 @ApiTags('templates')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('templates')
 @Controller('templates')
 export class TemplatesController {
   constructor(private readonly svc: TemplatesService) {}

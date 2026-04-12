@@ -3,12 +3,14 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { WorkflowsService } from './workflows.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '@wacrm/database';
 
 @ApiTags('workflows')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('workflows')
 @Controller('workflows')
 export class WorkflowsController {
   constructor(private readonly svc: WorkflowsService) {}

@@ -7,6 +7,7 @@ import { IsString, IsOptional, IsNumber } from 'class-validator';
 import { MemoryService } from './memory.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '@wacrm/database';
 
@@ -26,6 +27,7 @@ class SearchDto {
 @ApiTags('memory')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('memory')
 @Controller('memory')
 export class MemoryController {
   constructor(private readonly memory: MemoryService) {}

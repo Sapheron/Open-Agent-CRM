@@ -24,10 +24,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { prisma } from '@wacrm/database';
+import { Public } from '../../common/decorators/public.decorator';
 import { QuotesService } from './quotes.service';
 
 @ApiTags('public-quotes')
 @Controller('public/quotes')
+@Public()
 export class PublicQuoteController {
   constructor(private readonly svc: QuotesService) {}
 

@@ -79,6 +79,18 @@ export class TeamController {
     return this.svc.updateRole(user.companyId, id, body.role, user.id);
   }
 
+  @Patch(':id/permissions')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Update permissions for a staff member (AGENT/MANAGER only)' })
+  updatePermissions(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() body: { permissions: string[] },
+  ) {
+    return this.svc.updatePermissions(user.companyId, id, body.permissions, user.id);
+  }
+
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')

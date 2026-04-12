@@ -28,6 +28,7 @@ import { FormsService } from './forms.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type {
   AutoActionsConfig,
   CreateFormDto,
@@ -44,6 +45,7 @@ function userActor(user: User): FormActor {
 @ApiTags('forms')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('forms')
 @Controller('forms')
 export class FormsController {
   constructor(private readonly svc: FormsService) {}

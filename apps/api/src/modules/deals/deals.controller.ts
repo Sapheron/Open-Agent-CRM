@@ -15,6 +15,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User, DealStage, DealSource, DealPriority, DealLossReason, DealActivityType } from '@wacrm/database';
 
 const STAGES = ['LEAD_IN', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'] as const;
@@ -77,6 +78,7 @@ function userActor(user: User): DealActor {
 @ApiTags('deals')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('deals')
 @Controller('deals')
 export class DealsController {
   constructor(private readonly svc: DealsService) {}

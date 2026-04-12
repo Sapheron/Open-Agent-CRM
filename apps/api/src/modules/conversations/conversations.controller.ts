@@ -6,6 +6,7 @@ import { IsString, IsBoolean, IsOptional } from 'class-validator';
 import { ConversationsService } from './conversations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
+import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User, ConversationStatus } from '@wacrm/database';
 
@@ -15,6 +16,7 @@ class ToggleAiBody { @IsBoolean() enabled: boolean; }
 @ApiTags('conversations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('whatsapp')
 @Controller('conversations')
 export class ConversationsController {
   constructor(private readonly svc: ConversationsService) {}

@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User, BroadcastStatus } from '@wacrm/database';
 
@@ -50,6 +51,7 @@ function userActor(user: User): BroadcastActor {
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard, RolesGuard)
 @Roles('ADMIN', 'MANAGER', 'SUPER_ADMIN')
+@RequirePermissions('broadcasts')
 @Controller('broadcasts')
 export class BroadcastController {
   constructor(private readonly svc: BroadcastService) {}

@@ -5,6 +5,7 @@ import { WhatsAppSettingsService } from './whatsapp-settings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import type { User } from '@wacrm/database';
 
 class CreateAccountBody {
@@ -15,6 +16,7 @@ class CreateAccountBody {
 @ApiTags('whatsapp')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, CompanyScopeGuard)
+@RequirePermissions('whatsapp')
 @Controller('settings/whatsapp/accounts')
 export class WhatsAppSettingsController {
   constructor(private readonly svc: WhatsAppSettingsService) {}
