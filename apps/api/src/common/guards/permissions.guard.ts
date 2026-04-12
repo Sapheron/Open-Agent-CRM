@@ -33,7 +33,10 @@ export class PermissionsGuard implements CanActivate {
     if (!required || required.length === 0) return true;
 
     const { user } = context.switchToHttp().getRequest();
-    if (!user) return false;
+    // No user yet — JwtAuthGuard (controller-level) hasn't run yet because
+    // this is a global APP_GUARD. Let it through; JwtAuthGuard will 401 if
+    // the token is missing or invalid.
+    if (!user) return true;
 
     // Check if the user has any of the required permissions
     const allowed = required.some((perm) =>
