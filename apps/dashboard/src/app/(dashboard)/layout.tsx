@@ -179,7 +179,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-hidden">
+        <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-y-auto">
           {navSections.map((section) => (
             <div key={section.label || 'main'}>
               {section.label && expanded && (
