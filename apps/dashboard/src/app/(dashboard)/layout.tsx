@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSocket } from '@/hooks/use-socket';
@@ -15,68 +15,95 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navSections = [
+// Permission required for each route
+const ROUTE_PERMISSIONS: Record<string, string> = {
+  '/chat': 'ai_chat',
+  '/memory': 'memory',
+  '/docs': 'ai_chat',
+  '/contacts': 'contacts',
+  '/leads': 'leads',
+  '/deals': 'deals',
+  '/tasks': 'tasks',
+  '/products': 'products',
+  '/broadcasts': 'broadcasts',
+  '/templates': 'templates',
+  '/sequences': 'sequences',
+  '/campaigns': 'campaigns',
+  '/forms': 'forms',
+  '/quotes': 'quotes',
+  '/invoices': 'invoices',
+  '/payments': 'payments',
+  '/tickets': 'tickets',
+  '/kb': 'kb',
+  '/workflows': 'workflows',
+  '/analytics': 'analytics',
+  '/reports': 'reports',
+  '/documents': 'documents',
+  '/integrations': 'integrations',
+};
+
+const ALL_NAV_SECTIONS = [
   {
     label: '',
     items: [
-      { href: '/chat', icon: MessageSquare, label: 'AI Chat' },
-      { href: '/memory', icon: Brain, label: 'Memory' },
-      { href: '/docs', icon: Terminal, label: 'AI Commands' },
+      { href: '/chat', icon: MessageSquare, label: 'AI Chat', perm: 'ai_chat' },
+      { href: '/memory', icon: Brain, label: 'Memory', perm: 'memory' },
+      { href: '/docs', icon: Terminal, label: 'AI Commands', perm: 'ai_chat' },
     ],
   },
   {
     label: 'CRM',
     items: [
-      { href: '/contacts', icon: Users, label: 'Contacts' },
-      { href: '/leads', icon: TrendingUp, label: 'Leads' },
-      { href: '/deals', icon: Briefcase, label: 'Deals' },
-      { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
-      { href: '/products', icon: Package, label: 'Products' },
+      { href: '/contacts', icon: Users, label: 'Contacts', perm: 'contacts' },
+      { href: '/leads', icon: TrendingUp, label: 'Leads', perm: 'leads' },
+      { href: '/deals', icon: Briefcase, label: 'Deals', perm: 'deals' },
+      { href: '/tasks', icon: CheckSquare, label: 'Tasks', perm: 'tasks' },
+      { href: '/products', icon: Package, label: 'Products', perm: 'products' },
     ],
   },
   {
     label: 'Engage',
     items: [
-      { href: '/broadcasts', icon: Megaphone, label: 'Broadcasts' },
-      { href: '/templates', icon: FileText, label: 'Templates' },
-      { href: '/sequences', icon: Repeat, label: 'Sequences' },
-      { href: '/campaigns', icon: Target, label: 'Campaigns' },
-      { href: '/forms', icon: Clipboard, label: 'Forms' },
+      { href: '/broadcasts', icon: Megaphone, label: 'Broadcasts', perm: 'broadcasts' },
+      { href: '/templates', icon: FileText, label: 'Templates', perm: 'templates' },
+      { href: '/sequences', icon: Repeat, label: 'Sequences', perm: 'sequences' },
+      { href: '/campaigns', icon: Target, label: 'Campaigns', perm: 'campaigns' },
+      { href: '/forms', icon: Clipboard, label: 'Forms', perm: 'forms' },
     ],
   },
   {
     label: 'Sales',
     items: [
-      { href: '/quotes', icon: Receipt, label: 'Quotes' },
-      { href: '/invoices', icon: FileSpreadsheet, label: 'Invoices' },
-      { href: '/payments', icon: CreditCard, label: 'Payments' },
+      { href: '/quotes', icon: Receipt, label: 'Quotes', perm: 'quotes' },
+      { href: '/invoices', icon: FileSpreadsheet, label: 'Invoices', perm: 'invoices' },
+      { href: '/payments', icon: CreditCard, label: 'Payments', perm: 'payments' },
     ],
   },
   {
     label: 'Support',
     items: [
-      { href: '/tickets', icon: LifeBuoy, label: 'Tickets' },
-      { href: '/kb', icon: BookOpen, label: 'Knowledge Base' },
+      { href: '/tickets', icon: LifeBuoy, label: 'Tickets', perm: 'tickets' },
+      { href: '/kb', icon: BookOpen, label: 'Knowledge Base', perm: 'kb' },
     ],
   },
   {
     label: 'Automate',
     items: [
-      { href: '/workflows', icon: Workflow, label: 'Workflows' },
+      { href: '/workflows', icon: Workflow, label: 'Workflows', perm: 'workflows' },
     ],
   },
   {
     label: 'Insights',
     items: [
-      { href: '/analytics', icon: BarChart3, label: 'Analytics' },
-      { href: '/reports', icon: PieChart, label: 'Reports' },
+      { href: '/analytics', icon: BarChart3, label: 'Analytics', perm: 'analytics' },
+      { href: '/reports', icon: PieChart, label: 'Reports', perm: 'reports' },
     ],
   },
   {
     label: 'More',
     items: [
-      { href: '/documents', icon: FolderOpen, label: 'Documents' },
-      { href: '/integrations', icon: Plug, label: 'Integrations' },
+      { href: '/documents', icon: FolderOpen, label: 'Documents', perm: 'documents' },
+      { href: '/integrations', icon: Plug, label: 'Integrations', perm: 'integrations' },
     ],
   },
 ];
@@ -88,14 +115,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
   const [sidebarHover, setSidebarHover] = useState(false);
 
+  // Filter nav sections by user permissions (admins see all)
+  const navSections = useMemo(() => {
+    if (!user) return [];
+    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
+    const permissionSet = new Set(user.permissions ?? []);
+
+    return ALL_NAV_SECTIONS
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => isAdmin || permissionSet.has(item.perm)),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [user]);
+
   useEffect(() => setMounted(true), []);
   useSocket();
 
   useEffect(() => {
     if (mounted && !isAuthenticated()) {
       router.push('/login');
+      return;
     }
-  }, [mounted, isAuthenticated, router]);
+    // Route gating: check if user has permission for current route
+    if (mounted && isAuthenticated() && user) {
+      const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
+      if (!isAdmin && pathname.startsWith('/settings')) {
+        // Settings is admin-only
+        router.push('/chat');
+        return;
+      }
+      // Check feature permissions
+      const requiredPerm = Object.entries(ROUTE_PERMISSIONS).find(
+        ([route]) => pathname === route || pathname.startsWith(route + '/'),
+      )?.[1];
+      if (requiredPerm && !(user.permissions ?? []).includes(requiredPerm)) {
+        router.push('/chat');
+      }
+    }
+  }, [mounted, isAuthenticated, user, pathname, router]);
 
   if (!mounted || !isAuthenticated()) return null;
 

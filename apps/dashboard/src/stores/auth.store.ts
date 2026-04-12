@@ -7,6 +7,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  permissions: string[];
   companyId: string;
   avatarUrl?: string;
 }

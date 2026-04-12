@@ -30,7 +30,7 @@ export default function LoginPage() {
     try {
       const res = await api.post<{
         data: {
-          user: { id: string; email: string; firstName: string; lastName: string; role: string; companyId: string };
+          user: { id: string; email: string; firstName: string; lastName: string; role: string; permissions: string[]; companyId: string };
           accessToken: string;
           refreshToken: string;
         };
