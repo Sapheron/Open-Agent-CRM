@@ -15,6 +15,8 @@ import { uploadMedia, mimeToExtension, ensureBucket } from '../media/media-stora
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const redisUrl = (process.env.REDIS_URL || '').trim();
 
+const STAFF_AI_REQUEST_CHANNEL = 'staff.ai.request';
+
 export class InboundMonitor {
   private readonly aiQueue: Queue;
   private readonly redis: Redis;
@@ -47,6 +49,16 @@ export class InboundMonitor {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async handleMessage(msg: any) {
+    // Staff AI chat via WhatsApp: detect when the account owner messages themselves
+    // (fromMe=true means typed on their own device, not sent by Baileys API).
+    // We handle this BEFORE normalizeMessage which filters out fromMe messages.
+    if (msg.key?.fromMe === true && msg.key?.remoteJid) {
+      await this.maybeHandleStaffChat(msg).catch((err: unknown) =>
+        logger.warn({ err, accountId: this.accountId }, 'Staff chat handler failed'),
+      );
+      return; // Never process fromMe as a customer message
+    }
+
     const normalized = normalizeMessage(msg as Parameters<typeof normalizeMessage>[0]);
     if (!normalized) return;
 
@@ -356,6 +368,48 @@ export class InboundMonitor {
       },
     });
     logger.info({ leadId: lead.id, contactId }, 'Auto-created lead from inbound WhatsApp');
+  }
+
+  /**
+   * Handles messages sent by the account owner to themselves (fromMe=true,
+   * remoteJid === own number). These are treated as staff AI chat inputs — the
+   * message is forwarded to the API via Redis so AiChatService processes it with
+   * the full admin tool set and sends the reply back to WhatsApp.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async maybeHandleStaffChat(msg: any): Promise<void> {
+    const account = await prisma.whatsAppAccount.findUnique({
+      where: { id: this.accountId },
+      select: { companyId: true, userId: true, phoneNumber: true },
+    });
+
+    // Only staff-owned accounts (userId set)
+    if (!account?.userId) return;
+
+    // Only self-messages: remoteJid must equal the account's own WhatsApp JID
+    const ownJid = `${account.phoneNumber}@s.whatsapp.net`;
+    if (msg.key.remoteJid !== ownJid) return;
+
+    // Extract text content
+    const text: string | undefined =
+      msg.message?.conversation ??
+      msg.message?.extendedTextMessage?.text ??
+      msg.message?.imageMessage?.caption ??
+      msg.message?.videoMessage?.caption ??
+      msg.message?.documentMessage?.caption;
+
+    if (!text?.trim()) return;
+
+    await this.redis.publish(
+      STAFF_AI_REQUEST_CHANNEL,
+      JSON.stringify({
+        companyId: account.companyId,
+        userId: account.userId,
+        accountId: this.accountId,
+        text: text.trim(),
+      }),
+    );
+    logger.info({ userId: account.userId, accountId: this.accountId }, 'Staff WhatsApp AI chat message queued');
   }
 
   /**
