@@ -2,7 +2,6 @@
 
 # Open Agent CRM — Complete Uninstaller
 # Removes ALL containers, volumes, networks, images, and files created by install.sh
-set -e
 
 # Setup colors
 RED='\033[0;31m'
@@ -78,18 +77,22 @@ VOLUMES=(
   "openagentcrm_backup_data"
   "openagentcrm_wa_sessions"
 )
+VOL_COUNT=0
 for vol in "${VOLUMES[@]}"; do
   if docker volume rm "$vol" 2>/dev/null; then
     echo -e "${GREEN}  ✓ Removed volume: $vol${NC}"
+    ((VOL_COUNT++))
   fi
 done
 
 # Remove any remaining volumes with the project prefix
 REMAINING=$(docker volume ls -q | grep "^openagentcrm_" || true)
 if [ -n "$REMAINING" ]; then
-  echo "$REMAINING" | xargs -r docker volume rm 2>/dev/null || true
+  echo "$REMAINING" | while read -r vol; do
+    docker volume rm "$vol" 2>/dev/null && ((VOL_COUNT++))
+  done
 fi
-echo -e "${GREEN}  ✓ All volumes removed${NC}"
+echo -e "${GREEN}  ✓ Processed $VOL_COUNT volumes${NC}"
 ((CLEANED++))
 
 # 3. Remove Docker network
