@@ -390,6 +390,7 @@ model User {
   passwordHash     String
   firstName        String
   lastName         String
+  phoneNumber      String?           // E.164 without '+' — used for WhatsApp AI allowlist matching
   avatarUrl        String?
   role             UserRole  @default(AGENT)
   permissions      String[]  @default([])

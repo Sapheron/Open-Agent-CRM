@@ -9,6 +9,8 @@ export interface CreateMemberDto {
   lastName: string;
   /** Admin sets the password directly — no invite flow. */
   password: string;
+  /** WhatsApp number in any format — auto-normalized to E.164 without '+'. */
+  phoneNumber?: string;
   role?: UserRole;
   /** For AGENT role, the specific feature permissions to grant. Ignored for ADMIN/SUPER_ADMIN. */
   permissions?: string[];
@@ -24,6 +26,7 @@ export class TeamService {
         email: true,
         firstName: true,
         lastName: true,
+        phoneNumber: true,
         avatarUrl: true,
         role: true,
         permissions: true,
@@ -79,13 +82,22 @@ export class TeamService {
     const role = dto.role ?? 'AGENT';
     const permissions = (role === 'AGENT' || role === 'MANAGER') ? (dto.permissions ?? []) : [];
 
-    return prisma.user.create({
+    // Normalize phone number: strip formatting, ensure E.164 without '+'
+    let phone: string | undefined;
+    if (dto.phoneNumber?.trim()) {
+      phone = dto.phoneNumber.replace(/[\s\-\(\)\.+]/g, '');
+      if (/^\d+$/.test(phone) && phone.length <= 10) phone = `91${phone}`;
+      if (!/^\d{7,15}$/.test(phone)) phone = undefined;
+    }
+
+    const user = await prisma.user.create({
       data: {
         companyId,
         email: dto.email.trim().toLowerCase(),
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
         passwordHash,
+        phoneNumber: phone,
         role,
         permissions,
       },
@@ -94,11 +106,30 @@ export class TeamService {
         email: true,
         firstName: true,
         lastName: true,
+        phoneNumber: true,
         role: true,
         permissions: true,
         createdAt: true,
       },
     });
+
+    // Auto-add staff phone to all company WhatsApp account allowlists
+    if (phone) {
+      const accounts = await prisma.whatsAppAccount.findMany({
+        where: { companyId },
+        select: { id: true, allowedNumbers: true },
+      });
+      for (const acc of accounts) {
+        if (!acc.allowedNumbers.includes(phone)) {
+          await prisma.whatsAppAccount.update({
+            where: { id: acc.id },
+            data: { allowedNumbers: [...acc.allowedNumbers, phone] },
+          });
+        }
+      }
+    }
+
+    return user;
   }
 
   async updateRole(companyId: string, targetUserId: string, role: UserRole, requestingUserId: string) {

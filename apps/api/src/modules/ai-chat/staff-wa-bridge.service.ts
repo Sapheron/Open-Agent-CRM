@@ -62,31 +62,56 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Staff AI chat: user=${userId} account=${accountId}${replyToPhone ? ` from=${replyToPhone}` : ''}`);
 
     try {
-      // Load user permissions
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { permissions: true, role: true },
-      });
-      if (!user) {
-        this.logger.warn(`Staff AI chat: user ${userId} not found`);
-        return;
+      // Resolve the actual sender's identity and permissions:
+      // - If replyToPhone is set, an allowed number sent the message → look up user by phone
+      // - Otherwise, it's a self-chat → use the account owner (userId)
+      let resolvedUserId = userId;
+      let userPerms: { permissions: string[]; role: string } | null = null;
+
+      if (replyToPhone) {
+        // Look up the staff member whose phone matches the sender
+        const senderUser = await prisma.user.findFirst({
+          where: { companyId, phoneNumber: replyToPhone, isActive: true },
+          select: { id: true, permissions: true, role: true },
+        });
+        if (senderUser) {
+          resolvedUserId = senderUser.id;
+          userPerms = { permissions: senderUser.permissions, role: senderUser.role };
+          this.logger.log(`Resolved sender ${replyToPhone} to user ${senderUser.id} (${senderUser.role})`);
+        } else {
+          // Phone not linked to any user — fall back to account owner
+          this.logger.warn(`No user found for phone ${replyToPhone}, falling back to account owner ${userId}`);
+        }
       }
 
-      // Find or create the persistent ChatConversation for this user+account
+      // If we didn't resolve via phone, load the account owner's permissions
+      if (!userPerms) {
+        const ownerUser = await prisma.user.findUnique({
+          where: { id: resolvedUserId },
+          select: { permissions: true, role: true },
+        });
+        if (!ownerUser) {
+          this.logger.warn(`Staff AI chat: user ${resolvedUserId} not found`);
+          return;
+        }
+        userPerms = { permissions: ownerUser.permissions, role: ownerUser.role };
+      }
+
+      // Find or create the persistent ChatConversation for THIS sender + account
       let conv = await prisma.chatConversation.findFirst({
-        where: { companyId, userId, whatsappAccountId: accountId },
+        where: { companyId, userId: resolvedUserId, whatsappAccountId: accountId },
         orderBy: { updatedAt: 'desc' },
       });
       if (!conv) {
         conv = await prisma.chatConversation.create({
           data: {
             companyId,
-            userId,
+            userId: resolvedUserId,
             whatsappAccountId: accountId,
             title: 'WhatsApp AI Chat',
           },
         });
-        this.logger.log(`Created new WhatsApp ChatConversation ${conv.id} for user ${userId}`);
+        this.logger.log(`Created new WhatsApp ChatConversation ${conv.id} for user ${resolvedUserId}`);
       }
 
       // Load recent history (last 30 messages = ~15 turns)
@@ -113,13 +138,13 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
         { role: 'user', content: text },
       ];
 
-      // Run AI with the user's permissions (same as dashboard chat)
+      // Run AI with the resolved sender's permissions (same as dashboard chat)
       const result = await this.aiChat.chat(
         companyId,
         userMessages,
         conv.id,
-        user.permissions,
-        user.role,
+        userPerms.permissions,
+        userPerms.role,
       );
 
       // Save AI response to history
@@ -153,7 +178,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
         }),
       );
 
-      this.logger.log(`Staff AI reply sent for user=${userId} (${result.latencyMs}ms via ${result.provider}/${result.model})`);
+      this.logger.log(`Staff AI reply sent for user=${resolvedUserId} (${result.latencyMs}ms via ${result.provider}/${result.model})`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Staff AI chat error for user=${userId}: ${msg}`);

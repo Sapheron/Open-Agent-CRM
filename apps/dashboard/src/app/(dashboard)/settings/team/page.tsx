@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Users, UserPlus, Trash2, Crown, Shield, User } from 'lucide-react';
+import { Users, UserPlus, Trash2, Crown, Shield, User, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PERMISSION_GROUPS, PERMISSION_LABELS, type Permission } from '@wacrm/shared';
 
@@ -13,6 +13,7 @@ interface TeamMember {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string;
   role: string;
   permissions: string[];
   avatarUrl?: string;
@@ -42,6 +43,7 @@ export default function TeamSettingsPage() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [role, setRole] = useState('AGENT');
   const [selectedPermissions, setSelectedPermissions] = useState<Set<Permission>>(new Set());
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
@@ -62,6 +64,7 @@ export default function TeamSettingsPage() {
         password,
         firstName,
         lastName,
+        ...(phoneNumber.trim() ? { phoneNumber: phoneNumber.trim() } : {}),
         role,
         permissions: role === 'AGENT' ? Array.from(selectedPermissions) : [],
       }),
@@ -116,6 +119,7 @@ export default function TeamSettingsPage() {
     setPassword('');
     setFirstName('');
     setLastName('');
+    setPhoneNumber('');
     setRole('AGENT');
     setSelectedPermissions(new Set());
   };
@@ -211,6 +215,21 @@ export default function TeamSettingsPage() {
               placeholder="Minimum 6 characters"
               className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
             />
+          </div>
+          <div className="mb-3">
+            <label className="text-sm font-medium text-gray-700">
+              WhatsApp Number
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="+91 98765 43210"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Used for WhatsApp AI access. Auto-added to allowed numbers on all connected accounts.
+            </p>
           </div>
           <div className="mb-4">
             <label className="text-sm font-medium text-gray-700">Role</label>
@@ -329,6 +348,12 @@ export default function TeamSettingsPage() {
                       {member.firstName} {member.lastName}
                     </p>
                     <p className="text-xs text-gray-500">{member.email}</p>
+                    {member.phoneNumber && (
+                      <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                        <Phone size={9} />
+                        +{member.phoneNumber}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <div
