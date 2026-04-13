@@ -10,6 +10,7 @@ import Redis from 'ioredis';
 import { QUEUES } from '@wacrm/shared';
 import { normalizeMessage } from './normalizer';
 import { isAlreadyProcessed } from './dedup';
+import { isRecentOutboundMessage } from './outbound-dedupe';
 import { uploadMedia, mimeToExtension, ensureBucket } from '../media/media-storage';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
@@ -75,9 +76,12 @@ export class InboundMonitor {
     });
     if (!account) return;
 
-    // Determine if this sender is in the allowlist
+    // Determine if this sender is in the allowlist.
+    // Normalize both sides to digits-only to handle +/space formatting differences.
+    const digitsOnly = (p: string) => p.replace(/\D/g, '');
+    const senderDigits = digitsOnly(normalized.fromPhone);
     const isAllowedNumber = account.allowedNumbers.length > 0
-      && account.allowedNumbers.includes(normalized.fromPhone);
+      && account.allowedNumbers.some((n) => digitsOnly(n) === senderDigits);
 
     // If allowlist is set and sender is NOT in it, skip entirely
     if (account.allowedNumbers.length > 0 && !isAllowedNumber) {
@@ -412,6 +416,14 @@ export class InboundMonitor {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async maybeHandleStaffChat(msg: any): Promise<void> {
+    // Skip echoes of messages we sent (prevents infinite self-reply loops).
+    // Mirrors OpenClaw's isRecentOutboundMessage dedup.
+    const msgId = msg.key?.id as string | undefined;
+    if (msgId && isRecentOutboundMessage(this.accountId, msg.key.remoteJid as string, msgId)) {
+      logger.debug({ msgId, accountId: this.accountId }, 'Skipping outbound echo (self-reply prevention)');
+      return;
+    }
+
     const account = await prisma.whatsAppAccount.findUnique({
       where: { id: this.accountId },
       select: { companyId: true, userId: true, phoneNumber: true },

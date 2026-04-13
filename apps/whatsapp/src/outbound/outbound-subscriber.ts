@@ -13,6 +13,7 @@ import { sendTextMessage, sendMediaMessage } from './sender';
 import { uploadMedia, mimeToExtension } from '../media/media-storage';
 import { getSocket } from '../session/session.manager';
 import { phoneToJid } from '@wacrm/shared';
+import { rememberOutboundMessage } from '../inbound/outbound-dedupe';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const redisUrl = (process.env.REDIS_URL || '').trim();
@@ -134,6 +135,12 @@ async function handleOutbound(channel: string, raw: string): Promise<void> {
     } else {
       logger.warn({ channel, payload }, 'Outbound payload has neither text nor media, skipping');
       return;
+    }
+
+    // Track sent message ID so we can skip Baileys echoes in inbound monitor
+    if (result.success && result.waMessageId) {
+      const jid = phoneToJid(toPhone);
+      rememberOutboundMessage(accountId, jid, result.waMessageId);
     }
 
     // Update message status in DB
