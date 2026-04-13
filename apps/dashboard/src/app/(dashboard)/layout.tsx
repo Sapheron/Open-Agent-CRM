@@ -137,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Check for updates every 30 minutes (admin only)
   const { data: updateInfo } = useQuery({
     queryKey: ['system-update-check'],
-    queryFn: () => api.get('/system/check-update').then((r) => r.data),
+    queryFn: () => api.get('/system/check-update').then((r) => r.data.data),
     enabled: !!mounted && !!isAdmin,
     refetchInterval: 30 * 60 * 1000,
     refetchOnWindowFocus: false,

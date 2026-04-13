@@ -57,25 +57,25 @@ export default function SystemSettingsPage() {
 
   const { data: updateCheck, isLoading: checking, refetch: recheckUpdate } = useQuery<UpdateCheck>({
     queryKey: ['system-update-check'],
-    queryFn: () => api.get('/system/check-update').then((r) => r.data),
+    queryFn: () => api.get('/system/check-update').then((r) => r.data.data),
   });
 
   const { data: updateStatus, refetch: refetchStatus } = useQuery<UpdateStatus>({
     queryKey: ['system-update-status'],
-    queryFn: () => api.get('/system/update-status').then((r) => r.data),
+    queryFn: () => api.get('/system/update-status').then((r) => r.data.data),
     refetchInterval: updateCheck?.updateAvailable ? 5000 : false,
   });
 
   const { data: changelog } = useQuery<ChangelogEntry[]>({
     queryKey: ['system-changelog'],
-    queryFn: () => api.get('/system/changelog').then((r) => r.data),
+    queryFn: () => api.get('/system/changelog').then((r) => r.data.data),
     enabled: !!updateCheck?.updateAvailable,
   });
 
   const updateMut = useMutation({
     mutationFn: () => api.post('/system/update'),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'Update started');
+      toast.success(res.data.data?.message || res.data.message || 'Update started');
       void qc.invalidateQueries({ queryKey: ['system-update-status'] });
     },
     onError: () => toast.error('Failed to start update'),
