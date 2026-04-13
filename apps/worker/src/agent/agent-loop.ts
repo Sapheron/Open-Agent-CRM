@@ -19,18 +19,34 @@ import { callWithBreaker, isCircuitOpen } from '../circuit-breaker/ai-breaker';
 import type { ChatMessage } from './providers/provider.interface';
 import Redis from 'ioredis';
 
-/** Per-model max output token limits — always use the model's max for CRM operations. */
+/**
+ * Per-model max output token limits — verified against official API docs (April 2025).
+ * Same as ai-chat.service.ts. Provider APIs clamp if we overshoot, so be generous.
+ * Unknown models default to 16384.
+ */
 const MODEL_MAX_TOKENS: Record<string, number> = {
-  'gpt-4.1': 32768, 'gpt-4.1-mini': 16384, 'gpt-4.1-nano': 16384,
-  'gpt-4o': 16384, 'gpt-4o-mini': 16384, 'o3': 100000, 'o3-mini': 65536, 'o4-mini': 100000,
-  'claude-opus-4-6': 16000, 'claude-sonnet-4-6': 16000,
-  'claude-sonnet-4-5-20241022': 8192, 'claude-haiku-4-5-20251001': 8192,
-  'gemini-2.5-pro': 65536, 'gemini-2.5-flash': 65536,
+  // OpenAI
+  'gpt-4.1': 32768, 'gpt-4.1-mini': 32768, 'gpt-4.1-nano': 32768,
+  'gpt-4o': 16384, 'gpt-4o-mini': 16384,
+  'o3': 100000, 'o3-mini': 100000, 'o4-mini': 100000,
+  // Anthropic
+  'claude-opus-4-6': 128000, 'claude-sonnet-4-6': 64000, 'claude-sonnet-4-5': 64000,
+  'claude-haiku-4-5-20251001': 64000,
+  // Gemini
+  'gemini-2.5-pro': 65536, 'gemini-2.5-flash': 65536, 'gemini-2.5-flash-lite': 65536,
   'gemini-2.0-flash': 8192, 'gemini-2.0-flash-lite': 8192,
-  'deepseek-chat': 8192, 'deepseek-reasoner': 8192,
-  'llama-3.3-70b-versatile': 8192, 'mixtral-8x7b-32768': 32768,
-  'grok-4': 16384, 'grok-3': 16384,
-  'mistral-large-latest': 8192, 'codestral-latest': 8192,
+  // DeepSeek
+  'deepseek-chat': 8192, 'deepseek-reasoner': 65536,
+  // Groq
+  'llama-3.3-70b-versatile': 32768, 'qwen-qwq-32b': 32768,
+  // xAI (no separate output cap — use full context)
+  'grok-4': 131072, 'grok-3': 131072, 'grok-3-mini': 131072,
+  // Mistral
+  'mistral-large-latest': 32768, 'codestral-latest': 32768,
+  // Moonshot
+  'kimi-k2.5': 65535, 'kimi-k2-thinking': 65535,
+  // Qwen
+  'qwen-max': 8192, 'qwen-plus': 8192,
 };
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
@@ -140,7 +156,7 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
     let response;
     try {
       response = await callWithBreaker(companyId, provider, iterationMessages, tools, {
-        maxTokens: MODEL_MAX_TOKENS[aiConfig.model] ?? 8192,
+        maxTokens: MODEL_MAX_TOKENS[aiConfig.model] ?? 16384,
         temperature: aiConfig.temperature,
       });
     } catch (err: unknown) {

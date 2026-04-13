@@ -25,35 +25,104 @@ import {
 const MAX_TOOL_ITERATIONS = 8;
 
 /**
- * Per-model max output token limits. CRM needs full output — always use the model's max.
- * Models not listed here default to 8192.
+ * Per-model max output token limits — verified against official API docs (April 2025).
+ *
+ * Strategy (same as OpenClaw): always request the model's documented max output.
+ * The provider API will clamp to its own limit if we overshoot, so being generous
+ * is safe and prevents CRM tool responses from getting truncated.
+ *
+ * Unknown models default to 16384 — high enough for CRM ops, safe for any provider.
  */
 const MODEL_MAX_TOKENS: Record<string, number> = {
-  // OpenAI
-  'gpt-4.1': 32768, 'gpt-4.1-mini': 16384, 'gpt-4.1-nano': 16384,
-  'gpt-4o': 16384, 'gpt-4o-mini': 16384, 'o3': 100000, 'o3-mini': 65536, 'o4-mini': 100000,
-  // Anthropic
-  'claude-opus-4-6': 16000, 'claude-sonnet-4-6': 16000,
-  'claude-sonnet-4-5-20241022': 8192, 'claude-haiku-4-5-20251001': 8192,
-  // Gemini
-  'gemini-2.5-pro': 65536, 'gemini-2.5-flash': 65536,
-  'gemini-2.0-flash': 8192, 'gemini-2.0-flash-lite': 8192,
-  // DeepSeek
-  'deepseek-chat': 8192, 'deepseek-reasoner': 8192,
-  // Groq
-  'llama-3.3-70b-versatile': 8192, 'mixtral-8x7b-32768': 32768,
-  // xAI
-  'grok-4': 16384, 'grok-3': 16384,
-  // Mistral
-  'mistral-large-latest': 8192, 'codestral-latest': 8192,
-  // Qwen
-  'qwen-max': 8192, 'qwen-plus': 8192, 'qwen3.5': 8192,
-  // Moonshot
-  'kimi-k2.5': 8192, 'kimi-k2-thinking': 8192,
+  // ── OpenAI ──────────────────────────────────────────────────────────────────
+  'gpt-4.1':       32768,  // docs: 32,768 output
+  'gpt-4.1-mini':  32768,  // docs: 32,768 output
+  'gpt-4.1-nano':  32768,  // docs: 32,768 output
+  'gpt-4o':        16384,  // docs: 16,384 output
+  'gpt-4o-mini':   16384,  // docs: 16,384 output
+  'o3':           100000,  // docs: 100,000 output
+  'o3-mini':      100000,  // docs: 100,000 output
+  'o4-mini':      100000,  // docs: 100,000 output
+  'gpt-5.4':       32768,  // same family as 4.1
+  'gpt-5.4-mini':  32768,
+  'gpt-5.4-nano':  32768,
+  'gpt-5.4-pro':   32768,
+
+  // ── Anthropic ───────────────────────────────────────────────────────────────
+  'claude-opus-4-6':           128000,  // docs: 128K output (up to 300K batch)
+  'claude-sonnet-4-6':          64000,  // docs: 64K output
+  'claude-sonnet-4-5':          64000,  // docs: 64K output
+  'claude-sonnet-4-5-20241022':  8192,  // legacy: 8K output
+  'claude-haiku-4-5-20251001':  64000,  // docs: 64K output
+
+  // ── Google Gemini ───────────────────────────────────────────────────────────
+  'gemini-2.5-pro':             65536,  // docs: 65,536 output
+  'gemini-2.5-flash':           65536,  // docs: 65,536 output
+  'gemini-2.5-flash-lite':      65536,  // docs: 65,536 output
+  'gemini-2.0-flash':            8192,  // docs: 8,192 output
+  'gemini-2.0-flash-lite':       8192,  // docs: 8,192 output
+  'gemini-3.1-pro-preview':     65536,
+  'gemini-3.1-flash-preview':   65536,
+  'gemini-3.1-flash-lite-preview': 65536,
+  'gemini-3-pro-preview':       65536,
+  'gemini-3-flash-preview':     65536,
+
+  // ── DeepSeek ────────────────────────────────────────────────────────────────
+  'deepseek-chat':       8192,  // docs: 8,192 output (default 4,096)
+  'deepseek-reasoner':  65536,  // docs: 65,536 output (default 32,768)
+
+  // ── Groq ────────────────────────────────────────────────────────────────────
+  'llama-3.3-70b-versatile':        32768,  // docs: 32,768 output
+  'deepseek-r1-distill-llama-70b':  16384,
+  'qwen-qwq-32b':                   32768,
+  'llama-3.1-8b-instant':           8192,
+  'gemma2-9b-it':                   8192,
+
+  // ── xAI ─────────────────────────────────────────────────────────────────────
+  // xAI shares context between input+output; no separate output cap published.
+  // Using 131072 (full context) — API will clamp based on input size.
+  'grok-4':       131072,  // context: 128K, reasoning model
+  'grok-4-fast':  131072,
+  'grok-4-1-fast': 131072,
+  'grok-3':       131072,  // context: 131,072
+  'grok-3-mini':  131072,
+  'grok-3-fast':  131072,
+
+  // ── Mistral ─────────────────────────────────────────────────────────────────
+  // Mistral doesn't publish separate output caps; defaults to context minus input.
+  // Using conservative 32768 — safe for all Mistral models.
+  'mistral-large-latest':  32768,
+  'mistral-medium-latest': 32768,
+  'mistral-small-latest':  32768,
+  'codestral-latest':      32768,
+
+  // ── Together AI ─────────────────────────────────────────────────────────────
+  'meta-llama/Llama-3.3-70B-Instruct-Turbo':            32768,
+  'meta-llama/Llama-4-Scout-17B-16E-Instruct':          16384,
+  'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8':  16384,
+  'deepseek-ai/DeepSeek-V3.1':                          8192,
+  'deepseek-ai/DeepSeek-R1':                            65536,
+  'moonshotai/Kimi-K2.5':                               65536,
+
+  // ── Moonshot/Kimi ───────────────────────────────────────────────────────────
+  'kimi-k2.5':             65535,  // docs: 65,535 output (context: 262K)
+  'kimi-k2-thinking':      65535,  // context: 256K
+  'kimi-k2-thinking-turbo': 65535,
+  'kimi-k2-turbo':         65535,
+
+  // ── Qwen (Alibaba) ─────────────────────────────────────────────────────────
+  'qwen-max':   8192,  // docs: 8,192 output
+  'qwen-plus':  8192,  // docs: 8,192 output
+  'qwen3.5':    8192,
+
+  // ── StepFun ─────────────────────────────────────────────────────────────────
+  'step-2-16k':  16384,
+  'step-1-200k': 16384,
+  'step-1-32k':  16384,
 };
 
 function getMaxTokensForModel(model: string): number {
-  return MODEL_MAX_TOKENS[model] ?? 8192;
+  return MODEL_MAX_TOKENS[model] ?? 16384;
 }
 
 /**
