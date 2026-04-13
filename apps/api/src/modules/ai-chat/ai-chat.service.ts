@@ -25,25 +25,95 @@ import {
 const MAX_TOOL_ITERATIONS = 8;
 
 /**
- * Returns true for transient provider errors that warrant trying the next
- * fallback model: overload (503), rate-limit (429), and common message
- * patterns from Gemini/OpenAI/Anthropic when they're under high demand.
+ * Classify an error into a failover reason — mirrors OpenClaw's FailoverReason type.
+ *
+ * | reason           | action              |
+ * |------------------|---------------------|
+ * | rate_limit       | try next candidate  |
+ * | overloaded       | try next candidate  |
+ * | timeout          | try next candidate  |
+ * | auth             | try next candidate  |
+ * | billing          | try next candidate  |
+ * | model_not_found  | try next candidate  |
+ * | unknown          | STOP — propagate    |
  */
-function isRetryableError(msg: string): boolean {
+type FailoverReason =
+  | 'rate_limit'
+  | 'overloaded'
+  | 'timeout'
+  | 'auth'
+  | 'billing'
+  | 'model_not_found'
+  | 'unknown';
+
+function classifyError(msg: string): FailoverReason {
   const m = msg.toLowerCase();
-  return (
-    m.includes('503') ||
+
+  // Rate limit (429)
+  if (
     m.includes('429') ||
-    m.includes('overload') ||
-    m.includes('high demand') ||
-    m.includes('currently experiencing') ||
     m.includes('rate limit') ||
     m.includes('rate_limit') ||
     m.includes('too many requests') ||
-    m.includes('capacity') ||
+    m.includes('quota exceeded') ||
+    m.includes('resource_exhausted')
+  ) return 'rate_limit';
+
+  // Overloaded / high demand (503, 529)
+  if (
+    m.includes('503') ||
+    m.includes('529') ||
+    m.includes('overload') ||
+    m.includes('high demand') ||
+    m.includes('currently experiencing') ||
     m.includes('service unavailable') ||
-    m.includes('temporarily unavailable')
-  );
+    m.includes('temporarily unavailable') ||
+    m.includes('capacity')
+  ) return 'overloaded';
+
+  // Timeout / network (408, 500, 502, 504)
+  if (
+    m.includes('408') ||
+    m.includes('502') ||
+    m.includes('504') ||
+    m.includes('timeout') ||
+    m.includes('timed out') ||
+    m.includes('connection error') ||
+    m.includes('network error') ||
+    m.includes('econnreset') ||
+    m.includes('econnrefused')
+  ) return 'timeout';
+
+  // Auth failure (401, 403)
+  if (
+    m.includes('401') ||
+    m.includes('403') ||
+    m.includes('invalid api key') ||
+    m.includes('unauthorized') ||
+    m.includes('forbidden') ||
+    m.includes('authentication') ||
+    m.includes('invalid_api_key')
+  ) return 'auth';
+
+  // Billing (402)
+  if (
+    m.includes('402') ||
+    m.includes('payment required') ||
+    m.includes('insufficient credits') ||
+    m.includes('billing') ||
+    m.includes('subscription')
+  ) return 'billing';
+
+  // Model not found / deactivated
+  if (
+    m.includes('model not found') ||
+    m.includes('model_not_found') ||
+    m.includes('model_deactivated') ||
+    m.includes('no such model') ||
+    m.includes('does not exist')
+  ) return 'model_not_found';
+
+  return 'unknown';
 }
 
 const ADMIN_SYSTEM_PROMPT = `You are an AI assistant for a WhatsApp CRM. You have full control over the CRM and can perform any operation the user asks.
@@ -512,8 +582,9 @@ export class AiChatService {
             break;
           } catch (err: unknown) {
             lastErr = err instanceof Error ? err : new Error(String(err));
-            if (!isRetryableError(lastErr.message)) throw lastErr; // non-retryable → fail immediately
-            console.warn(`[AI Chat] ${candidate.provider}/${candidate.model} retryable error — trying next: ${lastErr.message.slice(0, 120)}`);
+            const reason = classifyError(lastErr.message);
+            if (reason === 'unknown') throw lastErr; // unknown error → stop chain, propagate immediately
+            console.warn(`[AI Chat] ${candidate.provider}/${candidate.model} [${reason}] — trying next: ${lastErr.message.slice(0, 120)}`);
           }
         }
         if (!succeeded) throw lastErr ?? new Error('All providers failed');
