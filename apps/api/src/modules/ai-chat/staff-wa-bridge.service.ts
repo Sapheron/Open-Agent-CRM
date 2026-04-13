@@ -50,7 +50,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleRequest(raw: string): Promise<void> {
-    let payload: { companyId: string; userId: string; accountId: string; text: string };
+    let payload: { companyId: string; userId: string; accountId: string; text: string; replyToPhone?: string };
     try {
       payload = JSON.parse(raw) as typeof payload;
     } catch {
@@ -58,8 +58,8 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const { companyId, userId, accountId, text } = payload;
-    this.logger.log(`Staff AI chat: user=${userId} account=${accountId}`);
+    const { companyId, userId, accountId, text, replyToPhone } = payload;
+    this.logger.log(`Staff AI chat: user=${userId} account=${accountId}${replyToPhone ? ` from=${replyToPhone}` : ''}`);
 
     try {
       // Load user permissions
@@ -134,19 +134,21 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Get account phone to reply back to the staff member's own WhatsApp
+      // Get account phone to determine reply target
       const account = await prisma.whatsAppAccount.findUnique({
         where: { id: accountId },
         select: { phoneNumber: true },
       });
       if (!account) return;
 
-      // Publish outbound reply — sends to the account's own number (self-chat)
+      // Reply to the sender: either the allowed number that sent the message,
+      // or the account's own number (staff self-chat)
+      const replyTo = replyToPhone || account.phoneNumber;
       await this.publisher.publish(
         WA_OUTBOUND_CHANNEL,
         JSON.stringify({
           accountId,
-          toPhone: account.phoneNumber,
+          toPhone: replyTo,
           text: result.content,
         }),
       );
@@ -156,7 +158,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Staff AI chat error for user=${userId}: ${msg}`);
 
-      // Send error back to WhatsApp so staff member knows something went wrong
+      // Send error back to WhatsApp so the sender knows something went wrong
       try {
         const account = await prisma.whatsAppAccount.findUnique({
           where: { id: accountId },
@@ -167,7 +169,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
             WA_OUTBOUND_CHANNEL,
             JSON.stringify({
               accountId,
-              toPhone: account.phoneNumber,
+              toPhone: replyToPhone || account.phoneNumber,
               text: `⚠️ AI error: ${msg.slice(0, 200)}`,
             }),
           );

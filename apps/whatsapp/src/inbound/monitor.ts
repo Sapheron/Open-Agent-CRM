@@ -71,19 +71,21 @@ export class InboundMonitor {
     // Look up the WhatsApp account to get companyId + allowlist
     const account = await prisma.whatsAppAccount.findUnique({
       where: { id: this.accountId },
-      select: { companyId: true, id: true, allowedNumbers: true },
+      select: { companyId: true, id: true, userId: true, allowedNumbers: true },
     });
     if (!account) return;
 
-    // Allowlist gating: if allowedNumbers is non-empty, only process messages from listed numbers
-    if (account.allowedNumbers.length > 0) {
-      if (!account.allowedNumbers.includes(normalized.fromPhone)) {
-        logger.debug(
-          { accountId: this.accountId, fromPhone: normalized.fromPhone },
-          'Number not in allowlist, skipping',
-        );
-        return;
-      }
+    // Determine if this sender is in the allowlist
+    const isAllowedNumber = account.allowedNumbers.length > 0
+      && account.allowedNumbers.includes(normalized.fromPhone);
+
+    // If allowlist is set and sender is NOT in it, skip entirely
+    if (account.allowedNumbers.length > 0 && !isAllowedNumber) {
+      logger.debug(
+        { accountId: this.accountId, fromPhone: normalized.fromPhone },
+        'Number not in allowlist, skipping',
+      );
+      return;
     }
 
     const { companyId } = account;
@@ -182,29 +184,50 @@ export class InboundMonitor {
       'Inbound message stored',
     );
 
-    // Queue for AI processing if AI is enabled on this conversation
-    const freshConv = await prisma.conversation.findUnique({
-      where: { id: conversation.id },
-      select: { aiEnabled: true, status: true },
-    });
-
-    if (freshConv?.aiEnabled && freshConv.status !== 'HUMAN_HANDLING') {
-      await this.aiQueue.add(
-        'process-message',
-        {
+    // Route AI processing based on whether sender is an allowed number
+    if (isAllowedNumber && account.userId && normalized.body?.trim()) {
+      // Allowed numbers get the full admin AI (same as staff self-chat):
+      // routed through StaffWaBridgeService with full CRM tools + permissions.
+      // This bypasses autoReplyEnabled since it's a staff control channel.
+      await this.redis.publish(
+        STAFF_AI_REQUEST_CHANNEL,
+        JSON.stringify({
           companyId,
-          conversationId: conversation.id,
-          messageId: storedMessage.id,
-          contactId: contact.id,
+          userId: account.userId,
           accountId: this.accountId,
-        },
-        {
-          jobId: `ai-${storedMessage.id}`,
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 2000 },
-        },
+          text: normalized.body.trim(),
+          replyToPhone: normalized.fromPhone, // reply to the sender, not self
+        }),
       );
-      logger.info({ messageId: storedMessage.id }, 'Message queued for AI processing');
+      logger.info(
+        { messageId: storedMessage.id, fromPhone: normalized.fromPhone },
+        'Allowed number message routed to staff AI bridge',
+      );
+    } else {
+      // Regular inbound: queue through worker agent-loop (respects autoReplyEnabled)
+      const freshConv = await prisma.conversation.findUnique({
+        where: { id: conversation.id },
+        select: { aiEnabled: true, status: true },
+      });
+
+      if (freshConv?.aiEnabled && freshConv.status !== 'HUMAN_HANDLING') {
+        await this.aiQueue.add(
+          'process-message',
+          {
+            companyId,
+            conversationId: conversation.id,
+            messageId: storedMessage.id,
+            contactId: contact.id,
+            accountId: this.accountId,
+          },
+          {
+            jobId: `ai-${storedMessage.id}`,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 },
+          },
+        );
+        logger.info({ messageId: storedMessage.id }, 'Message queued for AI processing');
+      }
     }
 
     // ── Lead + deal + task + campaign hooks (best-effort, never block ingestion) ────
