@@ -11,6 +11,8 @@ import pino from 'pino';
 import { prisma } from '@wacrm/database';
 import { sendTextMessage, sendMediaMessage } from './sender';
 import { uploadMedia, mimeToExtension } from '../media/media-storage';
+import { getSocket } from '../session/session.manager';
+import { phoneToJid } from '@wacrm/shared';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const redisUrl = (process.env.REDIS_URL || '').trim();
@@ -43,17 +45,40 @@ interface BroadcastPayload {
 export function startOutboundSubscriber(): void {
   const subscriber = new Redis(redisUrl);
 
-  subscriber.subscribe('wa:outbound', 'wa:broadcast', (err) => {
+  subscriber.subscribe('wa:outbound', 'wa:broadcast', 'wa:typing', (err) => {
     if (err) {
       logger.error({ err }, 'Failed to subscribe to outbound channels');
       return;
     }
-    logger.info('Outbound subscriber started');
+    logger.info('Outbound subscriber started (wa:outbound, wa:broadcast, wa:typing)');
   });
 
   subscriber.on('message', (channel: string, raw: string) => {
-    void handleOutbound(channel, raw);
+    if (channel === 'wa:typing') {
+      void handleTyping(raw);
+    } else {
+      void handleOutbound(channel, raw);
+    }
   });
+}
+
+/**
+ * Show/clear the WhatsApp "typing…" indicator on the recipient's screen.
+ * Published by StaffWaBridgeService and agent-loop before/after AI replies.
+ */
+async function handleTyping(raw: string): Promise<void> {
+  try {
+    const payload = JSON.parse(raw) as { accountId: string; toPhone: string; action: 'composing' | 'paused' };
+    const { accountId, toPhone, action } = payload;
+    const sock = getSocket(accountId);
+    if (!sock) return;
+
+    const jid = phoneToJid(toPhone);
+    await sock.sendPresenceUpdate(action, jid);
+    logger.debug({ accountId, toPhone, action }, 'Presence update sent');
+  } catch (err: unknown) {
+    logger.warn({ err }, 'Failed to send presence update');
+  }
 }
 
 async function handleOutbound(channel: string, raw: string): Promise<void> {

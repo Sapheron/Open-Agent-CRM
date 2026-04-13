@@ -145,7 +145,14 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
   let totalTokens = 0;
   let escalated = false;
 
-  // Emit "AI is typing" via Redis → WS gateway picks it up
+  const contactPhone = contact?.phoneNumber ?? '';
+
+  // Show "typing…" on WhatsApp and notify dashboard
+  await redis.publish('wa:typing', JSON.stringify({
+    accountId,
+    toPhone: contactPhone,
+    action: 'composing',
+  })).catch(() => null);
   await redis.publish(`company:${companyId}:events`, JSON.stringify({
     event: 'ai.typing',
     data: { conversationId },
@@ -161,6 +168,7 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
       });
     } catch (err: unknown) {
       logger.error({ ...logCtx, err }, 'AI call failed');
+      await redis.publish('wa:typing', JSON.stringify({ accountId, toPhone: contactPhone, action: 'paused' })).catch(() => null);
       await escalateToHuman(conversationId, 'AI provider error');
       return;
     }
@@ -263,7 +271,13 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
 
       logger.info({ ...logCtx, storedMessageId: storedMessage.id, tokens: totalTokens }, 'AI reply stored');
 
-      // Signal to WhatsApp sender (via BullMQ outbound queue)
+      // Clear WhatsApp typing indicator and send the reply
+      await redis.publish('wa:typing', JSON.stringify({
+        accountId,
+        toPhone: contactPhone,
+        action: 'paused',
+      })).catch(() => null);
+
       await redis.publish('wa:outbound', JSON.stringify({
         accountId,
         contactId,

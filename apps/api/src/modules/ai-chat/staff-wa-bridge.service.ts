@@ -17,6 +17,7 @@ import { AiChatService } from './ai-chat.service';
 
 const STAFF_AI_REQUEST_CHANNEL = 'staff.ai.request';
 const WA_OUTBOUND_CHANNEL = 'wa:outbound';
+const WA_TYPING_CHANNEL = 'wa:typing';
 const redisUrl = (process.env.REDIS_URL || '').trim();
 
 @Injectable()
@@ -138,6 +139,20 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
         { role: 'user', content: text },
       ];
 
+      // Get account phone for reply + typing target before AI call
+      const account = await prisma.whatsAppAccount.findUnique({
+        where: { id: accountId },
+        select: { phoneNumber: true },
+      });
+      if (!account) return;
+      const replyTo = replyToPhone || account.phoneNumber;
+
+      // Show "typing…" on WhatsApp before AI processes
+      await this.publisher.publish(
+        WA_TYPING_CHANNEL,
+        JSON.stringify({ accountId, toPhone: replyTo, action: 'composing' }),
+      ).catch(() => null);
+
       // Run AI with the resolved sender's permissions (same as dashboard chat)
       const result = await this.aiChat.chat(
         companyId,
@@ -159,16 +174,12 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Get account phone to determine reply target
-      const account = await prisma.whatsAppAccount.findUnique({
-        where: { id: accountId },
-        select: { phoneNumber: true },
-      });
-      if (!account) return;
+      // Clear typing indicator and send the reply
+      await this.publisher.publish(
+        WA_TYPING_CHANNEL,
+        JSON.stringify({ accountId, toPhone: replyTo, action: 'paused' }),
+      ).catch(() => null);
 
-      // Reply to the sender: either the allowed number that sent the message,
-      // or the account's own number (staff self-chat)
-      const replyTo = replyToPhone || account.phoneNumber;
       await this.publisher.publish(
         WA_OUTBOUND_CHANNEL,
         JSON.stringify({
@@ -190,11 +201,17 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
           select: { phoneNumber: true },
         });
         if (account) {
+          const replyTo = replyToPhone || account.phoneNumber;
+          // Clear typing indicator on error
+          await this.publisher.publish(
+            WA_TYPING_CHANNEL,
+            JSON.stringify({ accountId, toPhone: replyTo, action: 'paused' }),
+          ).catch(() => null);
           await this.publisher.publish(
             WA_OUTBOUND_CHANNEL,
             JSON.stringify({
               accountId,
-              toPhone: replyToPhone || account.phoneNumber,
+              toPhone: replyTo,
               text: `⚠️ AI error: ${msg.slice(0, 200)}`,
             }),
           );

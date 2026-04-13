@@ -35,9 +35,19 @@ export class InboundMonitor {
 
   start() {
     this.sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (type !== 'notify') return;
-
       for (const msg of messages) {
+        // Staff self-chat: handle BEFORE the type filter because self-sent messages
+        // can arrive as type='append' on some Baileys versions, not just 'notify'.
+        if (msg.key?.fromMe === true && msg.key?.remoteJid) {
+          await this.maybeHandleStaffChat(msg).catch((err: unknown) =>
+            logger.warn({ err, accountId: this.accountId }, 'Staff chat handler failed'),
+          );
+          continue; // never treat our own messages as customer messages
+        }
+
+        // Only process inbound notifications (skip echoes of our own sends)
+        if (type !== 'notify') continue;
+
         await this.handleMessage(msg).catch((err: unknown) => {
           logger.error({ accountId: this.accountId, err }, 'Error handling inbound message');
         });
@@ -49,16 +59,6 @@ export class InboundMonitor {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async handleMessage(msg: any) {
-    // Staff AI chat via WhatsApp: detect when the account owner messages themselves
-    // (fromMe=true means typed on their own device, not sent by Baileys API).
-    // We handle this BEFORE normalizeMessage which filters out fromMe messages.
-    if (msg.key?.fromMe === true && msg.key?.remoteJid) {
-      await this.maybeHandleStaffChat(msg).catch((err: unknown) =>
-        logger.warn({ err, accountId: this.accountId }, 'Staff chat handler failed'),
-      );
-      return; // Never process fromMe as a customer message
-    }
-
     const normalized = normalizeMessage(msg as Parameters<typeof normalizeMessage>[0]);
     if (!normalized) return;
 
@@ -420,9 +420,12 @@ export class InboundMonitor {
     // Only staff-owned accounts (userId set)
     if (!account?.userId) return;
 
-    // Only self-messages: remoteJid must equal the account's own WhatsApp JID
-    const ownJid = `${account.phoneNumber}@s.whatsapp.net`;
-    if (msg.key.remoteJid !== ownJid) return;
+    // Only self-messages: compare phone digits (strip JID domain and device suffix)
+    // msg.key.remoteJid can be "91XXXXXXXXXX@s.whatsapp.net" or "91XXXXXXXXXX:62@s.whatsapp.net"
+    // account.phoneNumber may be "91XXXXXXXXXX" (digits only) or have @domain if saved incorrectly
+    const ownPhone = (account.phoneNumber ?? '').replace(/\D/g, '');
+    const remotePhone = (msg.key.remoteJid as string).split('@')[0].split(':')[0];
+    if (!ownPhone || remotePhone !== ownPhone) return;
 
     // Extract text content
     const text: string | undefined =

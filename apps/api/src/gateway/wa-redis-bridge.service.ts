@@ -22,11 +22,17 @@ export class WaRedisBridgeService implements OnModuleInit, OnModuleDestroy {
     const redisUrl = (process.env.REDIS_URL || '').trim();
     this.subscriber = new Redis(redisUrl);
 
-    // Use pattern subscribe to catch all account-specific channels:
+    // Use pattern subscribe to catch all relevant channels:
     //   wa:qr:<accountId>
     //   wa:connected:<accountId>
     //   wa:disconnected:<accountId>
-    await this.subscriber.psubscribe('wa:qr:*', 'wa:connected:*', 'wa:disconnected:*');
+    //   company:<companyId>:events  (ai.typing, message.new from worker)
+    await this.subscriber.psubscribe(
+      'wa:qr:*',
+      'wa:connected:*',
+      'wa:disconnected:*',
+      'company:*:events',
+    );
 
     this.subscriber.on('pmessage', (_pattern: string, channel: string, message: string) => {
       void this.handleMessage(channel, message).catch((err) => {
@@ -34,7 +40,7 @@ export class WaRedisBridgeService implements OnModuleInit, OnModuleDestroy {
       });
     });
 
-    this.logger.log('Subscribed to WhatsApp Redis events (wa:qr:*, wa:connected:*, wa:disconnected:*)');
+    this.logger.log('Subscribed to WhatsApp Redis events (wa:qr:*, wa:connected:*, wa:disconnected:*, company:*:events)');
   }
 
   async onModuleDestroy() {
@@ -42,6 +48,24 @@ export class WaRedisBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleMessage(channel: string, raw: string) {
+    // company:<companyId>:events — worker publishes ai.typing and message.new here
+    const companyEventsMatch = channel.match(/^company:([^:]+):events$/);
+    if (companyEventsMatch) {
+      const companyId = companyEventsMatch[1];
+      try {
+        const payload = JSON.parse(raw) as { event: string; data: Record<string, unknown> };
+        if (payload.event === 'ai.typing') {
+          this.ws.emitAiTyping(companyId, payload.data as { conversationId: string });
+        } else if (payload.event === 'message.new') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          this.ws.emitMessageNew(companyId, payload.data as any);
+        }
+      } catch {
+        this.logger.warn({ channel }, 'Failed to parse company event');
+      }
+      return;
+    }
+
     const data = JSON.parse(raw);
     const accountId: string = data.accountId;
 

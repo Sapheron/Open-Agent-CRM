@@ -15,6 +15,7 @@ import { prisma } from '@wacrm/database';
 import { usePostgresAuthState } from './session.store';
 import { publishQr, publishConnected, publishDisconnected } from '../events/redis-pubsub';
 import { InboundMonitor } from '../inbound/monitor';
+import { jidToPhone } from '@wacrm/shared';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 
@@ -65,7 +66,7 @@ export async function startSession(accountId: string): Promise<void> {
       }
 
       if (connection === 'open') {
-        const phone = sock.user?.id?.split(':')[0] ?? '';
+        const phone = sock.user?.id ? jidToPhone(sock.user.id) : '';
         const displayName = sock.user?.name ?? '';
         logger.info({ accountId, phone }, 'WhatsApp connected');
 
