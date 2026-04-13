@@ -42,9 +42,7 @@ export default function AiSettingsPage() {
   const [baseUrl, setBaseUrl] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('Custom');
-  const [maxTokens, setMaxTokens] = useState(1024);
   const [temperature, setTemperature] = useState(0.7);
-  const [autoReply, setAutoReply] = useState(true);
   const [toolCalling, setToolCalling] = useState(true);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string; latencyMs?: number; reply?: string } | null>(null);
@@ -118,9 +116,7 @@ export default function AiSettingsPage() {
       setModel(config.model);
       setBaseUrl(config.baseUrl ?? '');
       setSystemPrompt(config.systemPrompt);
-      setMaxTokens(config.maxTokens);
       setTemperature(config.temperature);
-      setAutoReply(config.autoReplyEnabled);
       setToolCalling(config.toolCallingEnabled);
       // Detect preset
       const match = PROMPT_PRESETS.find((p) => p.prompt === config.systemPrompt);
@@ -140,8 +136,8 @@ export default function AiSettingsPage() {
       provider, model,
       ...(apiKey ? { apiKey } : {}),
       ...(baseUrl ? { baseUrl } : {}),
-      systemPrompt, maxTokens, temperature,
-      autoReplyEnabled: autoReply, toolCallingEnabled: toolCalling,
+      systemPrompt, temperature,
+      autoReplyEnabled: false, toolCallingEnabled: toolCalling,
     }),
     onSuccess: () => { toast.success('Settings saved'); setApiKey(''); },
     onError: () => toast.error('Failed to save'),
@@ -265,49 +261,27 @@ export default function AiSettingsPage() {
           {/* Advanced Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Advanced</p>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="text-[11px] font-medium text-gray-600 mb-1 block">Max Output Tokens</label>
-                <input
-                  type="number"
-                  value={maxTokens}
-                  onChange={(e) => setMaxTokens(Number(e.target.value))}
-                  min={64} max={8192}
-                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
-                />
-                <p className="text-[9px] text-gray-400 mt-0.5">64 – 8192</p>
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-gray-600 mb-1 block">Temperature: {temperature}</label>
-                <input
-                  type="range" min="0" max="1" step="0.05"
-                  value={temperature}
-                  onChange={(e) => setTemperature(Number(e.target.value))}
-                  className="w-full mt-1 accent-violet-500"
-                />
-                <div className="flex justify-between text-[9px] text-gray-400">
-                  <span>Precise</span>
-                  <span>Creative</span>
-                </div>
+            <div className="mb-4">
+              <label className="text-[11px] font-medium text-gray-600 mb-1 block">Temperature: {temperature}</label>
+              <input
+                type="range" min="0" max="1" step="0.05"
+                value={temperature}
+                onChange={(e) => setTemperature(Number(e.target.value))}
+                className="w-full mt-1 accent-violet-500"
+              />
+              <div className="flex justify-between text-[9px] text-gray-400">
+                <span>Precise</span>
+                <span>Creative</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={autoReply} onChange={(e) => setAutoReply(e.target.checked)} className="rounded text-violet-500 w-3.5 h-3.5" />
-                <div>
-                  <span className="text-xs text-gray-700 block">Auto-reply to WhatsApp</span>
-                  <span className="text-[9px] text-gray-400">AI responds automatically to incoming messages</span>
-                </div>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={toolCalling} onChange={(e) => setToolCalling(e.target.checked)} className="rounded text-violet-500 w-3.5 h-3.5" />
-                <div>
-                  <span className="text-xs text-gray-700 block">CRM Tool Calling</span>
-                  <span className="text-[9px] text-gray-400">AI can create leads, deals, tasks from chats</span>
-                </div>
-              </label>
-            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={toolCalling} onChange={(e) => setToolCalling(e.target.checked)} className="rounded text-violet-500 w-3.5 h-3.5" />
+              <div>
+                <span className="text-xs text-gray-700 block">CRM Tool Calling</span>
+                <span className="text-[9px] text-gray-400">AI can create leads, deals, tasks from chats</span>
+              </div>
+            </label>
           </div>
 
           {/* Fallback Model Chain */}

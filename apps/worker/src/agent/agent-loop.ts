@@ -19,6 +19,20 @@ import { callWithBreaker, isCircuitOpen } from '../circuit-breaker/ai-breaker';
 import type { ChatMessage } from './providers/provider.interface';
 import Redis from 'ioredis';
 
+/** Per-model max output token limits — always use the model's max for CRM operations. */
+const MODEL_MAX_TOKENS: Record<string, number> = {
+  'gpt-4.1': 32768, 'gpt-4.1-mini': 16384, 'gpt-4.1-nano': 16384,
+  'gpt-4o': 16384, 'gpt-4o-mini': 16384, 'o3': 100000, 'o3-mini': 65536, 'o4-mini': 100000,
+  'claude-opus-4-6': 16000, 'claude-sonnet-4-6': 16000,
+  'claude-sonnet-4-5-20241022': 8192, 'claude-haiku-4-5-20251001': 8192,
+  'gemini-2.5-pro': 65536, 'gemini-2.5-flash': 65536,
+  'gemini-2.0-flash': 8192, 'gemini-2.0-flash-lite': 8192,
+  'deepseek-chat': 8192, 'deepseek-reasoner': 8192,
+  'llama-3.3-70b-versatile': 8192, 'mixtral-8x7b-32768': 32768,
+  'grok-4': 16384, 'grok-3': 16384,
+  'mistral-large-latest': 8192, 'codestral-latest': 8192,
+};
+
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const redis = new Redis(process.env.REDIS_URL!, { lazyConnect: true });
 
@@ -126,7 +140,7 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
     let response;
     try {
       response = await callWithBreaker(companyId, provider, iterationMessages, tools, {
-        maxTokens: aiConfig.maxTokens,
+        maxTokens: MODEL_MAX_TOKENS[aiConfig.model] ?? 8192,
         temperature: aiConfig.temperature,
       });
     } catch (err: unknown) {

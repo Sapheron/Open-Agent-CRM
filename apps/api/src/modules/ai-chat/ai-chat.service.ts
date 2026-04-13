@@ -25,6 +25,38 @@ import {
 const MAX_TOOL_ITERATIONS = 8;
 
 /**
+ * Per-model max output token limits. CRM needs full output — always use the model's max.
+ * Models not listed here default to 8192.
+ */
+const MODEL_MAX_TOKENS: Record<string, number> = {
+  // OpenAI
+  'gpt-4.1': 32768, 'gpt-4.1-mini': 16384, 'gpt-4.1-nano': 16384,
+  'gpt-4o': 16384, 'gpt-4o-mini': 16384, 'o3': 100000, 'o3-mini': 65536, 'o4-mini': 100000,
+  // Anthropic
+  'claude-opus-4-6': 16000, 'claude-sonnet-4-6': 16000,
+  'claude-sonnet-4-5-20241022': 8192, 'claude-haiku-4-5-20251001': 8192,
+  // Gemini
+  'gemini-2.5-pro': 65536, 'gemini-2.5-flash': 65536,
+  'gemini-2.0-flash': 8192, 'gemini-2.0-flash-lite': 8192,
+  // DeepSeek
+  'deepseek-chat': 8192, 'deepseek-reasoner': 8192,
+  // Groq
+  'llama-3.3-70b-versatile': 8192, 'mixtral-8x7b-32768': 32768,
+  // xAI
+  'grok-4': 16384, 'grok-3': 16384,
+  // Mistral
+  'mistral-large-latest': 8192, 'codestral-latest': 8192,
+  // Qwen
+  'qwen-max': 8192, 'qwen-plus': 8192, 'qwen3.5': 8192,
+  // Moonshot
+  'kimi-k2.5': 8192, 'kimi-k2-thinking': 8192,
+};
+
+function getMaxTokensForModel(model: string): number {
+  return MODEL_MAX_TOKENS[model] ?? 8192;
+}
+
+/**
  * Classify an error into a failover reason — mirrors OpenClaw's FailoverReason type.
  *
  * | reason           | action              |
@@ -646,7 +678,7 @@ export class AiChatService {
             response = await this.callWithTools(
               candidate.provider, candidate.model, candidate.apiKey, candidate.baseUrl,
               messages, tools,
-              config.maxTokens ?? 2048, config.temperature ?? 0.7,
+              getMaxTokensForModel(candidate.model), config.temperature ?? 0.7,
             );
             activeProvider = candidate.provider;
             activeModel = candidate.model;
