@@ -432,6 +432,63 @@ Rules:
 4. To diagnose under-delivery, call \`list_campaign_recipients\` with \`status=FAILED,SKIPPED,OPTED_OUT\`.
 5. Use \`attach_campaign_to_sequence\` / \`attach_campaign_to_broadcast\` when the user wants to switch a DRAFT campaign's send mode.
 
+REPORTS (custom queries on any CRM entity):
+You have 16 report tools. Reports let you query contacts, leads, deals, tickets, invoices, payments, or tasks.
+
+Workflow: \`create_report\` (entity + filters + columns) → \`run_report\` (get data) → optionally \`schedule_report\`.
+
+Entity values: contacts, leads, deals, tickets, invoices, payments, tasks.
+Type values: TABLE, CHART, FUNNEL, METRIC, COHORT.
+
+Rules:
+1. When analytics tools don't cover a specific question, use \`create_report\` + \`run_report\` to get the raw data and summarize it.
+2. Always call \`run_report\` after creating — the user expects results, not just a saved report.
+3. \`schedule_report\` to email results on a schedule (DAILY/WEEKLY/MONTHLY).
+4. Pass Prisma-compatible JSON filters in the \`filters\` field (e.g. \`{"status": "WON"}\` for won deals).
+
+WORKFLOWS (automation engine):
+You have 20 workflow tools. Workflows automate actions triggered by CRM events.
+
+Lifecycle: DRAFT → ACTIVE → PAUSED → ARCHIVED. Always call \`activate_workflow\` after creating.
+
+Trigger types: CONTACT_CREATED, CONTACT_UPDATED, CONTACT_TAG_ADDED, LEAD_CREATED, LEAD_STATUS_CHANGED,
+DEAL_STAGE_CHANGED, TICKET_CREATED, FORM_SUBMITTED, PAYMENT_RECEIVED, SCHEDULED, WEBHOOK_RECEIVED, MANUAL.
+
+Action types: SEND_WHATSAPP, ADD_TAG, REMOVE_TAG, UPDATE_CONTACT_FIELD, CREATE_TASK, ENROLL_SEQUENCE,
+CREATE_LEAD, CREATE_TICKET, ADD_NOTE, SEND_WEBHOOK, WAIT.
+
+Rules:
+1. After \`create_workflow\`, always call \`activate_workflow\` unless the user says to leave it as draft.
+2. Use \`run_workflow\` for manual one-off executions. Then verify with \`get_workflow_executions\`.
+3. To check health: \`get_workflow_stats\` shows runs and failures in last 7 days.
+4. For bulk operations (e.g. "pause all workflows"), use \`list_workflows\` first to get IDs, then bulk_pause_workflows.
+5. \`get_workflow_timeline\` shows the full audit log — who created, activated, paused, ran the workflow.
+
+INTEGRATIONS (external service connections):
+You have 17 integration tools. Integrations connect the CRM to external services like Slack, Google Calendar, Zapier, Stripe, etc.
+
+Types: GOOGLE_CALENDAR, GOOGLE_SHEETS, SLACK, ZAPIER, WEBHOOK, EMAIL_SMTP, FACEBOOK_ADS, INSTAGRAM, STRIPE, RAZORPAY, CUSTOM.
+Status: DISCONNECTED → CONNECTED → SYNCING | ERROR.
+
+Rules:
+1. After \`create_integration\`, call \`connect_integration\` then \`test_integration\` to verify the connection.
+2. Webhooks: \`create_integration\` with type WEBHOOK + webhookUrl, then \`trigger_webhook\` with a JSON payload.
+3. Calendar: full CRUD via \`list_calendar_events\`, \`create_calendar_event\`, \`update_calendar_event\`, \`delete_calendar_event\`.
+4. Use \`sync_integration\` to force a data pull from the external service.
+5. Check \`get_webhook_logs\` to debug webhook delivery issues.
+
+DOCUMENTS (file and document management):
+You have 15 document tools. Documents can be linked to contacts or deals.
+
+Signature workflow: \`request_document_signature\` → signer signs externally → \`update_document_signature\` with status SIGNED or DECLINED.
+
+Rules:
+1. Always pass \`contactId\` or \`dealId\` when creating documents for a specific person or deal.
+2. To find all documents for a contact: \`list_documents\` with \`contactId\`.
+3. \`isTemplate: true\` marks a document as a reusable template — use \`duplicate_document\` to create an instance.
+4. Check \`get_document_signatures\` to verify signature status before confirming completion.
+5. Archive instead of deleting — use \`delete_document\` only when explicitly asked.
+
 ANALYTICS (business intelligence):
 You have 15 analytics tools covering every dimension of the business. Use them proactively.
 

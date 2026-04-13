@@ -5,12 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api-client';
 import {
   Users, TrendingUp, Briefcase, CreditCard,
-  LifeBuoy, Clock, TrendingDown, ArrowUpRight, ArrowDownRight,
+  LifeBuoy, Clock, ArrowUpRight, ArrowDownRight,
   RefreshCw,
 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, FunnelChart, Funnel, LabelList,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 
 const RANGES = [
@@ -210,7 +210,7 @@ export default function AnalyticsPage() {
                   <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false}
                     tickFormatter={v => fmtCurrency(v)} width={52} />
                   <Tooltip
-                    formatter={(v: number) => [fmtCurrency(v), 'Revenue']}
+                    formatter={(v: unknown) => [fmtCurrency(v as number), 'Revenue']}
                     labelStyle={{ fontSize: 10 }}
                     contentStyle={{ fontSize: 10, border: '1px solid #e5e7eb', borderRadius: 6 }}
                   />
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="stage" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} tickFormatter={v => fmtCurrency(v)} width={52} />
                   <Tooltip
-                    formatter={(v: number) => [fmtCurrency(v), 'Value']}
+                    formatter={(v: unknown) => [fmtCurrency(v as number), 'Value']}
                     labelStyle={{ fontSize: 10 }}
                     contentStyle={{ fontSize: 10, border: '1px solid #e5e7eb', borderRadius: 6 }}
                   />
@@ -284,7 +284,7 @@ export default function AnalyticsPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => [v, 'Leads']}
+                      formatter={(v: unknown) => [v as number, 'Leads']}
                       contentStyle={{ fontSize: 10, border: '1px solid #e5e7eb', borderRadius: 6 }}
                     />
                   </PieChart>
@@ -317,7 +317,7 @@ export default function AnalyticsPage() {
                     tickFormatter={v => v.slice(5)} />
                   <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} width={28} />
                   <Tooltip
-                    formatter={(v: number) => [v, 'New Contacts']}
+                    formatter={(v: unknown) => [v as number, 'New Contacts']}
                     labelStyle={{ fontSize: 10 }}
                     contentStyle={{ fontSize: 10, border: '1px solid #e5e7eb', borderRadius: 6 }}
                   />

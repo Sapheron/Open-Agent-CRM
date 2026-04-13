@@ -32,7 +32,7 @@ export class AnalyticsService {
     const [
       totalContacts, prevContacts,
       openConversations,
-      totalLeads, activeLeads, wonLeadsThisMonth,
+      _totalLeads, activeLeads, wonLeadsThisMonth,
       activeDeals,
       openTickets,
       messagesLast,
@@ -331,7 +331,7 @@ export class AnalyticsService {
 
   // ── Period Comparison ──────────────────────────────────────────────────────────
 
-  async comparePeriods(companyId: string, currentDays = 30, previousDays = 30) {
+  async comparePeriods(companyId: string, currentDays = 30, _previousDays = 30) {
     const current = rangeFromDays(currentDays);
     const previous = prevRange(current);
 

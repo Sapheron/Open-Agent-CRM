@@ -78,6 +78,10 @@ import type {
   ListKBArticlesFilters,
 } from '../knowledge-base/knowledge-base.types';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { WorkflowsService } from '../workflows/workflows.service';
+import { DocumentsService } from '../documents/documents.service';
+import { IntegrationsService } from '../integrations/integrations.service';
+import { ReportsService } from '../reports/reports.service';
 import { Queue } from 'bullmq';
 import { QUEUES } from '@wacrm/shared';
 import type { ChatAttachment } from './attachments';
@@ -106,6 +110,10 @@ const paymentsService = new PaymentsService(invoicesService);
 const ticketsService = new TicketsService();
 const kbService = new KnowledgeBaseService();
 const analyticsService = new AnalyticsService();
+const workflowsService = new WorkflowsService();
+const documentsService = new DocumentsService();
+const integrationsService = new IntegrationsService();
+const reportsService = new ReportsService();
 
 // BroadcastService takes a BullMQ Queue. We construct one here so the AI
 // tools can drive the same single-write-path service the controller uses.
@@ -7044,27 +7052,353 @@ const tools: AdminTool[] = [
     },
   },
 
-  // ── Workflows ─────────────────────────────────────────────────────────────
+  // ── Workflows (full lifecycle — 20 tools) ────────────────────────────────
   {
-    definition: { name: 'create_workflow', description: 'Create an automation workflow with trigger and steps.', parameters: { type: 'object', properties: { name: { type: 'string' }, trigger: { type: 'object', description: 'e.g. {type: "contact_created"}' }, steps: { type: 'array', items: { type: 'object' }, description: 'e.g. [{type: "send_message", config: {text: "Welcome!"}}]' } }, required: ['name'] } },
+    definition: {
+      name: 'list_workflows',
+      description: 'List automation workflows with optional filters.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Comma-separated: DRAFT, ACTIVE, PAUSED, ARCHIVED' },
+          search: { type: 'string', description: 'Search by name or description' },
+          tags: { type: 'string', description: 'Comma-separated tag values' },
+          triggerType: { type: 'string', description: 'e.g. CONTACT_CREATED, LEAD_CREATED, SCHEDULED' },
+          sort: { type: 'string', description: 'recent | name | runs | errors' },
+          page: { type: 'number' },
+          limit: { type: 'number' },
+        },
+        required: [],
+      },
+    },
     execute: async (args, companyId) => {
-      const w = await prisma.workflow.create({ data: { companyId, name: args.name as string, trigger: (args.trigger || {}) as any, steps: (args.steps || []) as any } });
-      return `Created workflow "${w.name}" — activate it to start running`;
+      const r = await workflowsService.list(companyId, {
+        status: args.status ? (args.status as string).split(',') as any : undefined,
+        search: args.search as string | undefined,
+        tags: args.tags ? (args.tags as string).split(',') : undefined,
+        triggerType: args.triggerType as string | undefined,
+        sort: args.sort as any,
+        page: args.page as number | undefined,
+        limit: args.limit as number | undefined,
+      });
+      if (!r.items.length) return 'No workflows found';
+      return `${r.total} workflow(s) (page ${r.page}):\n` +
+        r.items.map((w: any) => `- [${w.id}] "${w.name}" | ${w.status} | Runs: ${w.runCount}`).join('\n');
     },
   },
   {
-    definition: { name: 'list_workflows', description: 'List automation workflows.', parameters: { type: 'object', properties: {}, required: [] } },
+    definition: {
+      name: 'get_workflow',
+      description: 'Get full details of a workflow by ID.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const w = await workflowsService.get(companyId, args.workflowId as string);
+      return JSON.stringify(w, null, 2);
+    },
+  },
+  {
+    definition: {
+      name: 'create_workflow',
+      description: 'Create an automation workflow. After creating, call activate_workflow to start it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          trigger: { type: 'object', description: 'e.g. {type: "CONTACT_CREATED"}' },
+          steps: { type: 'array', items: { type: 'object' }, description: 'Array of action steps' },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['name'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const w = await workflowsService.create(companyId, {
+        name: args.name as string,
+        description: args.description as string | undefined,
+        trigger: args.trigger as any,
+        steps: args.steps as any[],
+        tags: args.tags as string[] | undefined,
+      }, AI_ACTOR);
+      return `Created workflow "${w.name}" (id: ${w.id}) — call activate_workflow to start it`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_workflow',
+      description: 'Update workflow name, description, trigger, steps, or tags.',
+      parameters: {
+        type: 'object',
+        properties: {
+          workflowId: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          trigger: { type: 'object' },
+          steps: { type: 'array', items: { type: 'object' } },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { workflowId, ...dto } = args as any;
+      const w = await workflowsService.update(companyId, workflowId, dto, AI_ACTOR);
+      return `Updated workflow "${w.name}"`;
+    },
+  },
+  {
+    definition: {
+      name: 'activate_workflow',
+      description: 'Activate a DRAFT or PAUSED workflow so it starts executing.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const w = await workflowsService.activate(companyId, args.workflowId as string, AI_ACTOR);
+      return `Workflow "${w.name}" is now ACTIVE`;
+    },
+  },
+  {
+    definition: {
+      name: 'pause_workflow',
+      description: 'Pause an ACTIVE workflow.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const w = await workflowsService.pause(companyId, args.workflowId as string, AI_ACTOR);
+      return `Workflow "${w.name}" is now PAUSED`;
+    },
+  },
+  {
+    definition: {
+      name: 'archive_workflow',
+      description: 'Archive a workflow (hide from active list). Use restore_workflow to recover.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await workflowsService.archive(companyId, args.workflowId as string, AI_ACTOR);
+      return 'Workflow archived';
+    },
+  },
+  {
+    definition: {
+      name: 'restore_workflow',
+      description: 'Restore an ARCHIVED workflow back to DRAFT status.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const w = await workflowsService.restore(companyId, args.workflowId as string, AI_ACTOR);
+      return `Workflow "${w.name}" restored to DRAFT`;
+    },
+  },
+  {
+    definition: {
+      name: 'duplicate_workflow',
+      description: 'Duplicate a workflow as a new DRAFT copy.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const w = await workflowsService.duplicate(companyId, args.workflowId as string, AI_ACTOR);
+      return `Duplicated to "${w.name}" (id: ${w.id})`;
+    },
+  },
+  {
+    definition: {
+      name: 'run_workflow',
+      description: 'Manually trigger a one-off execution of a workflow.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const exec = await workflowsService.run(companyId, args.workflowId as string, AI_ACTOR);
+      return `Manual run started — execution id: ${exec.id}`;
+    },
+  },
+  {
+    definition: {
+      name: 'add_workflow_note',
+      description: 'Add a note to a workflow\'s activity timeline.',
+      parameters: {
+        type: 'object',
+        properties: {
+          workflowId: { type: 'string' },
+          note: { type: 'string' },
+        },
+        required: ['workflowId', 'note'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await workflowsService.addNote(companyId, args.workflowId as string, args.note as string, AI_ACTOR);
+      return 'Note added to workflow timeline';
+    },
+  },
+  {
+    definition: {
+      name: 'delete_workflow',
+      description: 'Permanently delete a workflow and all its executions.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await workflowsService.remove(companyId, args.workflowId as string, AI_ACTOR);
+      return 'Workflow deleted';
+    },
+  },
+  {
+    definition: {
+      name: 'get_workflow_timeline',
+      description: 'Get the activity timeline (audit log) for a workflow.',
+      parameters: {
+        type: 'object',
+        properties: { workflowId: { type: 'string' } },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const events = await workflowsService.getTimeline(companyId, args.workflowId as string);
+      if (!events.length) return 'No timeline events found';
+      return events.map((e: any) => `[${e.createdAt}] ${e.type}: ${e.title}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_workflow_stats',
+      description: 'Get a stats snapshot: counts by status, runs and failures in last 7 days.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
     execute: async (_args, companyId) => {
-      const wfs = await prisma.workflow.findMany({ where: { companyId }, take: 20 });
-      if (!wfs.length) return 'No workflows found';
-      return wfs.map((w) => `- "${w.name}" | ${w.isActive ? 'Active' : 'Inactive'} | Runs: ${w.runCount}`).join('\n');
+      const s = await workflowsService.stats(companyId);
+      return `Total: ${s.total} | Active: ${s.active} | Paused: ${s.paused} | Draft: ${s.draft} | Archived: ${s.archived} | Runs 7d: ${s.runsLast7d} | Failures 7d: ${s.failuresLast7d}`;
     },
   },
   {
-    definition: { name: 'toggle_workflow', description: 'Enable or disable a workflow.', parameters: { type: 'object', properties: { workflowId: { type: 'string' }, active: { type: 'boolean' } }, required: ['workflowId', 'active'] } },
-    execute: async (args, _companyId) => {
-      const w = await prisma.workflow.update({ where: { id: args.workflowId as string }, data: { isActive: args.active as boolean } });
-      return `Workflow "${w.name}" is now ${w.isActive ? 'active' : 'inactive'}`;
+    definition: {
+      name: 'get_workflow_executions',
+      description: 'Get execution history for a specific workflow.',
+      parameters: {
+        type: 'object',
+        properties: {
+          workflowId: { type: 'string' },
+          limit: { type: 'number', description: 'Max results (default 20)' },
+        },
+        required: ['workflowId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const execs = await workflowsService.getExecutions(companyId, args.workflowId as string, args.limit as number | undefined);
+      if (!execs.length) return 'No executions found';
+      return execs.map((e: any) => `- [${e.id}] ${e.status} started: ${e.startedAt}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'list_workflow_executions',
+      description: 'List recent workflow executions across all workflows.',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number', description: 'Max results (default 20)' } },
+        required: [],
+      },
+    },
+    execute: async (args, companyId) => {
+      const execs = await prisma.workflowExecution.findMany({
+        where: { companyId },
+        orderBy: { startedAt: 'desc' },
+        take: (args.limit as number) || 20,
+        include: { workflow: { select: { name: true } } },
+      });
+      if (!execs.length) return 'No executions found';
+      return execs.map((e: any) => `- [${e.id}] "${e.workflow?.name}" | ${e.status} | ${e.startedAt}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_activate_workflows',
+      description: 'Activate multiple workflows at once.',
+      parameters: {
+        type: 'object',
+        properties: { ids: { type: 'array', items: { type: 'string' }, description: 'Array of workflow IDs' } },
+        required: ['ids'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await workflowsService.bulkActivate(companyId, args.ids as string[], AI_ACTOR);
+      return `Activated ${r.updated}, failed ${r.failed}`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_pause_workflows',
+      description: 'Pause multiple workflows at once.',
+      parameters: {
+        type: 'object',
+        properties: { ids: { type: 'array', items: { type: 'string' } } },
+        required: ['ids'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await workflowsService.bulkPause(companyId, args.ids as string[], AI_ACTOR);
+      return `Paused ${r.updated}, failed ${r.failed}`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_archive_workflows',
+      description: 'Archive multiple workflows at once.',
+      parameters: {
+        type: 'object',
+        properties: { ids: { type: 'array', items: { type: 'string' } } },
+        required: ['ids'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await workflowsService.bulkArchive(companyId, args.ids as string[], AI_ACTOR);
+      return `Archived ${r.updated}, failed ${r.failed}`;
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_delete_workflows',
+      description: 'Permanently delete multiple workflows.',
+      parameters: {
+        type: 'object',
+        properties: { ids: { type: 'array', items: { type: 'string' } } },
+        required: ['ids'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await workflowsService.bulkDelete(companyId, args.ids as string[], AI_ACTOR);
+      return `Deleted ${r.updated}, failed ${r.failed}`;
     },
   },
 
@@ -7643,52 +7977,866 @@ const tools: AdminTool[] = [
     },
   },
 
-  // ── Reports ───────────────────────────────────────────────────────────────
+  // ── Reports (full lifecycle — 16 tools) ──────────────────────────────────
   {
-    definition: { name: 'generate_report', description: 'Generate a quick report on an entity.', parameters: { type: 'object', properties: { entity: { type: 'string', enum: ['contacts', 'leads', 'deals', 'tickets', 'payments'] } }, required: ['entity'] } },
+    definition: {
+      name: 'list_reports',
+      description: 'List custom reports with optional filters.',
+      parameters: {
+        type: 'object',
+        properties: {
+          search: { type: 'string' },
+          status: { type: 'string', description: 'Comma-separated: DRAFT, ACTIVE, ARCHIVED' },
+          type: { type: 'string', description: 'TABLE, CHART, FUNNEL, METRIC, COHORT' },
+          entity: { type: 'string', description: 'contacts, leads, deals, tickets, invoices, payments, tasks' },
+          sort: { type: 'string', description: 'recent | name' },
+          page: { type: 'number' },
+          limit: { type: 'number' },
+        },
+        required: [],
+      },
+    },
     execute: async (args, companyId) => {
-      const entity = args.entity as string;
-      switch (entity) {
-        case 'contacts': { const c = await prisma.contact.count({ where: { companyId, deletedAt: null } }); return `Total contacts: ${c}`; }
-        case 'leads': {
-          const all = await prisma.lead.groupBy({ by: ['status'], where: { companyId }, _count: true });
-          return `Leads:\n${all.map((g) => `  ${g.status}: ${g._count}`).join('\n')}`;
-        }
-        case 'deals': {
-          const all = await prisma.deal.groupBy({ by: ['stage'], where: { companyId }, _count: true, _sum: { value: true } });
-          return `Deals:\n${all.map((g) => `  ${g.stage}: ${g._count} deals, ₹${(g._sum?.value ?? 0)}`).join('\n')}`;
-        }
-        case 'tickets': {
-          const all = await prisma.ticket.groupBy({ by: ['status'], where: { companyId }, _count: true });
-          return `Tickets:\n${all.map((g) => `  ${g.status}: ${g._count}`).join('\n')}`;
-        }
-        case 'payments': {
-          const all = await prisma.payment.groupBy({ by: ['status'], where: { companyId }, _count: true, _sum: { amount: true } });
-          return `Payments:\n${all.map((g) => `  ${g.status}: ${g._count}, ₹${(g._sum?.amount ?? 0) / 100}`).join('\n')}`;
-        }
-        default: return 'Unknown entity';
-      }
+      const r = await reportsService.list(companyId, {
+        search: args.search as string | undefined,
+        status: args.status ? (args.status as string).split(',') as any : undefined,
+        type: args.type as any,
+        entity: args.entity as string | undefined,
+        sort: args.sort as any,
+        page: args.page as number | undefined,
+        limit: args.limit as number | undefined,
+      });
+      if (!r.items.length) return 'No reports found';
+      return `${r.total} report(s):\n` +
+        r.items.map((rpt: any) => `- [${rpt.id}] "${rpt.name}" | ${rpt.entity} | ${rpt.status}${rpt.lastRunAt ? ` | Last run: ${rpt.lastRunAt}` : ''}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_report',
+      description: 'Get full details of a report by ID.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await reportsService.get(companyId, args.reportId as string);
+      return JSON.stringify(r, null, 2);
+    },
+  },
+  {
+    definition: {
+      name: 'create_report',
+      description: 'Create a custom report query. After creating, call run_report to execute it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          entity: { type: 'string', description: 'contacts | leads | deals | tickets | invoices | payments | tasks' },
+          type: { type: 'string', description: 'TABLE | CHART | FUNNEL | METRIC | COHORT' },
+          description: { type: 'string' },
+          filters: { type: 'object', description: 'Prisma-compatible where filters' },
+          groupBy: { type: 'string' },
+          columns: { type: 'array', items: { type: 'string' } },
+          tags: { type: 'array', items: { type: 'string' } },
+          isPublic: { type: 'boolean' },
+          notes: { type: 'string' },
+        },
+        required: ['name', 'entity'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await reportsService.create(companyId, args as any, AI_ACTOR);
+      return `Created report "${r.name}" (id: ${r.id}) — call run_report to execute it`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_report',
+      description: 'Update report name, entity, filters, columns, or other fields.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reportId: { type: 'string' },
+          name: { type: 'string' },
+          entity: { type: 'string' },
+          type: { type: 'string' },
+          filters: { type: 'object' },
+          groupBy: { type: 'string' },
+          columns: { type: 'array', items: { type: 'string' } },
+          description: { type: 'string' },
+          notes: { type: 'string' },
+        },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { reportId, ...dto } = args as any;
+      const r = await reportsService.update(companyId, reportId, dto, AI_ACTOR);
+      return `Updated report "${r.name}"`;
+    },
+  },
+  {
+    definition: {
+      name: 'run_report',
+      description: 'Execute a report and return the data rows. Summarize results inline.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const result = await reportsService.run(companyId, args.reportId as string, AI_ACTOR);
+      return `Report ran — ${result.total} rows from "${result.entity}":\n${JSON.stringify(result.rows.slice(0, 10), null, 2)}${result.total > 10 ? `\n... and ${result.total - 10} more rows` : ''}`;
+    },
+  },
+  {
+    definition: {
+      name: 'archive_report',
+      description: 'Archive a report.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await reportsService.archive(companyId, args.reportId as string, AI_ACTOR);
+      return 'Report archived';
+    },
+  },
+  {
+    definition: {
+      name: 'restore_report',
+      description: 'Restore an archived report to DRAFT.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await reportsService.restore(companyId, args.reportId as string, AI_ACTOR);
+      return `Report "${r.name}" restored to DRAFT`;
+    },
+  },
+  {
+    definition: {
+      name: 'duplicate_report',
+      description: 'Duplicate a report as a new DRAFT copy.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await reportsService.duplicate(companyId, args.reportId as string, AI_ACTOR);
+      return `Duplicated to "${r.name}" (id: ${r.id})`;
+    },
+  },
+  {
+    definition: {
+      name: 'add_report_note',
+      description: 'Add a note to a report\'s activity timeline.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reportId: { type: 'string' },
+          note: { type: 'string' },
+        },
+        required: ['reportId', 'note'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await reportsService.addNote(companyId, args.reportId as string, args.note as string, AI_ACTOR);
+      return 'Note added to report timeline';
+    },
+  },
+  {
+    definition: {
+      name: 'delete_report',
+      description: 'Permanently delete a report.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await reportsService.remove(companyId, args.reportId as string, AI_ACTOR);
+      return 'Report deleted';
+    },
+  },
+  {
+    definition: {
+      name: 'get_report_stats',
+      description: 'Get report stats: total, by status, scheduled count.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+    execute: async (_args, companyId) => {
+      const s = await reportsService.stats(companyId);
+      return `Total: ${s.total} | Active: ${s.active} | Draft: ${s.draft} | Archived: ${s.archived} | Scheduled: ${s.scheduled}`;
+    },
+  },
+  {
+    definition: {
+      name: 'schedule_report',
+      description: 'Schedule a report to be delivered on a recurring basis.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reportId: { type: 'string' },
+          frequency: { type: 'string', description: 'DAILY, WEEKLY, MONTHLY' },
+          recipients: { type: 'array', items: { type: 'string' }, description: 'Email addresses' },
+        },
+        required: ['reportId', 'recipients'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const s = await reportsService.schedule(companyId, args.reportId as string, {
+        frequency: args.frequency as string | undefined,
+        recipients: args.recipients as string[],
+      }, AI_ACTOR);
+      return `Report scheduled (${s.frequency}) to ${(s.recipients as string[]).join(', ')}`;
+    },
+  },
+  {
+    definition: {
+      name: 'unschedule_report',
+      description: 'Remove a scheduled report.',
+      parameters: {
+        type: 'object',
+        properties: { scheduleId: { type: 'string' } },
+        required: ['scheduleId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await reportsService.unschedule(companyId, args.scheduleId as string, AI_ACTOR);
+      return 'Schedule removed';
+    },
+  },
+  {
+    definition: {
+      name: 'list_scheduled_reports',
+      description: 'List all scheduled reports.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+    execute: async (_args, companyId) => {
+      const schedules = await reportsService.listScheduled(companyId);
+      if (!schedules.length) return 'No scheduled reports';
+      return schedules.map((s: any) => `- [${s.id}] "${s.report?.name}" | ${s.frequency} → ${(s.recipients as string[]).join(', ')} | active: ${s.isActive}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_report_timeline',
+      description: 'Get the activity timeline for a report.',
+      parameters: {
+        type: 'object',
+        properties: { reportId: { type: 'string' } },
+        required: ['reportId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const events = await reportsService.getTimeline(companyId, args.reportId as string);
+      if (!events.length) return 'No timeline events found';
+      return events.map((e: any) => `[${e.createdAt}] ${e.type}: ${e.title}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_delete_reports',
+      description: 'Permanently delete multiple reports.',
+      parameters: {
+        type: 'object',
+        properties: { ids: { type: 'array', items: { type: 'string' } } },
+        required: ['ids'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await reportsService.bulkDelete(companyId, args.ids as string[], AI_ACTOR);
+      return `Deleted ${r.updated}, failed ${r.failed}`;
     },
   },
 
-  // ── Calendar ──────────────────────────────────────────────────────────────
+  // ── Documents (full lifecycle — 15 tools) ────────────────────────────────
   {
-    definition: { name: 'create_calendar_event', description: 'Create a calendar event/meeting.', parameters: { type: 'object', properties: { title: { type: 'string' }, startAt: { type: 'string', description: 'ISO date' }, endAt: { type: 'string', description: 'ISO date' }, contactId: { type: 'string' }, location: { type: 'string' } }, required: ['title', 'startAt', 'endAt'] } },
+    definition: {
+      name: 'list_documents',
+      description: 'List documents with optional filters.',
+      parameters: {
+        type: 'object',
+        properties: {
+          search: { type: 'string' },
+          type: { type: 'string', description: 'Document type/category' },
+          status: { type: 'string', description: 'Comma-separated: DRAFT, ACTIVE, ARCHIVED' },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          isTemplate: { type: 'boolean' },
+          sort: { type: 'string', description: 'recent | name | size' },
+          page: { type: 'number' },
+          limit: { type: 'number' },
+        },
+        required: [],
+      },
+    },
     execute: async (args, companyId) => {
-      const e = await prisma.calendarEvent.create({ data: { companyId, title: args.title as string, startAt: new Date(args.startAt as string), endAt: new Date(args.endAt as string), contactId: (args.contactId as string) || undefined, location: (args.location as string) || undefined } });
-      return `Created event "${e.title}" on ${e.startAt.toISOString().split('T')[0]}`;
+      const r = await documentsService.list(companyId, {
+        search: args.search as string | undefined,
+        type: args.type as string | undefined,
+        status: args.status ? (args.status as string).split(',') as any : undefined,
+        contactId: args.contactId as string | undefined,
+        dealId: args.dealId as string | undefined,
+        isTemplate: args.isTemplate as boolean | undefined,
+        sort: args.sort as any,
+        page: args.page as number | undefined,
+        limit: args.limit as number | undefined,
+      });
+      if (!r.items.length) return 'No documents found';
+      return `${r.total} document(s):\n` +
+        r.items.map((d: any) => `- [${d.id}] "${d.name}" [${d.type}] | ${d.status} | Sigs: ${d._count?.signatures ?? 0}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_document',
+      description: 'Get full details of a document by ID.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const d = await documentsService.get(companyId, args.documentId as string);
+      return JSON.stringify(d, null, 2);
+    },
+  },
+  {
+    definition: {
+      name: 'create_document',
+      description: 'Create a document record linked to a contact or deal.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          type: { type: 'string', description: 'e.g. CONTRACT, PROPOSAL, INVOICE, NDA' },
+          fileUrl: { type: 'string' },
+          fileSize: { type: 'number' },
+          mimeType: { type: 'string' },
+          description: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+          isTemplate: { type: 'boolean' },
+          expiresAt: { type: 'string', description: 'ISO date string' },
+          notes: { type: 'string' },
+        },
+        required: ['name', 'type', 'fileUrl'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const d = await documentsService.create(companyId, args as any, AI_ACTOR);
+      return `Created document "${d.name}" (id: ${d.id})`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_document',
+      description: 'Update document name, type, description, tags, or other fields.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: { type: 'string' },
+          name: { type: 'string' },
+          type: { type: 'string' },
+          description: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          notes: { type: 'string' },
+          isTemplate: { type: 'boolean' },
+          expiresAt: { type: 'string' },
+        },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { documentId, ...dto } = args as any;
+      const d = await documentsService.update(companyId, documentId, dto, AI_ACTOR);
+      return `Updated document "${d.name}"`;
+    },
+  },
+  {
+    definition: {
+      name: 'archive_document',
+      description: 'Archive a document.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await documentsService.archive(companyId, args.documentId as string, AI_ACTOR);
+      return 'Document archived';
+    },
+  },
+  {
+    definition: {
+      name: 'restore_document',
+      description: 'Restore an archived document to DRAFT.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const d = await documentsService.restore(companyId, args.documentId as string, AI_ACTOR);
+      return `Document "${d.name}" restored to DRAFT`;
+    },
+  },
+  {
+    definition: {
+      name: 'duplicate_document',
+      description: 'Duplicate a document as a new DRAFT copy.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const d = await documentsService.duplicate(companyId, args.documentId as string, AI_ACTOR);
+      return `Duplicated to "${d.name}" (id: ${d.id})`;
+    },
+  },
+  {
+    definition: {
+      name: 'add_document_note',
+      description: 'Add a note to a document\'s activity timeline.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: { type: 'string' },
+          note: { type: 'string' },
+        },
+        required: ['documentId', 'note'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await documentsService.addNote(companyId, args.documentId as string, args.note as string, AI_ACTOR);
+      return 'Note added to document timeline';
+    },
+  },
+  {
+    definition: {
+      name: 'delete_document',
+      description: 'Permanently delete a document.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await documentsService.remove(companyId, args.documentId as string, AI_ACTOR);
+      return 'Document deleted';
+    },
+  },
+  {
+    definition: {
+      name: 'get_document_timeline',
+      description: 'Get the activity timeline for a document.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const events = await documentsService.getTimeline(companyId, args.documentId as string);
+      if (!events.length) return 'No timeline events found';
+      return events.map((e: any) => `[${e.createdAt}] ${e.type}: ${e.title}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_document_stats',
+      description: 'Get document stats: totals by status, templates, signatures.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+    execute: async (_args, companyId) => {
+      const s = await documentsService.stats(companyId);
+      return `Total: ${s.total} | Active: ${s.active} | Draft: ${s.draft} | Archived: ${s.archived} | Templates: ${s.templates} | Pending sigs: ${s.pendingSignatures} | Signed: ${s.signedTotal}`;
+    },
+  },
+  {
+    definition: {
+      name: 'request_document_signature',
+      description: 'Request a signature on a document from a named person.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: { type: 'string' },
+          signerName: { type: 'string' },
+          signerEmail: { type: 'string' },
+        },
+        required: ['documentId', 'signerName'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sig = await documentsService.requestSignature(
+        companyId, args.documentId as string,
+        { signerName: args.signerName as string, signerEmail: args.signerEmail as string | undefined },
+        AI_ACTOR,
+      );
+      return `Signature requested from "${args.signerName}" — signature id: ${sig.id}`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_document_signature',
+      description: 'Update signature status: SIGNED, DECLINED, or EXPIRED.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: { type: 'string' },
+          signatureId: { type: 'string' },
+          status: { type: 'string', enum: ['SIGNED', 'DECLINED', 'EXPIRED'] },
+        },
+        required: ['documentId', 'signatureId', 'status'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sig = await documentsService.updateSignature(
+        companyId, args.documentId as string, args.signatureId as string,
+        { status: args.status as string }, AI_ACTOR,
+      );
+      return `Signature ${sig.status.toLowerCase()}`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_document_signatures',
+      description: 'List all signatures for a document.',
+      parameters: {
+        type: 'object',
+        properties: { documentId: { type: 'string' } },
+        required: ['documentId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const sigs = await documentsService.getSignatures(companyId, args.documentId as string);
+      if (!sigs.length) return 'No signatures found';
+      return sigs.map((s: any) => `- ${s.signerName} | ${s.status} | ${s.createdAt}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'bulk_delete_documents',
+      description: 'Permanently delete multiple documents.',
+      parameters: {
+        type: 'object',
+        properties: { ids: { type: 'array', items: { type: 'string' } } },
+        required: ['ids'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await documentsService.bulkDelete(companyId, args.ids as string[], AI_ACTOR);
+      return `Deleted ${r.updated}, failed ${r.failed}`;
     },
   },
 
-  // ── Documents ─────────────────────────────────────────────────────────────
+  // ── Integrations (full lifecycle — 17 tools) ─────────────────────────────
   {
-    definition: { name: 'list_documents', description: 'List documents.', parameters: { type: 'object', properties: { contactId: { type: 'string' } }, required: [] } },
+    definition: {
+      name: 'list_integrations',
+      description: 'List all integrations with optional type or status filters.',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', description: 'GOOGLE_CALENDAR, GOOGLE_SHEETS, SLACK, ZAPIER, WEBHOOK, EMAIL_SMTP, FACEBOOK_ADS, INSTAGRAM, STRIPE, RAZORPAY, CUSTOM' },
+          status: { type: 'string', description: 'DISCONNECTED, CONNECTED, ERROR, SYNCING' },
+        },
+        required: [],
+      },
+    },
     execute: async (args, companyId) => {
-      const where: Record<string, unknown> = { companyId };
-      if (args.contactId) where.contactId = args.contactId;
-      const docs = await prisma.document.findMany({ where: where as any, take: 20, orderBy: { createdAt: 'desc' } });
-      if (!docs.length) return 'No documents found';
-      return docs.map((d) => `- "${d.name}" [${d.type}] — ${d.createdAt.toISOString().split('T')[0]}`).join('\n');
+      const items = await integrationsService.list(companyId, {
+        type: args.type as string | undefined,
+        status: args.status as string | undefined,
+      });
+      if (!items.length) return 'No integrations found';
+      return items.map((i: any) => `- [${i.id}] ${i.type}${i.name ? ` (${i.name})` : ''} | ${i.status}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'get_integration',
+      description: 'Get full details of an integration by ID.',
+      parameters: {
+        type: 'object',
+        properties: { integrationId: { type: 'string' } },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const i = await integrationsService.get(companyId, args.integrationId as string);
+      return JSON.stringify(i, null, 2);
+    },
+  },
+  {
+    definition: {
+      name: 'create_integration',
+      description: 'Create a new integration connection.',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', description: 'GOOGLE_CALENDAR, SLACK, ZAPIER, WEBHOOK, STRIPE, RAZORPAY, CUSTOM, etc.' },
+          name: { type: 'string', description: 'Friendly name' },
+          config: { type: 'object', description: 'Type-specific config (API keys, credentials, etc.)' },
+          webhookUrl: { type: 'string' },
+          webhookSecret: { type: 'string' },
+        },
+        required: ['type'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const i = await integrationsService.create(companyId, args as any, AI_ACTOR);
+      return `Created integration "${i.type}"${i.name ? ` (${i.name})` : ''} (id: ${i.id})`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_integration',
+      description: 'Update integration config, name, or webhook settings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          integrationId: { type: 'string' },
+          name: { type: 'string' },
+          config: { type: 'object' },
+          webhookUrl: { type: 'string' },
+          webhookSecret: { type: 'string' },
+          isActive: { type: 'boolean' },
+        },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { integrationId, ...dto } = args as any;
+      const i = await integrationsService.update(companyId, integrationId, dto, AI_ACTOR);
+      return `Updated integration ${i.type}`;
+    },
+  },
+  {
+    definition: {
+      name: 'connect_integration',
+      description: 'Mark an integration as CONNECTED (after user has authenticated externally).',
+      parameters: {
+        type: 'object',
+        properties: { integrationId: { type: 'string' } },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const i = await integrationsService.connect(companyId, args.integrationId as string, AI_ACTOR);
+      return `Integration "${i.type}" is now CONNECTED`;
+    },
+  },
+  {
+    definition: {
+      name: 'disconnect_integration',
+      description: 'Disconnect an integration.',
+      parameters: {
+        type: 'object',
+        properties: { integrationId: { type: 'string' } },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const i = await integrationsService.disconnect(companyId, args.integrationId as string, AI_ACTOR);
+      return `Integration "${i.type}" disconnected`;
+    },
+  },
+  {
+    definition: {
+      name: 'test_integration',
+      description: 'Test whether an integration connection is healthy.',
+      parameters: {
+        type: 'object',
+        properties: { integrationId: { type: 'string' } },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const result = await integrationsService.testConnection(companyId, args.integrationId as string, AI_ACTOR);
+      return `Test ${result.success ? 'PASSED' : 'FAILED'}: ${result.message}`;
+    },
+  },
+  {
+    definition: {
+      name: 'sync_integration',
+      description: 'Trigger a data sync for an integration.',
+      parameters: {
+        type: 'object',
+        properties: { integrationId: { type: 'string' } },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const result = await integrationsService.sync(companyId, args.integrationId as string, AI_ACTOR);
+      return result.message;
+    },
+  },
+  {
+    definition: {
+      name: 'trigger_webhook',
+      description: 'Send an HTTP POST to the integration\'s webhookUrl with a custom payload.',
+      parameters: {
+        type: 'object',
+        properties: {
+          integrationId: { type: 'string' },
+          payload: { type: 'object', description: 'JSON body to send' },
+        },
+        required: ['integrationId', 'payload'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const r = await integrationsService.triggerWebhook(companyId, args.integrationId as string, args.payload as any, AI_ACTOR);
+      return `Webhook sent — status ${r.statusCode}, latency ${r.latencyMs}ms`;
+    },
+  },
+  {
+    definition: {
+      name: 'get_webhook_logs',
+      description: 'Get outbound webhook log history for an integration.',
+      parameters: {
+        type: 'object',
+        properties: {
+          integrationId: { type: 'string' },
+          limit: { type: 'number' },
+        },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const logs = await integrationsService.getWebhookLogs(companyId, args.integrationId as string, args.limit as number | undefined);
+      if (!logs.length) return 'No webhook logs found';
+      return logs.map((l: any) => `- ${l.method} ${l.url} → ${l.statusCode} (${l.latencyMs}ms) | ${l.createdAt}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'delete_integration',
+      description: 'Delete an integration.',
+      parameters: {
+        type: 'object',
+        properties: { integrationId: { type: 'string' } },
+        required: ['integrationId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await integrationsService.remove(companyId, args.integrationId as string, AI_ACTOR);
+      return 'Integration deleted';
+    },
+  },
+  {
+    definition: {
+      name: 'get_integration_stats',
+      description: 'Get integration stats: counts by status, webhook activity in last 24h.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+    execute: async (_args, companyId) => {
+      const s = await integrationsService.stats(companyId);
+      return `Total: ${s.total} | Connected: ${s.connected} | Disconnected: ${s.disconnected} | Error: ${s.error} | Webhook logs 24h: ${s.webhookLogs24h}`;
+    },
+  },
+  {
+    definition: {
+      name: 'list_calendar_events',
+      description: 'List calendar events. Optionally filter by date range.',
+      parameters: {
+        type: 'object',
+        properties: {
+          from: { type: 'string', description: 'ISO date string' },
+          to: { type: 'string', description: 'ISO date string' },
+        },
+        required: [],
+      },
+    },
+    execute: async (args, companyId) => {
+      const events = await integrationsService.listCalendarEvents(companyId, {
+        from: args.from as string | undefined,
+        to: args.to as string | undefined,
+      });
+      if (!events.length) return 'No calendar events found';
+      return events.map((e: any) => `- [${e.id}] "${e.title}" | ${e.startAt} → ${e.endAt}${e.location ? ` @ ${e.location}` : ''}`).join('\n');
+    },
+  },
+  {
+    definition: {
+      name: 'create_calendar_event',
+      description: 'Create a calendar event.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          startAt: { type: 'string', description: 'ISO datetime' },
+          endAt: { type: 'string', description: 'ISO datetime' },
+          location: { type: 'string' },
+          contactId: { type: 'string' },
+          dealId: { type: 'string' },
+        },
+        required: ['title', 'startAt', 'endAt'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const e = await integrationsService.createCalendarEvent(companyId, args as any);
+      return `Calendar event "${e.title}" created (id: ${e.id})`;
+    },
+  },
+  {
+    definition: {
+      name: 'update_calendar_event',
+      description: 'Update a calendar event.',
+      parameters: {
+        type: 'object',
+        properties: {
+          eventId: { type: 'string' },
+          title: { type: 'string' },
+          description: { type: 'string' },
+          startAt: { type: 'string' },
+          endAt: { type: 'string' },
+          location: { type: 'string' },
+        },
+        required: ['eventId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      const { eventId, ...dto } = args as any;
+      const e = await integrationsService.updateCalendarEvent(companyId, eventId, dto);
+      return `Calendar event "${e.title}" updated`;
+    },
+  },
+  {
+    definition: {
+      name: 'delete_calendar_event',
+      description: 'Delete a calendar event.',
+      parameters: {
+        type: 'object',
+        properties: { eventId: { type: 'string' } },
+        required: ['eventId'],
+      },
+    },
+    execute: async (args, companyId) => {
+      await integrationsService.deleteCalendarEvent(companyId, args.eventId as string);
+      return 'Calendar event deleted';
     },
   },
 
@@ -7848,6 +8996,20 @@ const CORE_TOOL_NAMES = new Set([
   'get_agent_performance', 'get_broadcast_analytics', 'get_message_volume',
   'get_ticket_analytics', 'get_response_time_stats', 'get_top_contacts',
   'get_tag_analytics', 'compare_analytics_periods',
+  // Workflows (full lifecycle — 20 tools, 10 exposed by default)
+  'list_workflows', 'get_workflow', 'create_workflow', 'update_workflow',
+  'activate_workflow', 'pause_workflow', 'run_workflow', 'get_workflow_stats',
+  'get_workflow_executions', 'add_workflow_note',
+  // Documents (full lifecycle — 15 tools, 7 exposed by default)
+  'list_documents', 'get_document', 'create_document', 'update_document',
+  'request_document_signature', 'get_document_signatures', 'get_document_stats',
+  // Integrations (full lifecycle — 17 tools, 8 exposed by default)
+  'list_integrations', 'get_integration', 'create_integration', 'update_integration',
+  'connect_integration', 'test_integration', 'trigger_webhook', 'list_calendar_events',
+  'create_calendar_event',
+  // Reports (full lifecycle — 16 tools, 6 exposed by default)
+  'list_reports', 'create_report', 'run_report', 'get_report_stats',
+  'schedule_report', 'list_scheduled_reports',
   // Tickets (full lifecycle — 20 tools total, 8 exposed by default)
   'list_tickets', 'get_ticket', 'create_ticket', 'change_ticket_status',
   'assign_ticket', 'escalate_ticket', 'add_ticket_comment', 'get_ticket_stats',
@@ -7905,11 +9067,12 @@ function categorizeTool(name: string): string {
   if (m(/campaign/)) return 'Campaigns';
   if (m(/form/)) return 'Forms';
   if (m(/workflow/)) return 'Workflows';
+  if (m(/document/)) return 'Documents';
+  if (m(/integration|webhook|connect|disconnect|sync_integration/)) return 'Integrations';
+  if (m(/calendar|calendar_event/)) return 'Calendar';
   if (m(/ticket/)) return 'Tickets';
   if (m(/knowledge_base|^kb_|knowledgebase/i)) return 'Knowledge Base';
   if (m(/report/)) return 'Reports';
-  if (m(/calendar|event/)) return 'Calendar';
-  if (m(/document/)) return 'Documents';
   return 'Other';
 }
 

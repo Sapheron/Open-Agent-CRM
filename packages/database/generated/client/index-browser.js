@@ -1142,11 +1142,18 @@ exports.Prisma.WorkflowScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
   name: 'name',
+  description: 'description',
+  status: 'status',
   isActive: 'isActive',
   trigger: 'trigger',
   steps: 'steps',
+  tags: 'tags',
   runCount: 'runCount',
+  errorCount: 'errorCount',
+  lastError: 'lastError',
   lastRunAt: 'lastRunAt',
+  publishedAt: 'publishedAt',
+  createdByUserId: 'createdByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1161,6 +1168,19 @@ exports.Prisma.WorkflowExecutionScalarFieldEnum = {
   error: 'error',
   startedAt: 'startedAt',
   completedAt: 'completedAt'
+};
+
+exports.Prisma.WorkflowActivityScalarFieldEnum = {
+  id: 'id',
+  workflowId: 'workflowId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  meta: 'meta',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.TicketScalarFieldEnum = {
@@ -1262,10 +1282,19 @@ exports.Prisma.CustomReportScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
   name: 'name',
+  description: 'description',
   entity: 'entity',
+  status: 'status',
+  type: 'type',
   filters: 'filters',
   groupBy: 'groupBy',
   columns: 'columns',
+  tags: 'tags',
+  isPublic: 'isPublic',
+  lastRunAt: 'lastRunAt',
+  lastRunResult: 'lastRunResult',
+  notes: 'notes',
+  createdByUserId: 'createdByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1282,14 +1311,61 @@ exports.Prisma.ScheduledReportScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.ReportActivityScalarFieldEnum = {
+  id: 'id',
+  reportId: 'reportId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  meta: 'meta',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.IntegrationScalarFieldEnum = {
   id: 'id',
   companyId: 'companyId',
   type: 'type',
+  name: 'name',
   config: 'config',
+  status: 'status',
   isActive: 'isActive',
+  lastSyncAt: 'lastSyncAt',
+  lastError: 'lastError',
+  syncCount: 'syncCount',
+  webhookUrl: 'webhookUrl',
+  webhookSecret: 'webhookSecret',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.IntegrationActivityScalarFieldEnum = {
+  id: 'id',
+  integrationId: 'integrationId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  meta: 'meta',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.WebhookLogScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  integrationId: 'integrationId',
+  direction: 'direction',
+  url: 'url',
+  method: 'method',
+  statusCode: 'statusCode',
+  requestBody: 'requestBody',
+  responseBody: 'responseBody',
+  latencyMs: 'latencyMs',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CalendarEventScalarFieldEnum = {
@@ -1324,11 +1400,20 @@ exports.Prisma.DocumentScalarFieldEnum = {
   contactId: 'contactId',
   dealId: 'dealId',
   name: 'name',
+  description: 'description',
   type: 'type',
+  status: 'status',
   fileUrl: 'fileUrl',
   fileSize: 'fileSize',
   mimeType: 'mimeType',
-  createdAt: 'createdAt'
+  tags: 'tags',
+  version: 'version',
+  isTemplate: 'isTemplate',
+  expiresAt: 'expiresAt',
+  notes: 'notes',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.DocumentSignatureScalarFieldEnum = {
@@ -1338,6 +1423,19 @@ exports.Prisma.DocumentSignatureScalarFieldEnum = {
   signerEmail: 'signerEmail',
   status: 'status',
   signedAt: 'signedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.DocumentActivityScalarFieldEnum = {
+  id: 'id',
+  documentId: 'documentId',
+  companyId: 'companyId',
+  type: 'type',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  title: 'title',
+  body: 'body',
+  meta: 'meta',
   createdAt: 'createdAt'
 };
 
@@ -2078,6 +2176,26 @@ exports.FormActivityType = exports.$Enums.FormActivityType = {
   ERROR: 'ERROR'
 };
 
+exports.WorkflowStatus = exports.$Enums.WorkflowStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.WorkflowActivityType = exports.$Enums.WorkflowActivityType = {
+  CREATED: 'CREATED',
+  ACTIVATED: 'ACTIVATED',
+  PAUSED: 'PAUSED',
+  ARCHIVED: 'ARCHIVED',
+  RESTORED: 'RESTORED',
+  UPDATED: 'UPDATED',
+  EXECUTED: 'EXECUTED',
+  FAILED: 'FAILED',
+  NOTE_ADDED: 'NOTE_ADDED',
+  ERROR: 'ERROR'
+};
+
 exports.TicketStatus = exports.$Enums.TicketStatus = {
   OPEN: 'OPEN',
   IN_PROGRESS: 'IN_PROGRESS',
@@ -2143,6 +2261,91 @@ exports.KBArticleActivityType = exports.$Enums.KBArticleActivityType = {
   ERROR: 'ERROR'
 };
 
+exports.ReportStatus = exports.$Enums.ReportStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.ReportType = exports.$Enums.ReportType = {
+  TABLE: 'TABLE',
+  CHART: 'CHART',
+  FUNNEL: 'FUNNEL',
+  METRIC: 'METRIC',
+  COHORT: 'COHORT'
+};
+
+exports.ReportActivityType = exports.$Enums.ReportActivityType = {
+  CREATED: 'CREATED',
+  UPDATED: 'UPDATED',
+  RUN: 'RUN',
+  EXPORTED: 'EXPORTED',
+  SCHEDULED: 'SCHEDULED',
+  ARCHIVED: 'ARCHIVED',
+  RESTORED: 'RESTORED',
+  NOTE_ADDED: 'NOTE_ADDED'
+};
+
+exports.IntegrationType = exports.$Enums.IntegrationType = {
+  GOOGLE_CALENDAR: 'GOOGLE_CALENDAR',
+  GOOGLE_SHEETS: 'GOOGLE_SHEETS',
+  SLACK: 'SLACK',
+  ZAPIER: 'ZAPIER',
+  WEBHOOK: 'WEBHOOK',
+  EMAIL_SMTP: 'EMAIL_SMTP',
+  FACEBOOK_ADS: 'FACEBOOK_ADS',
+  INSTAGRAM: 'INSTAGRAM',
+  STRIPE: 'STRIPE',
+  RAZORPAY: 'RAZORPAY',
+  CUSTOM: 'CUSTOM'
+};
+
+exports.IntegrationStatus = exports.$Enums.IntegrationStatus = {
+  DISCONNECTED: 'DISCONNECTED',
+  CONNECTED: 'CONNECTED',
+  ERROR: 'ERROR',
+  SYNCING: 'SYNCING'
+};
+
+exports.IntegrationActivityType = exports.$Enums.IntegrationActivityType = {
+  CONNECTED: 'CONNECTED',
+  DISCONNECTED: 'DISCONNECTED',
+  SYNCED: 'SYNCED',
+  SYNC_FAILED: 'SYNC_FAILED',
+  WEBHOOK_SENT: 'WEBHOOK_SENT',
+  WEBHOOK_RECEIVED: 'WEBHOOK_RECEIVED',
+  ERROR: 'ERROR',
+  NOTE_ADDED: 'NOTE_ADDED',
+  CONFIGURED: 'CONFIGURED'
+};
+
+exports.DocumentStatus = exports.$Enums.DocumentStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.DocumentSignatureStatus = exports.$Enums.DocumentSignatureStatus = {
+  PENDING: 'PENDING',
+  SIGNED: 'SIGNED',
+  DECLINED: 'DECLINED',
+  EXPIRED: 'EXPIRED'
+};
+
+exports.DocumentActivityType = exports.$Enums.DocumentActivityType = {
+  CREATED: 'CREATED',
+  UPDATED: 'UPDATED',
+  ARCHIVED: 'ARCHIVED',
+  RESTORED: 'RESTORED',
+  DELETED: 'DELETED',
+  SIGNATURE_REQUESTED: 'SIGNATURE_REQUESTED',
+  SIGNATURE_RECEIVED: 'SIGNATURE_RECEIVED',
+  SIGNATURE_DECLINED: 'SIGNATURE_DECLINED',
+  NOTE_ADDED: 'NOTE_ADDED',
+  SHARED: 'SHARED',
+  DOWNLOADED: 'DOWNLOADED'
+};
+
 exports.Prisma.ModelName = {
   Company: 'Company',
   User: 'User',
@@ -2204,6 +2407,7 @@ exports.Prisma.ModelName = {
   FormActivity: 'FormActivity',
   Workflow: 'Workflow',
   WorkflowExecution: 'WorkflowExecution',
+  WorkflowActivity: 'WorkflowActivity',
   Ticket: 'Ticket',
   TicketComment: 'TicketComment',
   TicketActivity: 'TicketActivity',
@@ -2212,11 +2416,15 @@ exports.Prisma.ModelName = {
   SlaPolicy: 'SlaPolicy',
   CustomReport: 'CustomReport',
   ScheduledReport: 'ScheduledReport',
+  ReportActivity: 'ReportActivity',
   Integration: 'Integration',
+  IntegrationActivity: 'IntegrationActivity',
+  WebhookLog: 'WebhookLog',
   CalendarEvent: 'CalendarEvent',
   ActivityLog: 'ActivityLog',
   Document: 'Document',
   DocumentSignature: 'DocumentSignature',
+  DocumentActivity: 'DocumentActivity',
   ApiKey: 'ApiKey',
   ChatConversation: 'ChatConversation',
   ChatMessage: 'ChatMessage',
