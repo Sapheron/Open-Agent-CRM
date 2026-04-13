@@ -3,6 +3,8 @@ import { execSync, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface VersionInfo {
   version: string;
   commitHash: string;
@@ -10,14 +12,16 @@ interface VersionInfo {
   branch: string;
 }
 
+interface LatestInfo {
+  commitHash: string;
+  commitDate: string;
+  message: string;
+  author: string;
+}
+
 interface UpdateCheck {
   current: VersionInfo;
-  latest: {
-    commitHash: string;
-    commitDate: string;
-    message: string;
-    author: string;
-  } | null;
+  latest: LatestInfo | null;
   updateAvailable: boolean;
   checkedAt: string;
 }
@@ -32,90 +36,106 @@ interface UpdateStatus {
   } | null;
 }
 
+// GitHub API response shape (only fields we need)
+interface GitHubCommit {
+  sha: string;
+  commit: {
+    message: string;
+    author: { name: string; date: string };
+    committer: { date: string };
+  };
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const GITHUB_REPO = 'Sapheron/Open-Agent-CRM';
+const GITHUB_BRANCH = 'main';
+const VERSION_FILE = 'version.json'; // baked at build time
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * SystemService — works in both Docker containers (no git) and local dev (has git).
+ *
+ * Version detection:
+ *   1. Try reading `version.json` (baked at Docker build time)
+ *   2. Fall back to git commands (dev environment)
+ *   3. Fall back to package.json version
+ *
+ * Update checking:
+ *   - Uses GitHub REST API (no git needed)
+ *
+ * Triggering updates:
+ *   - Runs update.sh on the host install dir (mounted into the container)
+ */
 @Injectable()
 export class SystemService {
   private readonly logger = new Logger(SystemService.name);
-  private readonly repoDir: string;
-  private readonly pkgVersion: string;
+  private readonly hostDir: string; // host install dir mounted into container
+  private readonly versionInfo: VersionInfo;
 
-  private updateStatus: UpdateStatus = {
-    isUpdating: false,
-    lastUpdate: null,
-  };
-
+  private updateStatus: UpdateStatus = { isUpdating: false, lastUpdate: null };
   private cachedCheck: UpdateCheck | null = null;
   private cacheExpiry = 0;
-  private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
-    // In production: /opt/openagentcrm. In dev: project root.
-    this.repoDir = process.env.INSTALL_DIR || this.findRepoRoot();
-    this.pkgVersion = this.readPkgVersion();
+    // In production Docker: /opt/openagentcrm is mounted at /host
+    // Env var INSTALL_DIR tells us where the host repo lives
+    this.hostDir = process.env.HOST_INSTALL_DIR || process.env.INSTALL_DIR || '/opt/openagentcrm';
+    this.versionInfo = this.detectVersion();
+    this.logger.log(`Version: v${this.versionInfo.version} (${this.versionInfo.commitHash})`);
   }
 
   // ── Version ────────────────────────────────────────────────────────────────
 
   getVersion(): VersionInfo {
-    try {
-      const commitHash = this.git('rev-parse --short HEAD');
-      const commitDate = this.git('log -1 --format=%cI');
-      const branch = this.git('rev-parse --abbrev-ref HEAD');
-      return { version: this.pkgVersion, commitHash, commitDate, branch };
-    } catch {
-      return {
-        version: this.pkgVersion,
-        commitHash: 'unknown',
-        commitDate: new Date().toISOString(),
-        branch: 'unknown',
-      };
-    }
+    return this.versionInfo;
   }
 
-  // ── Check for Updates ──────────────────────────────────────────────────────
+  // ── Check for Updates (via GitHub API) ─────────────────────────────────────
 
   async checkForUpdate(): Promise<UpdateCheck> {
     if (this.cachedCheck && Date.now() < this.cacheExpiry) {
       return this.cachedCheck;
     }
 
-    const current = this.getVersion();
+    const current = this.versionInfo;
 
     try {
-      // Fetch latest from remote without merging
-      this.git('fetch origin main --quiet');
+      const url = `https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`;
+      const res = await fetch(url, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OpenAgentCRM-Updater',
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
 
-      const localHash = this.git('rev-parse HEAD');
-      const remoteHash = this.git('rev-parse origin/main');
-      const updateAvailable = localHash !== remoteHash;
-
-      let latest = null;
-      if (updateAvailable) {
-        const message = this.git('log origin/main -1 --format=%s');
-        const author = this.git('log origin/main -1 --format=%an');
-        const commitDate = this.git('log origin/main -1 --format=%cI');
-        const commitHash = remoteHash.substring(0, 7);
-        latest = { commitHash, commitDate, message, author };
+      if (!res.ok) {
+        this.logger.warn(`GitHub API returned ${res.status}`);
+        return this.noUpdateResult(current);
       }
 
-      const result: UpdateCheck = {
-        current,
-        latest,
-        updateAvailable,
-        checkedAt: new Date().toISOString(),
-      };
+      const data = (await res.json()) as GitHubCommit;
+      const remoteHash = data.sha.substring(0, 7);
+      const updateAvailable = current.commitHash !== remoteHash && current.commitHash !== 'unknown';
 
+      let latest: LatestInfo | null = null;
+      if (updateAvailable) {
+        latest = {
+          commitHash: remoteHash,
+          commitDate: data.commit.committer.date,
+          message: data.commit.message.split('\n')[0], // first line only
+          author: data.commit.author.name,
+        };
+      }
+
+      const result: UpdateCheck = { current, latest, updateAvailable, checkedAt: new Date().toISOString() };
       this.cachedCheck = result;
-      this.cacheExpiry = Date.now() + SystemService.CACHE_TTL;
+      this.cacheExpiry = Date.now() + CACHE_TTL;
       return result;
     } catch (err) {
       this.logger.warn(`Failed to check for updates: ${err}`);
-      // If git fetch fails (no network, etc.), return current version info
-      return {
-        current,
-        latest: null,
-        updateAvailable: false,
-        checkedAt: new Date().toISOString(),
-      };
+      return this.noUpdateResult(current);
     }
   }
 
@@ -126,44 +146,42 @@ export class SystemService {
       return { ok: false, message: 'An update is already in progress' };
     }
 
-    const updateScript = path.join(this.repoDir, 'deploy', 'update.sh');
-    if (!fs.existsSync(updateScript)) {
-      return { ok: false, message: 'Update script not found. Is this a production install?' };
+    // Try host-mounted path first, then local
+    const candidates = [
+      path.join('/host', 'deploy', 'update.sh'),
+      path.join(this.hostDir, 'deploy', 'update.sh'),
+    ];
+
+    let updateScript: string | null = null;
+    for (const c of candidates) {
+      if (fs.existsSync(c)) { updateScript = c; break; }
+    }
+
+    if (!updateScript) {
+      return { ok: false, message: 'Update script not found. Make sure the install directory is mounted.' };
     }
 
     this.updateStatus.isUpdating = true;
-    this.updateStatus.lastUpdate = {
-      startedAt: new Date().toISOString(),
-      success: false,
-      log: '',
-    };
-
-    // Invalidate cache so next check sees fresh state
+    this.updateStatus.lastUpdate = { startedAt: new Date().toISOString(), success: false, log: '' };
     this.cachedCheck = null;
 
-    // Run update in background — the process will restart containers
+    const installDir = updateScript.replace('/deploy/update.sh', '');
+
     const child = spawn('bash', [updateScript], {
-      cwd: this.repoDir,
-      env: { ...process.env, INSTALL_DIR: this.repoDir },
+      cwd: installDir,
+      env: { ...process.env, INSTALL_DIR: installDir },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: true,
     });
 
     let log = '';
-
-    child.stdout.on('data', (data: Buffer) => {
+    const appendLog = (data: Buffer) => {
       log += data.toString();
-      if (this.updateStatus.lastUpdate) {
-        this.updateStatus.lastUpdate.log = log;
-      }
-    });
+      if (this.updateStatus.lastUpdate) this.updateStatus.lastUpdate.log = log;
+    };
 
-    child.stderr.on('data', (data: Buffer) => {
-      log += data.toString();
-      if (this.updateStatus.lastUpdate) {
-        this.updateStatus.lastUpdate.log = log;
-      }
-    });
+    child.stdout.on('data', appendLog);
+    child.stderr.on('data', appendLog);
 
     child.on('close', (code) => {
       this.updateStatus.isUpdating = false;
@@ -175,7 +193,6 @@ export class SystemService {
       this.logger.log(`Update process exited with code ${code}`);
     });
 
-    // Detach so the update can continue even if API restarts
     child.unref();
 
     return { ok: true, message: 'Update started. The system will restart automatically.' };
@@ -187,55 +204,96 @@ export class SystemService {
     return this.updateStatus;
   }
 
-  // ── Changelog (recent commits not yet applied) ─────────────────────────────
+  // ── Changelog (commits between current and latest) ─────────────────────────
 
   async getChangelog(): Promise<Array<{ hash: string; date: string; message: string; author: string }>> {
     try {
-      this.git('fetch origin main --quiet');
-      const localHash = this.git('rev-parse HEAD');
-      const remoteHash = this.git('rev-parse origin/main');
+      const currentHash = this.versionInfo.commitHash;
+      if (currentHash === 'unknown') return [];
 
-      if (localHash === remoteHash) return [];
+      // Fetch recent commits from GitHub API
+      const url = `https://api.github.com/repos/${GITHUB_REPO}/commits?sha=${GITHUB_BRANCH}&per_page=30`;
+      const res = await fetch(url, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OpenAgentCRM-Updater',
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
 
-      const raw = this.git(`log ${localHash}..${remoteHash} --format=%h|||%cI|||%s|||%an`);
-      if (!raw.trim()) return [];
+      if (!res.ok) return [];
 
-      return raw
-        .trim()
-        .split('\n')
-        .map((line) => {
-          const [hash, date, message, author] = line.split('|||');
-          return { hash, date, message, author };
+      const commits = (await res.json()) as GitHubCommit[];
+
+      // Return all commits until we find the current one
+      const changelog: Array<{ hash: string; date: string; message: string; author: string }> = [];
+      for (const c of commits) {
+        const shortHash = c.sha.substring(0, 7);
+        if (shortHash === currentHash) break;
+        changelog.push({
+          hash: shortHash,
+          date: c.commit.committer.date,
+          message: c.commit.message.split('\n')[0],
+          author: c.commit.author.name,
         });
+      }
+
+      return changelog;
     } catch {
       return [];
     }
   }
 
-  // ── Private ────────────────────────────────────────────────────────────────
+  // ── Private: Version Detection ─────────────────────────────────────────────
 
-  private git(cmd: string): string {
-    return execSync(`git -C "${this.repoDir}" ${cmd}`, {
-      encoding: 'utf8',
-      timeout: 30_000,
-    }).trim();
-  }
-
-  private findRepoRoot(): string {
-    try {
-      return execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim();
-    } catch {
-      return process.cwd();
+  private detectVersion(): VersionInfo {
+    // 1. Try version.json (baked at Docker build time)
+    for (const base of ['/app', process.cwd(), this.hostDir]) {
+      try {
+        const vPath = path.join(base, VERSION_FILE);
+        if (fs.existsSync(vPath)) {
+          const data = JSON.parse(fs.readFileSync(vPath, 'utf8'));
+          if (data.commitHash && data.commitHash !== 'unknown') {
+            return {
+              version: data.version || '0.0.0',
+              commitHash: data.commitHash,
+              commitDate: data.commitDate || new Date().toISOString(),
+              branch: data.branch || 'main',
+            };
+          }
+        }
+      } catch { /* skip */ }
     }
+
+    // 2. Try git (dev environment)
+    try {
+      const root = execSync('git rev-parse --show-toplevel', { encoding: 'utf8', timeout: 5000 }).trim();
+      const commitHash = execSync(`git -C "${root}" rev-parse --short HEAD`, { encoding: 'utf8', timeout: 5000 }).trim();
+      const commitDate = execSync(`git -C "${root}" log -1 --format=%cI`, { encoding: 'utf8', timeout: 5000 }).trim();
+      const branch = execSync(`git -C "${root}" rev-parse --abbrev-ref HEAD`, { encoding: 'utf8', timeout: 5000 }).trim();
+      const version = this.readPkgVersion(root);
+      return { version, commitHash, commitDate, branch };
+    } catch { /* no git available */ }
+
+    // 3. Fallback
+    return {
+      version: this.readPkgVersion('/app') || this.readPkgVersion(process.cwd()),
+      commitHash: 'unknown',
+      commitDate: new Date().toISOString(),
+      branch: 'unknown',
+    };
   }
 
-  private readPkgVersion(): string {
+  private readPkgVersion(dir: string): string {
     try {
-      const pkgPath = path.join(this.repoDir, 'package.json');
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
       return pkg.version ?? '0.0.0';
     } catch {
       return '0.0.0';
     }
+  }
+
+  private noUpdateResult(current: VersionInfo): UpdateCheck {
+    return { current, latest: null, updateAvailable: false, checkedAt: new Date().toISOString() };
   }
 }

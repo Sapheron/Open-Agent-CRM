@@ -16,12 +16,21 @@ services:
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
+      args:
+        GIT_HASH: ${GIT_HASH:-unknown}
+        GIT_DATE: ${GIT_DATE:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-main}
+        APP_VERSION: "1.0.0"
     ports:
       - "127.0.0.1:3000:3000"
     env_file:
       - ../.env
     environment:
       - NODE_ENV=production
+      - HOST_INSTALL_DIR=/host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock    # for triggering updates
+      - ${INSTALL_DIR:-/opt/openagentcrm}:/host:ro   # host repo for update.sh
     depends_on:
       postgres:
         condition: service_healthy

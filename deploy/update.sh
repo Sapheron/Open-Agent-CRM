@@ -31,6 +31,9 @@ info "Pulling latest code from origin/main..."
 git fetch origin main || fail "git fetch failed"
 git reset --hard origin/main || fail "git reset failed"
 NEW_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+NEW_HASH_FULL=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+NEW_DATE=$(git log -1 --format=%cI 2>/dev/null || echo "unknown")
+NEW_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
 info "Updated to: $NEW_HASH"
 
 if [ "$OLD_HASH" = "$NEW_HASH" ]; then
@@ -38,10 +41,19 @@ if [ "$OLD_HASH" = "$NEW_HASH" ]; then
   exit 0
 fi
 
-# ── Step 3: Rebuild Docker images ────────────────────────────────────────────
+# ── Step 3: Read version from package.json ────────────────────────────────────
+APP_VERSION=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "1.0.0")
+info "App version: $APP_VERSION"
+
+# ── Step 4: Rebuild Docker images with version info ──────────────────────────
 info "Rebuilding Docker images..."
 if [ -f "$COMPOSE_FILE" ]; then
-  docker compose -f "$COMPOSE_FILE" build --no-cache api dashboard worker whatsapp 2>&1 | tee -a "$LOG_FILE"
+  export GIT_HASH="$NEW_HASH_FULL"
+  export GIT_DATE="$NEW_DATE"
+  export GIT_BRANCH="$NEW_BRANCH"
+  export APP_VERSION="$APP_VERSION"
+
+  docker compose -f "$COMPOSE_FILE" build api dashboard worker whatsapp 2>&1 | tee -a "$LOG_FILE"
   if [ ${PIPESTATUS[0]} -ne 0 ]; then
     fail "Docker build failed"
   fi
@@ -50,22 +62,21 @@ else
   warn "No docker-compose.yml found at $COMPOSE_FILE — skipping build"
 fi
 
-# ── Step 4: Run database migrations ──────────────────────────────────────────
+# ── Step 5: Run database migrations ──────────────────────────────────────────
 info "Running database migrations..."
 if [ -f "$COMPOSE_FILE" ]; then
-  # Run migrations via the API container
   docker compose -f "$COMPOSE_FILE" run --rm api npx prisma migrate deploy --schema=./node_modules/@wacrm/database/prisma/schema.prisma 2>&1 | tee -a "$LOG_FILE"
   ok "Migrations applied"
 fi
 
-# ── Step 5: Restart services ────────────────────────────────────────────────
+# ── Step 6: Restart services ────────────────────────────────────────────────
 info "Restarting services..."
 if [ -f "$COMPOSE_FILE" ]; then
   docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1 | tee -a "$LOG_FILE"
   ok "Services restarted"
 fi
 
-# ── Step 6: Health check ────────────────────────────────────────────────────
+# ── Step 7: Health check ────────────────────────────────────────────────────
 info "Waiting for API health check..."
 for i in $(seq 1 30); do
   if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then

@@ -119,6 +119,11 @@ jobs:
           file: apps/api/Dockerfile
           push: true
           tags: ghcr.io/${{ env.REPO_LOWER }}/api:latest,ghcr.io/${{ env.REPO_LOWER }}/api:${{ github.sha }}
+          build-args: |
+            GIT_HASH=${{ github.sha }}
+            GIT_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_BRANCH=${{ github.ref_name }}
+            APP_VERSION=1.0.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push Worker

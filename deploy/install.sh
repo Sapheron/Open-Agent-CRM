@@ -294,6 +294,13 @@ fi
 # ════════════════════════════════════════════════════════════════════════════
 step 5 "Docker images"
 
+# Export version info so docker-compose build args pick them up
+export GIT_HASH=$(git -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null || echo "unknown")
+export GIT_DATE=$(git -C "$INSTALL_DIR" log -1 --format=%cI 2>/dev/null || echo "unknown")
+export GIT_BRANCH=$(git -C "$INSTALL_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+export APP_VERSION=$(node -e "console.log(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "1.0.0")
+export INSTALL_DIR="$INSTALL_DIR"
+
 IMAGES_EXIST=$(docker images --format "{{.Repository}}" 2>/dev/null | grep -c "open-agent-crm" || true)
 
 if [[ "$IMAGES_EXIST" -gt 0 ]]; then

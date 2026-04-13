@@ -8,6 +8,14 @@ RUN apk update && apk upgrade && \
 FROM base AS builder
 WORKDIR /app
 COPY . .
+
+# Bake version info at build time
+ARG GIT_HASH=unknown
+ARG GIT_DATE=unknown
+ARG GIT_BRANCH=main
+ARG APP_VERSION=0.0.0
+RUN echo "{\"version\":\"${APP_VERSION}\",\"commitHash\":\"${GIT_HASH}\",\"commitDate\":\"${GIT_DATE}\",\"branch\":\"${GIT_BRANCH}\"}" > version.json
+
 RUN pnpm dlx turbo@latest prune --scope=@wacrm/api --docker
 
 FROM base AS installer
@@ -20,6 +28,7 @@ RUN pnpm install --frozen-lockfile
 
 # Copy pruned source and build
 COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/version.json ./version.json
 COPY turbo.json turbo.json
 COPY tsconfig.base.json tsconfig.base.json
 RUN pnpm db:generate
@@ -27,7 +36,7 @@ RUN pnpm turbo build --filter=@wacrm/api
 
 FROM node:22-alpine AS runner
 RUN apk update && apk upgrade && \
-    apk add --no-cache libc6-compat
+    apk add --no-cache libc6-compat git docker-cli curl bash
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs && \
