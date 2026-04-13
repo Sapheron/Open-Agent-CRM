@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api-client';
 import { useWhatsAppQr } from '@/hooks/use-whatsapp-qr';
 import { useAuthStore } from '@/stores/auth.store';
 import { toast } from 'sonner';
-import { Smartphone, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Loader2, User } from 'lucide-react';
+import { Smartphone, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Loader2, User, Shield, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface WaAccount {
@@ -16,7 +17,25 @@ interface WaAccount {
   status: string;
   lastConnectedAt?: string;
   userId?: string;
+  allowedNumbers?: string[];
   user?: { id: string; firstName: string; lastName: string; email: string };
+}
+
+/** Normalize a phone number: strip formatting, ensure digits only, add country code if needed */
+function normalizePhone(raw: string): string {
+  let n = raw.replace(/[\s\-\(\)\.+]/g, '');
+  if (/^\d+$/.test(n) && n.length <= 10) n = `91${n}`;
+  return n;
+}
+
+/** Format a stored number for display: +91 98765 43210 */
+function formatPhone(n: string): string {
+  if (n.length > 10) {
+    const cc = n.slice(0, n.length - 10);
+    const rest = n.slice(n.length - 10);
+    return `+${cc} ${rest.slice(0, 5)} ${rest.slice(5)}`;
+  }
+  return `+${n}`;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -41,11 +60,42 @@ function AccountCard({
   isReconnecting: boolean;
   showOwner: boolean;
 }) {
+  const qc = useQueryClient();
   const needsQr = account.status === 'QR_PENDING' || account.status === 'CONNECTING';
   const qrState = useWhatsAppQr(needsQr ? account.id : null);
-
-  // Show connected state from WebSocket even before list refetch
   const isConnected = account.status === 'CONNECTED' || qrState.connected;
+
+  // Allowlist state
+  const [newNumber, setNewNumber] = useState('');
+  const allowedNumbers = account.allowedNumbers ?? [];
+
+  const allowlistMut = useMutation({
+    mutationFn: (numbers: string[]) =>
+      api.patch(`/settings/whatsapp/accounts/${account.id}/allowed-numbers`, { allowedNumbers: numbers }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['wa-accounts'] }); },
+    onError: () => toast.error('Failed to update allowed numbers'),
+  });
+
+  const addNumber = () => {
+    const trimmed = newNumber.trim();
+    if (!trimmed) return;
+    const normalized = normalizePhone(trimmed);
+    if (!/^\d{7,15}$/.test(normalized)) {
+      toast.error('Invalid phone number. Use format: +91 98765 43210');
+      return;
+    }
+    if (allowedNumbers.includes(normalized)) {
+      toast.error('Number already in the list');
+      setNewNumber('');
+      return;
+    }
+    allowlistMut.mutate([...allowedNumbers, normalized]);
+    setNewNumber('');
+  };
+
+  const removeNumber = (num: string) => {
+    allowlistMut.mutate(allowedNumbers.filter((n) => n !== num));
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -113,6 +163,58 @@ function AccountCard({
           <p className="text-sm text-violet-600 font-medium">WhatsApp connected successfully!</p>
         </div>
       )}
+
+      {/* Allowed Numbers */}
+      <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Shield size={12} className="text-violet-500" />
+          <span className="text-[11px] font-semibold text-gray-700">Allowed Numbers for AI Control</span>
+        </div>
+        <p className="text-[10px] text-gray-400 mb-2.5">
+          Only these numbers can send WhatsApp messages to control the AI and CRM.
+          {allowedNumbers.length === 0 && ' No restriction — all numbers can interact.'}
+        </p>
+
+        {/* Current numbers */}
+        {allowedNumbers.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2.5">
+            {allowedNumbers.map((num) => (
+              <span
+                key={num}
+                className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-md px-2 py-1 text-[11px] text-gray-700 font-mono"
+              >
+                {formatPhone(num)}
+                <button
+                  onClick={() => removeNumber(num)}
+                  className="text-gray-300 hover:text-red-500 transition-colors"
+                  disabled={allowlistMut.isPending}
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Add number input */}
+        <div className="flex gap-1.5">
+          <input
+            value={newNumber}
+            onChange={(e) => setNewNumber(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addNumber()}
+            placeholder="+91 98765 43210"
+            className="flex-1 border border-gray-200 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 placeholder:text-gray-300 font-mono"
+          />
+          <button
+            onClick={addNumber}
+            disabled={allowlistMut.isPending || !newNumber.trim()}
+            className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-md text-[11px] font-medium disabled:opacity-40"
+          >
+            <Plus size={11} />
+            Add
+          </button>
+        </div>
+      </div>
 
       <div className="flex gap-2">
         <button

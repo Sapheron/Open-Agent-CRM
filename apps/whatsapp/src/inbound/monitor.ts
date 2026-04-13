@@ -68,12 +68,23 @@ export class InboundMonitor {
       return;
     }
 
-    // Look up the WhatsApp account to get companyId
+    // Look up the WhatsApp account to get companyId + allowlist
     const account = await prisma.whatsAppAccount.findUnique({
       where: { id: this.accountId },
-      select: { companyId: true, id: true },
+      select: { companyId: true, id: true, allowedNumbers: true },
     });
     if (!account) return;
+
+    // Allowlist gating: if allowedNumbers is non-empty, only process messages from listed numbers
+    if (account.allowedNumbers.length > 0) {
+      if (!account.allowedNumbers.includes(normalized.fromPhone)) {
+        logger.debug(
+          { accountId: this.accountId, fromPhone: normalized.fromPhone },
+          'Number not in allowlist, skipping',
+        );
+        return;
+      }
+    }
 
     const { companyId } = account;
 

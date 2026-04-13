@@ -173,6 +173,7 @@ exports.Prisma.WhatsAppAccountScalarFieldEnum = {
   consecutiveErrors: 'consecutiveErrors',
   lastErrorAt: 'lastErrorAt',
   lastConnectedAt: 'lastConnectedAt',
+  allowedNumbers: 'allowedNumbers',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

@@ -69,6 +69,13 @@ export async function startSession(accountId: string): Promise<void> {
         const displayName = sock.user?.name ?? '';
         logger.info({ accountId, phone }, 'WhatsApp connected');
 
+        // Auto-add connected number to allowlist if empty (first connection default)
+        const existing = await prisma.whatsAppAccount.findUnique({
+          where: { id: accountId },
+          select: { allowedNumbers: true },
+        });
+        const shouldSeedAllowlist = !existing?.allowedNumbers?.length && phone;
+
         await prisma.whatsAppAccount.update({
           where: { id: accountId },
           data: {
@@ -78,6 +85,7 @@ export async function startSession(accountId: string): Promise<void> {
             qrCode: null,
             consecutiveErrors: 0,
             lastConnectedAt: new Date(),
+            ...(shouldSeedAllowlist ? { allowedNumbers: [phone] } : {}),
           },
         });
 

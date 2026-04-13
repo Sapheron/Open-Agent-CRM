@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsArray } from 'class-validator';
 import { WhatsAppSettingsService } from './whatsapp-settings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyScopeGuard } from '../../common/guards/company-scope.guard';
@@ -11,6 +11,12 @@ import type { User } from '@wacrm/database';
 class CreateAccountBody {
   @IsString() @IsOptional()
   phoneNumber?: string;
+}
+
+class UpdateAllowedNumbersBody {
+  @IsArray()
+  @IsString({ each: true })
+  allowedNumbers!: string[];
 }
 
 @ApiTags('whatsapp')
@@ -37,6 +43,16 @@ export class WhatsAppSettingsController {
   @ApiOperation({ summary: 'Reconnect a WhatsApp account (re-triggers QR flow)' })
   reconnect(@CurrentUser() user: User, @Param('id') id: string) {
     return this.svc.reconnectAccount(user.companyId, id, user.id);
+  }
+
+  @Patch(':id/allowed-numbers')
+  @ApiOperation({ summary: 'Update allowed phone numbers for AI control' })
+  updateAllowedNumbers(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() body: UpdateAllowedNumbersBody,
+  ) {
+    return this.svc.updateAllowedNumbers(user.companyId, id, body.allowedNumbers);
   }
 
   @Delete(':id')

@@ -438,6 +438,7 @@ model WhatsAppAccount {
   consecutiveErrors Int             @default(0)
   lastErrorAt       DateTime?
   lastConnectedAt   DateTime?
+  allowedNumbers    String[]        @default([])  // E.164 numbers allowed to control AI via WhatsApp
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 

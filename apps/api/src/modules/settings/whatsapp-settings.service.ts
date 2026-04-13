@@ -32,11 +32,10 @@ export class WhatsAppSettingsService {
         status: true,
         lastConnectedAt: true,
         userId: true,
+        allowedNumbers: true,
         user: isAdmin
           ? { select: { id: true, firstName: true, lastName: true, email: true } }
           : false,
-        // Never return sessionDataEnc, accessTokenEnc, or warmup stats
-        // (warmup is only relevant for bulk broadcasts, not AI chat)
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -106,6 +105,35 @@ export class WhatsAppSettingsService {
     // Tell WhatsApp service to stop this session before deleting
     await this.publishCommand('stop', accountId);
     return prisma.whatsAppAccount.delete({ where: { id: accountId } });
+  }
+
+  async updateAllowedNumbers(companyId: string, accountId: string, numbers: string[]) {
+    const account = await prisma.whatsAppAccount.findFirst({
+      where: { id: accountId, companyId },
+    });
+    if (!account) throw new NotFoundException('Account not found');
+
+    // Normalize all numbers to E.164 without '+' (consistent with how Baileys stores them)
+    const normalized = numbers
+      .map((n) => n.replace(/[\s\-\(\)\.]/g, ''))  // strip formatting
+      .map((n) => n.replace(/^\+/, ''))              // strip leading +
+      .map((n) => {
+        // If it's only digits and looks like a local number without country code,
+        // prefix with 91 (India) as a sensible default for this CRM
+        if (/^\d+$/.test(n) && n.length <= 10) return `91${n}`;
+        return n;
+      })
+      .filter((n) => /^\d{7,15}$/.test(n));          // valid E.164 range
+
+    // Deduplicate
+    const unique = [...new Set(normalized)];
+
+    await prisma.whatsAppAccount.update({
+      where: { id: accountId },
+      data: { allowedNumbers: unique },
+    });
+
+    return { allowedNumbers: unique };
   }
 
   private async publishCommand(command: 'start' | 'stop', accountId: string) {
