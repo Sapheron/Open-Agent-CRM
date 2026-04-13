@@ -168,8 +168,8 @@ export class AnalyticsService {
 
   async getAgentPerformance(companyId: string, days = 30) {
     const range = rangeFromDays(days);
-    const [users, resolvedByAgent, wonByAgent, ticketsResolved, msgsByAgent] = await Promise.all([
-      prisma.user.findMany({ where: { companyId }, select: { id: true, name: true, email: true } }),
+    const [users, resolvedByAgent, wonByAgent, ticketsResolved] = await Promise.all([
+      prisma.user.findMany({ where: { companyId }, select: { id: true, firstName: true, lastName: true, email: true } }),
       prisma.conversation.groupBy({
         by: ['assignedAgentId'],
         where: { companyId, status: 'RESOLVED', assignedAgentId: { not: null }, updatedAt: { gte: range.start } },
@@ -186,22 +186,28 @@ export class AnalyticsService {
         where: { companyId, status: 'RESOLVED', assignedToId: { not: null }, updatedAt: { gte: range.start } },
         _count: true,
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (prisma.message.groupBy as any)({
-        by: ['senderId'],
-        where: { companyId, direction: 'OUTBOUND', senderId: { not: null }, createdAt: { gte: range.start } },
-        _count: true,
-      }) as Promise<Array<{ senderId: string | null; _count: number }>>,
     ]);
+
+    // Count outbound messages per agent via conversation assignment
+    const msgsMap: Record<string, number> = {};
+    for (const u of users) {
+      msgsMap[u.id] = await prisma.message.count({
+        where: {
+          companyId,
+          direction: 'OUTBOUND',
+          createdAt: { gte: range.start },
+          conversation: { assignedAgentId: u.id },
+        },
+      });
+    }
 
     const resolvedMap = Object.fromEntries(resolvedByAgent.map(r => [r.assignedAgentId!, r._count]));
     const wonMap = Object.fromEntries(wonByAgent.map(r => [r.assignedAgentId!, { count: r._count, value: r._sum.value ?? 0 }]));
     const ticketsMap = Object.fromEntries(ticketsResolved.map(r => [r.assignedToId!, r._count]));
-    const msgsMap = Object.fromEntries((msgsByAgent as Array<{ senderId: string | null; _count: number }>).map(r => [r.senderId!, r._count]));
 
     return users.map(u => ({
       userId: u.id,
-      name: u.name,
+      name: `${u.firstName} ${u.lastName}`.trim(),
       email: u.email,
       conversationsResolved: resolvedMap[u.id] ?? 0,
       dealsWon: wonMap[u.id]?.count ?? 0,
