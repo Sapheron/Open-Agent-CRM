@@ -37,7 +37,34 @@ export default function CompanySettingsPage() {
     onError: () => toast.error('Failed to save settings'),
   });
 
-  const timezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : ['Asia/Kolkata', 'UTC', 'America/New_York', 'Europe/London'];
+  const timezones = (() => {
+    try {
+      if (typeof Intl !== 'undefined' && Intl.supportedValuesOf) {
+        return Intl.supportedValuesOf('timeZone');
+      }
+    } catch { /* fallback */ }
+    return [
+      'UTC', 'Asia/Kolkata', 'Asia/Dubai', 'Asia/Riyadh', 'Asia/Singapore', 'Asia/Tokyo',
+      'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Seoul', 'Asia/Jakarta', 'Asia/Dhaka',
+      'Asia/Karachi', 'Asia/Colombo', 'Asia/Kathmandu', 'Asia/Tehran', 'Asia/Baghdad',
+      'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow', 'Europe/Istanbul',
+      'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+      'America/Toronto', 'America/Sao_Paulo', 'America/Mexico_City',
+      'Africa/Cairo', 'Africa/Lagos', 'Africa/Johannesburg', 'Africa/Nairobi',
+      'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland',
+    ];
+  })();
+
+  const formatTzLabel = (tz: string) => {
+    try {
+      const offset = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'shortOffset' })
+        .formatToParts(new Date())
+        .find((p) => p.type === 'timeZoneName')?.value ?? '';
+      return `${tz.replace(/_/g, ' ')} (${offset})`;
+    } catch {
+      return tz;
+    }
+  };
 
   return (
     <div className="p-6 max-w-2xl">
@@ -71,7 +98,7 @@ export default function CompanySettingsPage() {
         <div>
           <label className="text-sm font-medium text-gray-700">Timezone</label>
           <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400">
-            {timezones.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
+            {timezones.map((tz) => <option key={tz} value={tz}>{formatTzLabel(tz)}</option>)}
           </select>
         </div>
         <div className="pt-2">
