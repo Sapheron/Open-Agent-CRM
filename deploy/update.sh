@@ -57,6 +57,8 @@ cd "$INSTALL_DIR" || fail "Cannot cd to $INSTALL_DIR"
 
 git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
 git config --global --add safe.directory /host 2>/dev/null || true
+# Try to fix .git permissions (works if run on host, best-effort inside container)
+chmod -R a+rw "$INSTALL_DIR/.git" 2>/dev/null || true
 
 # ── Auto-fix: ensure remote points to the correct repo ───────────────────────
 CORRECT_REPO="https://github.com/Sapheron/AgenticCRM.git"
