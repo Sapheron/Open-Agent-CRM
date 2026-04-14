@@ -36,7 +36,7 @@ RUN pnpm turbo build --filter=@wacrm/api
 
 FROM node:22-alpine AS runner
 RUN apk update && apk upgrade && \
-    apk add --no-cache libc6-compat git docker-cli curl bash
+    apk add --no-cache libc6-compat git docker-cli docker-cli-compose curl bash
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs && \
