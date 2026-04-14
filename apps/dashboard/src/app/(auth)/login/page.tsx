@@ -51,7 +51,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#0f0f10]">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <Image src="/full_logo.png" alt="AgenticCRM" width={220} height={60} className="invert" priority />
+          <Image src="/full_logo.png" alt="AgenticCRM" width={220} height={60} className="invert" priority unoptimized />
         </div>
 
         <div className="bg-white rounded-lg p-6 shadow-2xl shadow-black/20">
