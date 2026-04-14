@@ -190,7 +190,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {/* Logo */}
         <div className="h-12 flex items-center px-3 gap-2.5">
-          <Image src="/logo.png" alt="AgenticCRM" width={24} height={24} className="shrink-0 rounded" unoptimized />
+          <Image src="/logo.png" alt="AgenticCRM" width={24} height={24} className="shrink-0 rounded invert" unoptimized />
           {expanded && <span className="text-white text-xs font-semibold tracking-tight truncate">AgenticCRM</span>}
         </div>
 

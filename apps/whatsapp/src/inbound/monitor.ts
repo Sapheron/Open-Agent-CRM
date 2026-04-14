@@ -39,6 +39,9 @@ export class InboundMonitor {
   start() {
     this.sock.ev.on('messages.upsert', async ({ messages, type }) => {
       for (const msg of messages) {
+        // Skip protocol-only messages (read receipts, key distribution, etc.)
+        if (!msg.message) continue;
+
         // Staff self-chat: handle BEFORE the type filter because self-sent messages
         // can arrive as type='append' on some Baileys versions, not just 'notify'.
         if (msg.key?.fromMe === true && msg.key?.remoteJid) {
@@ -48,8 +51,9 @@ export class InboundMonitor {
           continue; // never treat our own messages as customer messages
         }
 
-        // Only process inbound notifications (skip echoes of our own sends)
-        if (type !== 'notify') continue;
+        // Accept both 'notify' (real-time) and 'append' (history sync, reconnect catch-up).
+        // Only skip type=undefined or other internal Baileys types.
+        if (type !== 'notify' && type !== 'append') continue;
 
         await this.handleMessage(msg).catch((err: unknown) => {
           logger.error({ accountId: this.accountId, err }, 'Error handling inbound message');
@@ -79,11 +83,15 @@ export class InboundMonitor {
     if (!account) return;
 
     // Determine if this sender is in the allowlist.
-    // Normalize both sides to digits-only to handle +/space formatting differences.
+    // Normalize both sides to digits-only. Also check suffix match to handle
+    // cases where allowlist has "9876543210" but sender is "919876543210" (with country code).
     const digitsOnly = (p: string) => p.replace(/\D/g, '');
     const senderDigits = digitsOnly(normalized.fromPhone);
     const isAllowedNumber = account.allowedNumbers.length > 0
-      && account.allowedNumbers.some((n) => digitsOnly(n) === senderDigits);
+      && account.allowedNumbers.some((n) => {
+        const allowed = digitsOnly(n);
+        return allowed === senderDigits || senderDigits.endsWith(allowed) || allowed.endsWith(senderDigits);
+      });
 
     // If allowlist is set and sender is NOT in it, skip entirely
     if (account.allowedNumbers.length > 0 && !isAllowedNumber) {
@@ -181,7 +189,7 @@ export class InboundMonitor {
         lastMessageAt: new Date(normalized.timestampMs),
         lastMessageText: normalized.body?.slice(0, 200),
         unreadCount: { increment: 1 },
-        status: conversation.status === 'RESOLVED' ? 'OPEN' : conversation.status,
+        status: (conversation.status === 'RESOLVED' || conversation.status === 'HUMAN_HANDLING') ? 'OPEN' : conversation.status,
       },
     });
 
@@ -441,13 +449,21 @@ export class InboundMonitor {
     const remotePhone = (msg.key.remoteJid as string).split('@')[0].split(':')[0].replace(/\D/g, '');
     if (!ownPhone || remotePhone !== ownPhone) return;
 
-    // Extract text content
+    // Unwrap container types (ephemeral, view-once, etc.) then extract text
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let content = msg.message as Record<string, any> | undefined;
+    if (!content) return;
+    if (content.ephemeralMessage?.message) content = content.ephemeralMessage.message;
+    if (content.viewOnceMessageV2?.message) content = content.viewOnceMessageV2.message;
+    if (content.viewOnceMessage?.message) content = content.viewOnceMessage.message;
+    if (content.editedMessage?.message) content = content.editedMessage.message;
+
     const text: string | undefined =
-      msg.message?.conversation ??
-      msg.message?.extendedTextMessage?.text ??
-      msg.message?.imageMessage?.caption ??
-      msg.message?.videoMessage?.caption ??
-      msg.message?.documentMessage?.caption;
+      content.conversation ??
+      content.extendedTextMessage?.text ??
+      content.imageMessage?.caption ??
+      content.videoMessage?.caption ??
+      content.documentMessage?.caption;
 
     if (!text?.trim()) return;
 

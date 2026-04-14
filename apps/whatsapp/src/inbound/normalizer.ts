@@ -1,5 +1,6 @@
 /**
  * Normalize a raw WAMessage into our internal InternalMessage format.
+ * Handles Baileys wrapper types: ephemeralMessage, viewOnceMessage, etc.
  */
 import type { WAMessage } from '@whiskeysockets/baileys';
 import { jidToPhone } from '@wacrm/shared';
@@ -17,6 +18,21 @@ export interface InternalMessage {
   timestampMs: number;
 }
 
+/**
+ * Unwrap Baileys container message types to get the real content.
+ * Disappearing chats wrap in ephemeralMessage, view-once in viewOnceMessageV2, etc.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function unwrapContent(raw: Record<string, any>): Record<string, any> {
+  let content = raw;
+  if (content.ephemeralMessage?.message) content = content.ephemeralMessage.message;
+  if (content.viewOnceMessageV2?.message) content = content.viewOnceMessageV2.message;
+  if (content.viewOnceMessage?.message) content = content.viewOnceMessage.message;
+  if (content.documentWithCaptionMessage?.message) content = content.documentWithCaptionMessage.message;
+  if (content.editedMessage?.message) content = content.editedMessage.message;
+  return content;
+}
+
 export function normalizeMessage(msg: WAMessage): InternalMessage | null {
   const key = msg.key;
   if (!key.id || key.fromMe) return null; // skip our own outbound messages
@@ -31,8 +47,12 @@ export function normalizeMessage(msg: WAMessage): InternalMessage | null {
   const fromJid = key.participant ?? jid;
   const fromPhone = jidToPhone(fromJid);
 
-  const content = msg.message;
-  if (!content) return null;
+  const rawContent = msg.message;
+  if (!rawContent) return null;
+
+  // Unwrap container types (ephemeral, view-once, edited, etc.)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const content = unwrapContent(rawContent as Record<string, any>);
 
   let body: string | undefined;
   let mediaType: InternalMessage['mediaType'];
@@ -68,6 +88,27 @@ export function normalizeMessage(msg: WAMessage): InternalMessage | null {
       latitude: content.locationMessage.degreesLatitude ?? 0,
       longitude: content.locationMessage.degreesLongitude ?? 0,
     };
+  } else if (content.contactMessage || content.contactsArrayMessage) {
+    body = '[Contact card shared]';
+  } else if (content.liveLocationMessage) {
+    location = {
+      latitude: content.liveLocationMessage.degreesLatitude ?? 0,
+      longitude: content.liveLocationMessage.degreesLongitude ?? 0,
+    };
+  } else if (content.buttonsResponseMessage) {
+    body = content.buttonsResponseMessage.selectedDisplayText ?? content.buttonsResponseMessage.selectedButtonId;
+  } else if (content.listResponseMessage) {
+    body = content.listResponseMessage.title ?? content.listResponseMessage.singleSelectReply?.selectedRowId;
+  } else if (content.templateButtonReplyMessage) {
+    body = content.templateButtonReplyMessage.selectedDisplayText ?? content.templateButtonReplyMessage.selectedId;
+  } else if (content.reactionMessage || content.protocolMessage || content.senderKeyDistributionMessage) {
+    // Reactions, protocol messages (deletes/reads), key distribution — skip silently
+    return null;
+  }
+  // If we reach here with no body/media/location, the message type is unrecognized.
+  // Still process it so the user sees something arrived, with a fallback body.
+  if (!body && !mediaType && !location) {
+    body = '[Unsupported message type]';
   }
 
   const pushName = msg.pushName ?? undefined;
