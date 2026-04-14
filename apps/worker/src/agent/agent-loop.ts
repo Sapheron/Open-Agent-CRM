@@ -171,12 +171,27 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
 
   const contactPhone = contact?.phoneNumber ?? '';
 
-  // Show "typing…" on WhatsApp and notify dashboard
-  await redis.publish('wa:typing', JSON.stringify({
-    accountId,
-    toPhone: contactPhone,
-    action: 'composing',
-  })).catch(() => null);
+  // ── Typing keepalive (OpenClaw pattern: createTypingController) ──────────
+  // WhatsApp "composing" status expires after ~25s. OpenClaw re-sends every 6s.
+  // We start an interval that keeps the typing indicator alive until the reply is sent.
+  const TYPING_INTERVAL_MS = 6_000;
+  let typingDone = false;
+  const sendComposing = () => {
+    if (typingDone) return;
+    redis.publish('wa:typing', JSON.stringify({
+      accountId, toPhone: contactPhone, action: 'composing',
+    })).catch(() => null);
+  };
+  sendComposing(); // initial composing
+  const typingInterval = setInterval(sendComposing, TYPING_INTERVAL_MS);
+  const stopTyping = () => {
+    typingDone = true;
+    clearInterval(typingInterval);
+    redis.publish('wa:typing', JSON.stringify({
+      accountId, toPhone: contactPhone, action: 'paused',
+    })).catch(() => null);
+  };
+
   await redis.publish(`company:${companyId}:events`, JSON.stringify({
     event: 'ai.typing',
     data: { conversationId },
@@ -224,7 +239,7 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
 
           // All providers exhausted
           logger.error({ ...logCtx, err }, 'All AI providers failed');
-          await redis.publish('wa:typing', JSON.stringify({ accountId, toPhone: contactPhone, action: 'paused' })).catch(() => null);
+          stopTyping();
           await escalateToHuman(conversationId, `AI provider error: ${errMsg.slice(0, 200)}`);
           return;
         }
@@ -330,25 +345,32 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
 
       logger.info({ ...logCtx, storedMessageId: storedMessage.id, tokens: totalTokens }, 'AI reply stored');
 
-      // Clear WhatsApp typing indicator and send the reply
-      await redis.publish('wa:typing', JSON.stringify({
-        accountId,
-        toPhone: contactPhone,
-        action: 'paused',
-      })).catch(() => null);
+      // Stop typing indicator
+      stopTyping();
 
-      await redis.publish('wa:outbound', JSON.stringify({
-        accountId,
-        contactId,
-        messageId: storedMessage.id,
-        text: replyText,
-      })).catch(() => null);
+      // Chunk long replies (OpenClaw's chunkMarkdownTextWithMode pattern).
+      // WhatsApp has a ~65K char limit but long messages are unreadable.
+      // Split at ~4000 chars respecting paragraph boundaries.
+      const chunks = chunkText(replyText, 4000);
+      for (const chunk of chunks) {
+        await redis.publish('wa:outbound', JSON.stringify({
+          accountId,
+          contactId,
+          messageId: storedMessage.id,
+          text: chunk,
+        })).catch(() => null);
+        // Brief pause between chunks so they arrive in order
+        if (chunks.length > 1) await new Promise((r) => setTimeout(r, 500));
+      }
 
       break;
     }
 
     break; // no content, no tools — done
   }
+
+  // Ensure typing is always stopped
+  stopTyping();
 
   // Transition FSM back
   if (!escalated) {
@@ -369,4 +391,41 @@ async function escalateToHuman(conversationId: string, reason: string) {
     data: { status: 'WAITING_HUMAN' },
   });
   logger.info({ conversationId, reason }, 'Escalated to human');
+}
+
+/**
+ * Split long text into chunks respecting paragraph boundaries.
+ * Mirrors OpenClaw's chunkMarkdownTextWithMode from deliver-reply.ts.
+ */
+function chunkText(text: string, maxLen: number): string[] {
+  if (text.length <= maxLen) return [text];
+
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > maxLen) {
+    // Try to split at paragraph boundary
+    let splitAt = remaining.lastIndexOf('\n\n', maxLen);
+    if (splitAt < maxLen * 0.3) {
+      // No good paragraph break — try single newline
+      splitAt = remaining.lastIndexOf('\n', maxLen);
+    }
+    if (splitAt < maxLen * 0.3) {
+      // No good line break — try space
+      splitAt = remaining.lastIndexOf(' ', maxLen);
+    }
+    if (splitAt < maxLen * 0.3) {
+      // Force split
+      splitAt = maxLen;
+    }
+
+    chunks.push(remaining.slice(0, splitAt).trimEnd());
+    remaining = remaining.slice(splitAt).trimStart();
+  }
+
+  if (remaining.trim()) {
+    chunks.push(remaining.trim());
+  }
+
+  return chunks;
 }

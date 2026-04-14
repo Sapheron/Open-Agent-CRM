@@ -13,10 +13,10 @@ const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const breakers = new Map<string, CircuitBreaker<[AiProvider, ChatMessage[], ToolDefinition[], Record<string, unknown>], ChatResponse>>();
 
 const BREAKER_OPTIONS: CircuitBreaker.Options = {
-  timeout: 35000,       // 35s — AI calls can be slow
+  timeout: 120_000,     // 2 minutes — AI calls with reasoning models can be very slow
   errorThresholdPercentage: 50,
   volumeThreshold: 5,   // minimum calls before tripping
-  resetTimeout: 60000,  // 1 minute cool-down
+  resetTimeout: 60_000, // 1 minute cool-down
 };
 
 function getBreaker(companyId: string) {
