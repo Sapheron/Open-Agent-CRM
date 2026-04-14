@@ -97,13 +97,20 @@ if [ -f "$COMPOSE_FILE" ]; then
   export GIT_BRANCH="$NEW_BRANCH"
   export APP_VERSION="$NEW_VERSION"
 
-  spinner_start "Building api, dashboard, worker, whatsapp — this takes a few minutes..."
-  docker compose -f "$COMPOSE_FILE" build api dashboard worker whatsapp > /tmp/agenticcrm-build.log 2>&1
-  BUILD_EXIT=$?
-  spinner_stop
+  echo ""
+  docker compose -f "$COMPOSE_FILE" build api dashboard worker whatsapp 2>&1 | \
+    tee /tmp/agenticcrm-build.log | \
+    while IFS= read -r line; do
+      if echo "$line" | grep -qE '^\[.*\] (Building|Step |FROM |RUN |COPY |DONE |Successfully|CACHED)'; then
+        printf "\r\033[K  ${DIM}%s${NC}\n" "$(echo "$line" | cut -c1-80)"
+      elif echo "$line" | grep -qiE '^(Building|#[0-9]+ )'; then
+        printf "\r\033[K  ${DIM}%s${NC}\n" "$(echo "$line" | cut -c1-80)"
+      fi
+    done
+  BUILD_EXIT=${PIPESTATUS[0]}
 
   if [ $BUILD_EXIT -ne 0 ]; then
-    cat /tmp/agenticcrm-build.log | tail -20 | tee -a "$LOG_FILE"
+    tail -20 /tmp/agenticcrm-build.log | tee -a "$LOG_FILE"
     fail "Docker build failed (see /tmp/agenticcrm-build.log)"
   fi
   ok "Docker images rebuilt"

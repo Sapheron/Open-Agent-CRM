@@ -91,19 +91,20 @@ echo ""
 echo -e "${W}${BOLD}"
 echo "  ┌──────────────────────────────────────────────────────────┐"
 echo "  │                                                          │"
-echo "  │          _____ ______ _   _ _______ _____ _____          │"
-echo "  │    /\\   / ____|  ____| \\ | |__   __|_   _/ ____|         │"
-echo "  │   /  \\ | |  __| |__  |  \\| |  | |    | || |              │"
-echo "  │  / /\\ \\| | |_ |  __| | . \` |  | |    | || |              │"
-echo "  │ / ____ \\ |__| | |____| |\\  |  | |   _| || |____          │"
-echo "  │/_/    \\_\\_____|______|_| \\_|  |_|  |_____\\_____|         │"
+echo "  │              _____ ______ _   _ _______ _____ _____      │"
+echo "  │        /\\   / ____|  ____| \\ | |__   __|_   _/ ____|     │"
+echo "  │       /  \\ | |  __| |__  |  \\| |  | |    | || |          │"
+echo "  │      / /\\ \\| | |_ |  __| | . \` |  | |    | || |          │"
+echo "  │     / ____ \\ |__| | |____| |\\  |  | |   _| || |____      │"
+echo "  │    /_/    \\_\\_____|______|_| \\_|  |_|  |_____\\_____|     │"
 echo "  │                                                          │"
-echo "  │                      C  R  M                             │"
-echo "  │              Agentic CRM Platform                        │"
+echo "  │                          C  R  M                         │"
+echo "  │                                                          │"
+echo "  │                     A Sapheron Project                   │"
 echo "  │                                                          │"
 echo "  └──────────────────────────────────────────────────────────┘"
 echo -e "${NC}"
-echo -e "  ${DIM}A Sapheron Project  ·  TechnoTaLim Platform and Services LLP${NC}"
+echo -e "  ${DIM}From TechnoTaLim Platform and Services LLP${NC}"
 echo ""
 echo -e "  ${DIM}Install dir :${NC} ${W}$INSTALL_DIR${NC}"
 echo -e "  ${DIM}Repository  :${NC} ${W}$REPO_URL${NC}"
@@ -357,20 +358,40 @@ export INSTALL_DIR="$INSTALL_DIR"
 
 IMAGES_EXIST=$(docker images --format "{{.Repository}}" 2>/dev/null | grep -c "agentic-crm" || true)
 
+build_images() {
+  local cache_flag="$1"
+  echo ""
+  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" build $cache_flag 2>&1 | \
+    tee /tmp/agenticcrm-build.log | \
+    while IFS= read -r line; do
+      # Show service build start/finish and Docker step lines
+      if echo "$line" | grep -qE '^\[.*\] (Building|Step |FROM |RUN |COPY |DONE |Successfully|CACHED)'; then
+        printf "\r\033[K  ${DIM}%s${NC}\n" "$(echo "$line" | cut -c1-80)"
+      elif echo "$line" | grep -qiE '^(Building|#[0-9]+ )'; then
+        printf "\r\033[K  ${DIM}%s${NC}\n" "$(echo "$line" | cut -c1-80)"
+      fi
+    done
+  return ${PIPESTATUS[0]}
+}
+
 if [[ "$IMAGES_EXIST" -gt 0 ]]; then
   if ask_skip "Images already built ($IMAGES_EXIST found)"; then
     ok "Using cached images"
   else
-    spinner_start "Rebuilding all images (this takes a few minutes)..."
-    docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" build --no-cache > /tmp/agenticcrm-build.log 2>&1
-    spinner_stop
-    ok "Images rebuilt"
+    info "Rebuilding all images..."
+    if build_images "--no-cache"; then
+      ok "Images rebuilt"
+    else
+      fail "Docker build failed — check /tmp/agenticcrm-build.log"
+    fi
   fi
 else
-  spinner_start "Building images — grab a coffee, this takes a few minutes..."
-  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" build --no-cache > /tmp/agenticcrm-build.log 2>&1
-  spinner_stop
-  ok "Images built  ${DIM}(log: /tmp/agenticcrm-build.log)${NC}"
+  info "Building images — this takes a few minutes..."
+  if build_images "--no-cache"; then
+    ok "Images built  ${DIM}(log: /tmp/agenticcrm-build.log)${NC}"
+  else
+    fail "Docker build failed — check /tmp/agenticcrm-build.log"
+  fi
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
