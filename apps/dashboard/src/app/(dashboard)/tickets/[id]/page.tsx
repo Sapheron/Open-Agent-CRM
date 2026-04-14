@@ -80,8 +80,8 @@ interface Ticket {
 }
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
-  OPEN: 'bg-blue-50 text-blue-600',
-  IN_PROGRESS: 'bg-violet-50 text-violet-700',
+  OPEN: 'bg-gray-50 text-gray-700',
+  IN_PROGRESS: 'bg-gray-50 text-gray-900',
   WAITING: 'bg-amber-50 text-amber-600',
   ESCALATED: 'bg-red-50 text-red-600',
   RESOLVED: 'bg-emerald-50 text-emerald-700',
@@ -90,7 +90,7 @@ const STATUS_COLORS: Record<TicketStatus, string> = {
 
 const PRIORITY_COLORS: Record<TicketPriority, string> = {
   LOW: 'text-gray-400',
-  MEDIUM: 'text-blue-600',
+  MEDIUM: 'text-gray-700',
   HIGH: 'text-amber-600',
   CRITICAL: 'text-red-600',
 };
@@ -212,10 +212,10 @@ export default function TicketDetailPage() {
 
             <Section title="Linked">
               {ticket.contactId ? (
-                <Link href={`/contacts/${ticket.contactId}`} className="text-[11px] text-violet-600 hover:text-violet-700 block">→ Contact</Link>
+                <Link href={`/contacts/${ticket.contactId}`} className="text-[11px] text-gray-900 hover:text-gray-900 block">→ Contact</Link>
               ) : <p className="text-[10px] text-gray-300">No contact</p>}
               {ticket.mergedIntoId && (
-                <Link href={`/tickets/${ticket.mergedIntoId}`} className="text-[11px] text-violet-600 hover:text-violet-700 block">→ Merged into</Link>
+                <Link href={`/tickets/${ticket.mergedIntoId}`} className="text-[11px] text-gray-900 hover:text-gray-900 block">→ Merged into</Link>
               )}
             </Section>
 
@@ -242,7 +242,7 @@ export default function TicketDetailPage() {
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-4 shrink-0">
             {(['comments', 'activity', 'notes'] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={cn('text-[11px] py-1 border-b-2 transition-colors', tab === t ? 'border-violet-500 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600')}>
+              <button key={t} onClick={() => setTab(t)} className={cn('text-[11px] py-1 border-b-2 transition-colors', tab === t ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600')}>
                 {t === 'comments' ? `Comments (${ticket.comments.length})` : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -267,7 +267,7 @@ export default function TicketDetailPage() {
                 )}
               </div>
               <div className="border-t border-gray-200 p-3 shrink-0 space-y-2">
-                <textarea value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment…" rows={3} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                <textarea value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment…" rows={3} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-[11px] text-gray-600">
                     <input type="checkbox" checked={commentInternal} onChange={(e) => setCommentInternal(e.target.checked)} className="accent-amber-500" />
@@ -291,9 +291,9 @@ export default function TicketDetailPage() {
                     <div className="w-4 pt-0.5 shrink-0 flex justify-center">
                       {a.type === 'RESOLVED' ? <CheckCircle2 size={11} className="text-emerald-500" /> :
                        a.type === 'ESCALATED' ? <ArrowUpCircle size={11} className="text-red-500" /> :
-                       a.type === 'ASSIGNED' ? <UserPlus size={11} className="text-blue-500" /> :
+                       a.type === 'ASSIGNED' ? <UserPlus size={11} className="text-gray-800" /> :
                        a.type === 'SLA_BREACHED' ? <AlertTriangle size={11} className="text-red-500" /> :
-                       a.type === 'MERGED' ? <GitMerge size={11} className="text-violet-500" /> :
+                       a.type === 'MERGED' ? <GitMerge size={11} className="text-gray-800" /> :
                        a.type === 'COMMENT_ADDED' ? <MessageSquare size={11} className="text-gray-400" /> :
                        <Clock size={11} className="text-gray-400" />}
                     </div>
@@ -313,7 +313,7 @@ export default function TicketDetailPage() {
 
           {tab === 'notes' && (
             <div className="flex-1 overflow-auto p-3">
-              <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Add a note to the ticket timeline..." rows={4} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 mb-2" />
+              <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Add a note to the ticket timeline..." rows={4} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2" />
               <button onClick={() => addNoteM.mutate()} disabled={!noteDraft.trim() || addNoteM.isPending} className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-30">
                 {addNoteM.isPending ? 'Saving…' : 'Add Note'}
               </button>
@@ -345,7 +345,7 @@ export default function TicketDetailPage() {
               )
             ))}
             {isTerminal && (
-              <button onClick={() => changeStatusM.mutate({ status: 'OPEN' })} className="w-full flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded text-[11px] font-medium">
+              <button onClick={() => changeStatusM.mutate({ status: 'OPEN' })} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium">
                 <LifeBuoy size={11} /> Reopen
               </button>
             )}
@@ -370,7 +370,7 @@ export default function TicketDetailPage() {
               <button onClick={() => {
                 const targetId = prompt('Merge into which ticket id?');
                 if (targetId) mergeM.mutate(targetId);
-              }} className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium">
+              }} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium">
                 <GitMerge size={11} /> Merge into…
               </button>
             </>
@@ -383,7 +383,7 @@ export default function TicketDetailPage() {
           )}
 
           <div className="pt-2 mt-2 border-t border-gray-100">
-            <Link href={`/chat?q=${encodeURIComponent(`Tell me about ticket ${ticket.ticketNumber}`)}`} className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium">
+            <Link href={`/chat?q=${encodeURIComponent(`Tell me about ticket ${ticket.ticketNumber}`)}`} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium">
               <MessageSquare size={11} /> Ask AI
             </Link>
           </div>

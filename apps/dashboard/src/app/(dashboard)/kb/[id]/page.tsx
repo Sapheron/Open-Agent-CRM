@@ -143,7 +143,7 @@ export default function KBArticleDetailPage() {
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-4 shrink-0">
             {(['content', 'activity', 'notes'] as const).map((t) => (
-              <button key={t} onClick={() => { setTab(t); if (t === 'content' && !editing) setContentDraft(article.content); }} className={cn('text-[11px] py-1 border-b-2 transition-colors', tab === t ? 'border-violet-500 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600')}>
+              <button key={t} onClick={() => { setTab(t); if (t === 'content' && !editing) setContentDraft(article.content); }} className={cn('text-[11px] py-1 border-b-2 transition-colors', tab === t ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600')}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -153,7 +153,7 @@ export default function KBArticleDetailPage() {
             <div className="flex-1 overflow-auto p-4">
               {editing ? (
                 <div className="space-y-2">
-                  <textarea value={contentDraft} onChange={(e) => setContentDraft(e.target.value)} rows={20} className="w-full border border-gray-200 rounded px-3 py-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                  <textarea value={contentDraft} onChange={(e) => setContentDraft(e.target.value)} rows={20} className="w-full border border-gray-200 rounded px-3 py-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-gray-400" />
                   <div className="flex gap-2">
                     <button onClick={() => saveContentM.mutate()} disabled={saveContentM.isPending} className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-30">{saveContentM.isPending ? 'Saving…' : 'Save'}</button>
                     <button onClick={() => setEditing(false)} className="text-gray-500 text-[11px] px-2 py-1">Cancel</button>
@@ -162,7 +162,7 @@ export default function KBArticleDetailPage() {
               ) : (
                 <div>
                   {article.status !== 'ARCHIVED' && (
-                    <button onClick={() => { setContentDraft(article.content); setEditing(true); }} className="mb-3 text-[11px] text-violet-600 hover:text-violet-700">Edit content</button>
+                    <button onClick={() => { setContentDraft(article.content); setEditing(true); }} className="mb-3 text-[11px] text-gray-900 hover:text-gray-900">Edit content</button>
                   )}
                   <pre className="whitespace-pre-wrap text-xs text-gray-800 leading-relaxed font-mono">{article.content}</pre>
                 </div>
@@ -194,7 +194,7 @@ export default function KBArticleDetailPage() {
 
           {tab === 'notes' && (
             <div className="flex-1 overflow-auto p-3">
-              <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Add a note…" rows={4} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 mb-2" />
+              <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Add a note…" rows={4} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2" />
               <button onClick={() => addNoteM.mutate()} disabled={!noteDraft.trim() || addNoteM.isPending} className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-30">{addNoteM.isPending ? 'Saving…' : 'Add Note'}</button>
               <div className="mt-4 space-y-2">
                 {article.activities?.filter((a) => a.type === 'NOTE_ADDED').map((a) => (
@@ -225,7 +225,7 @@ export default function KBArticleDetailPage() {
             <button onClick={() => archiveM.mutate()} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded text-[11px] font-medium"><Archive size={11} /> Archive</button>
           )}
           {article.status === 'ARCHIVED' && (
-            <button onClick={() => restoreM.mutate()} className="w-full flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded text-[11px] font-medium"><RotateCcw size={11} /> Restore</button>
+            <button onClick={() => restoreM.mutate()} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"><RotateCcw size={11} /> Restore</button>
           )}
           <button onClick={() => duplicateM.mutate()} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded text-[11px] font-medium"><Copy size={11} /> Duplicate</button>
           {article.status !== 'PUBLISHED' && (
@@ -240,7 +240,7 @@ export default function KBArticleDetailPage() {
           )}
 
           <div className="pt-2 mt-2 border-t border-gray-100">
-            <Link href={`/chat?q=${encodeURIComponent(`Tell me about KB article "${article.title}"`)}`} className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium">
+            <Link href={`/chat?q=${encodeURIComponent(`Tell me about KB article "${article.title}"`)}`} className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium">
               <MessageSquare size={11} /> Ask AI
             </Link>
           </div>

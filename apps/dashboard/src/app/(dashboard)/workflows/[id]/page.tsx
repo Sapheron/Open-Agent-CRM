@@ -63,7 +63,7 @@ const STATUS_COLORS: Record<WorkflowStatus, string> = {
 };
 
 const EXEC_STATUS_ICON: Record<string, React.ReactNode> = {
-  RUNNING:   <RefreshCw size={12} className="text-blue-500 animate-spin" />,
+  RUNNING:   <RefreshCw size={12} className="text-gray-800 animate-spin" />,
   COMPLETED: <CheckCircle2 size={12} className="text-emerald-500" />,
   FAILED:    <XCircle size={12} className="text-red-400" />,
   SKIPPED:   <AlertCircle size={12} className="text-gray-400" />,
@@ -190,7 +190,7 @@ export default function WorkflowDetailPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-2">
         <p className="text-xs text-gray-400">Workflow not found</p>
-        <Link href="/workflows" className="text-xs text-violet-500 hover:underline">Back to workflows</Link>
+        <Link href="/workflows" className="text-xs text-gray-800 hover:underline">Back to workflows</Link>
       </div>
     );
   }
@@ -206,7 +206,7 @@ export default function WorkflowDetailPage() {
         <Link href="/workflows" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={14} />
         </Link>
-        <Zap size={13} className="text-violet-500 shrink-0" />
+        <Zap size={13} className="text-gray-800 shrink-0" />
         <span className="text-xs font-semibold text-gray-900 truncate flex-1">{workflow.name}</span>
         <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', STATUS_COLORS[workflow.status])}>
           {workflow.status}
@@ -241,7 +241,7 @@ export default function WorkflowDetailPage() {
             {/* Trigger */}
             <div>
               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">Trigger</p>
-              <span className="text-[11px] text-gray-600 bg-violet-50 px-1.5 py-0.5 rounded">
+              <span className="text-[11px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded">
                 {(workflow.trigger as any)?.type?.replace(/_/g, ' ') ?? 'Not set'}
               </span>
             </div>
@@ -252,7 +252,7 @@ export default function WorkflowDetailPage() {
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">Tags</p>
                 <div className="flex flex-wrap gap-1">
                   {workflow.tags.map((t) => (
-                    <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-500">{t}</span>
+                    <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-800">{t}</span>
                   ))}
                 </div>
               </div>
@@ -301,7 +301,7 @@ export default function WorkflowDetailPage() {
                 className={cn(
                   'py-2.5 text-[11px] font-medium capitalize border-b-2 transition-colors',
                   tab === t
-                    ? 'border-violet-500 text-violet-600'
+                    ? 'border-gray-800 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600',
                 )}
               >
@@ -315,9 +315,9 @@ export default function WorkflowDetailPage() {
             {tab === 'steps' && (
               <div className="space-y-3">
                 {/* Trigger block */}
-                <div className="bg-violet-50 border border-violet-100 rounded-lg p-3">
-                  <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-wide mb-1">Trigger</p>
-                  <pre className="text-[11px] text-violet-700 font-mono whitespace-pre-wrap">
+                <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Trigger</p>
+                  <pre className="text-[11px] text-gray-900 font-mono whitespace-pre-wrap">
                     {JSON.stringify(workflow.trigger ?? {}, null, 2)}
                   </pre>
                 </div>
@@ -388,13 +388,13 @@ export default function WorkflowDetailPage() {
               <div className="space-y-2">
                 {/* Add note */}
                 {addingNote ? (
-                  <div className="bg-white border border-violet-200 rounded-lg p-3 space-y-2">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
                     <textarea
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       placeholder="Add a note..."
                       rows={2}
-                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-400"
+                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
                     <div className="flex gap-2">
                       <button
@@ -410,7 +410,7 @@ export default function WorkflowDetailPage() {
                 ) : (
                   <button
                     onClick={() => setAddingNote(true)}
-                    className="flex items-center gap-1.5 text-[11px] text-violet-500 hover:text-violet-700"
+                    className="flex items-center gap-1.5 text-[11px] text-gray-800 hover:text-gray-900"
                   >
                     <MessageSquarePlus size={12} /> Add note
                   </button>
@@ -429,7 +429,7 @@ export default function WorkflowDetailPage() {
                         {i < timeline.length - 1 && (
                           <span className="absolute left-[-9px] top-3.5 bottom-0 w-px bg-gray-100" />
                         )}
-                        <span className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-violet-400 border-2 border-white" />
+                        <span className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-gray-400 border-2 border-white" />
                         <div className="bg-white border border-gray-100 rounded-lg px-3 py-2">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[11px] font-medium text-gray-700">{e.title}</p>

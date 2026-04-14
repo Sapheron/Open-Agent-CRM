@@ -23,9 +23,9 @@ interface Contact {
 
 const LIFECYCLE_COLORS: Record<string, string> = {
   SUBSCRIBER: 'bg-gray-100 text-gray-500',
-  LEAD: 'bg-blue-50 text-blue-500',
-  MQL: 'bg-violet-50 text-violet-500',
-  SQL: 'bg-indigo-50 text-indigo-500',
+  LEAD: 'bg-gray-50 text-gray-800',
+  MQL: 'bg-gray-50 text-gray-800',
+  SQL: 'bg-gray-50 text-gray-800',
   OPPORTUNITY: 'bg-amber-50 text-amber-500',
   CUSTOMER: 'bg-emerald-50 text-emerald-500',
   EVANGELIST: 'bg-pink-50 text-pink-500',
@@ -101,13 +101,13 @@ export default function ContactsPage() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search..."
-              className="w-40 pl-7 pr-2 py-1 border border-gray-200 rounded text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400 placeholder:text-gray-300"
+              className="w-40 pl-7 pr-2 py-1 border border-gray-200 rounded text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder:text-gray-300"
             />
           </div>
           <select
             value={filterLifecycle}
             onChange={(e) => { setFilterLifecycle(e.target.value); setPage(1); }}
-            className="border border-gray-200 rounded px-1.5 py-1 text-[10px] text-gray-500 focus:outline-none focus:ring-1 focus:ring-violet-400"
+            className="border border-gray-200 rounded px-1.5 py-1 text-[10px] text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="">All stages</option>
             {LIFECYCLE_STAGES.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -116,7 +116,7 @@ export default function ContactsPage() {
             <select
               value={filterTag}
               onChange={(e) => { setFilterTag(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded px-1.5 py-1 text-[10px] text-gray-500 focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="border border-gray-200 rounded px-1.5 py-1 text-[10px] text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
             >
               <option value="">All tags</option>
               {tags.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
@@ -133,13 +133,13 @@ export default function ContactsPage() {
       {showForm && (
         <div className="border-b border-gray-200 bg-white p-3 shrink-0">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
-            <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Phone (required)" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Display name" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-            <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-            <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-            <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="Job title" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+            <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Phone (required)" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Display name" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="Job title" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
           </div>
           <div className="flex gap-2">
             <button onClick={() => createMutation.mutate()} disabled={!phoneNumber || createMutation.isPending} className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-30">
@@ -176,11 +176,11 @@ export default function ContactsPage() {
                 <tr
                   key={contact.id}
                   onClick={() => router.push(`/contacts/${contact.id}`)}
-                  className="hover:bg-violet-50/30 transition-colors cursor-pointer"
+                  className="hover:bg-gray-50/30 transition-colors cursor-pointer"
                 >
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-[10px] font-bold shrink-0">
                         {((contact.displayName || contact.firstName || '?')[0] ?? '?').toUpperCase()}
                       </div>
                       <span className="text-xs font-medium text-gray-900 truncate">
@@ -203,7 +203,7 @@ export default function ContactsPage() {
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1.5">
                       <div className="w-10 bg-gray-100 rounded-full h-1">
-                        <div className="bg-violet-500 h-1 rounded-full" style={{ width: `${Math.min(contact.score, 100)}%` }} />
+                        <div className="bg-gray-800 h-1 rounded-full" style={{ width: `${Math.min(contact.score, 100)}%` }} />
                       </div>
                       <span className="text-[9px] text-gray-400">{contact.score}</span>
                     </div>
@@ -211,7 +211,7 @@ export default function ContactsPage() {
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-0.5">
                       {(contact.tags ?? []).slice(0, 3).map((tag) => (
-                        <span key={tag} className="text-[9px] bg-violet-50 text-violet-500 px-1 py-0.5 rounded">
+                        <span key={tag} className="text-[9px] bg-gray-50 text-gray-800 px-1 py-0.5 rounded">
                           {tag}
                         </span>
                       ))}

@@ -250,7 +250,7 @@ export default function AiChatPage() {
       <div className="w-52 border-r border-gray-200 bg-white flex flex-col shrink-0">
         <div className="h-11 border-b border-gray-200 px-3 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Chats</span>
-          <button onClick={() => createConvMutation.mutate()} className="text-gray-400 hover:text-violet-500 p-0.5" title="New Chat">
+          <button onClick={() => createConvMutation.mutate()} className="text-gray-400 hover:text-gray-800 p-0.5" title="New Chat">
             <Plus size={13} />
           </button>
         </div>
@@ -258,7 +258,7 @@ export default function AiChatPage() {
           {!conversations?.length ? (
             <div className="p-3 text-center">
               <p className="text-[10px] text-gray-300 mb-2">No chats yet</p>
-              <button onClick={() => createConvMutation.mutate()} className="text-[10px] text-violet-500 hover:text-violet-600">
+              <button onClick={() => createConvMutation.mutate()} className="text-[10px] text-gray-800 hover:text-gray-900">
                 + New Chat
               </button>
             </div>
@@ -270,7 +270,7 @@ export default function AiChatPage() {
                   onClick={() => { setActiveConvId(conv.id); setPendingMsgs([]); }}
                   className={cn(
                     'group flex items-center gap-1.5 px-3 py-2 cursor-pointer text-xs transition-colors',
-                    activeConvId === conv.id ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50',
+                    activeConvId === conv.id ? 'bg-gray-50 text-gray-900' : 'text-gray-600 hover:bg-gray-50',
                   )}
                 >
                   <MessageSquare size={11} className="shrink-0 text-gray-300" />
@@ -291,7 +291,7 @@ export default function AiChatPage() {
       {/* Chat area */}
       <div className="flex-1 flex flex-col">
         <div className="h-11 border-b border-gray-200 px-4 flex items-center gap-2 shrink-0 bg-white">
-          <Bot size={14} className="text-violet-500" />
+          <Bot size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">AI Assistant</span>
           {config && (
             <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -304,8 +304,8 @@ export default function AiChatPage() {
           {!activeConvId ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-sm">
-                <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center mx-auto mb-3">
-                  <Bot size={20} className="text-violet-500" />
+                <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                  <Bot size={20} className="text-gray-800" />
                 </div>
                 <p className="text-sm font-medium text-gray-900 mb-1">AI CRM Assistant</p>
                 <p className="text-xs text-gray-400 mb-4">Create a new chat to start a conversation</p>
@@ -323,7 +323,7 @@ export default function AiChatPage() {
                 <p className="text-xs text-gray-400 mb-3">Type a message to start</p>
                 <div className="text-[11px] text-gray-400 space-y-1.5 text-left">
                   {['Add contact John, phone 919876543210', 'Show all leads', 'What are the analytics?', 'Create a task to follow up tomorrow'].map((ex) => (
-                    <button key={ex} onClick={() => setInput(ex)} className="block w-full text-left px-2.5 py-1.5 rounded border border-gray-100 hover:border-violet-200 hover:bg-violet-50/50 transition-colors">
+                    <button key={ex} onClick={() => setInput(ex)} className="block w-full text-left px-2.5 py-1.5 rounded border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition-colors">
                       &ldquo;{ex}&rdquo;
                     </button>
                   ))}
@@ -336,15 +336,15 @@ export default function AiChatPage() {
                 <div key={i} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className="flex items-start gap-2 max-w-lg">
                     {msg.role === 'assistant' && (
-                      <div className="w-5 h-5 rounded bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <Bot size={11} className="text-violet-500" />
+                      <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <Bot size={11} className="text-gray-800" />
                       </div>
                     )}
                     <div className={cn('px-3 py-2 rounded-lg text-xs leading-relaxed', msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-white text-gray-800 border border-gray-150 shadow-sm')}>
                       {msg.toolCalls && msg.toolCalls.length > 0 && (
                         <div className="mb-1.5 space-y-1">
                           {msg.toolCalls.map((a, ai) => (
-                            <div key={ai} className="flex items-start gap-1 text-[10px] bg-violet-50 text-violet-700 rounded px-2 py-1 border border-violet-100">
+                            <div key={ai} className="flex items-start gap-1 text-[10px] bg-gray-50 text-gray-900 rounded px-2 py-1 border border-gray-100">
                               <Wrench size={9} className="mt-0.5 shrink-0" />
                               <span><strong>{a.tool}</strong> {a.result}</span>
                             </div>
@@ -360,7 +360,7 @@ export default function AiChatPage() {
                                 'inline-flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 border',
                                 msg.role === 'user'
                                   ? 'bg-white/10 border-white/20 text-white'
-                                  : 'bg-violet-50 border-violet-100 text-violet-700',
+                                  : 'bg-gray-50 border-gray-100 text-gray-900',
                               )}
                               title={`${att.fileName} (${att.size} bytes)`}
                             >
@@ -383,8 +383,8 @@ export default function AiChatPage() {
               {chatMutation.isPending && (
                 <div className="flex justify-start">
                   <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded bg-violet-100 flex items-center justify-center shrink-0">
-                      <Bot size={11} className="text-violet-500" />
+                    <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center shrink-0">
+                      <Bot size={11} className="text-gray-800" />
                     </div>
                     <div className="bg-white text-gray-400 px-3 py-2 rounded-lg border border-gray-150 shadow-sm text-xs flex items-center gap-1.5">
                       <Loader2 size={11} className="animate-spin" /> Thinking...
@@ -411,7 +411,7 @@ export default function AiChatPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={att.previewUrl} alt={att.fileName} className="w-6 h-6 object-cover rounded shrink-0" />
                   ) : (
-                    <FileText size={11} className="text-violet-500 shrink-0" />
+                    <FileText size={11} className="text-gray-800 shrink-0" />
                   )}
                   <span className="truncate flex-1">{att.fileName}</span>
                   <button
@@ -440,7 +440,7 @@ export default function AiChatPage() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={!activeConvId || !config?.apiKeySet || pendingAttachments.length >= MAX_ATTACHMENTS}
-              className="text-gray-400 hover:text-violet-500 disabled:opacity-30 disabled:cursor-not-allowed p-2 shrink-0"
+              className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed p-2 shrink-0"
               title={`Attach files (max ${MAX_ATTACHMENTS}, 5 MB each)`}
             >
               <Paperclip size={14} />
@@ -453,7 +453,7 @@ export default function AiChatPage() {
               placeholder={activeConvId ? (config?.apiKeySet ? 'Ask AI anything... (paste or attach files)' : 'Configure AI in Settings first') : 'Create a new chat to start'}
               disabled={!activeConvId || !config?.apiKeySet}
               rows={1}
-              className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-400 max-h-24 disabled:bg-gray-50 disabled:text-gray-300 placeholder:text-gray-300"
+              className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-gray-400 max-h-24 disabled:bg-gray-50 disabled:text-gray-300 placeholder:text-gray-300"
             />
             <button
               onClick={handleSend}

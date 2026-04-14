@@ -1,99 +1,156 @@
 #!/usr/bin/env bash
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║          Open Agent CRM — In-Place Updater                                 ║
-# ║          Triggered from the dashboard or run manually.                     ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
+# AgenticCRM — In-Place Updater
+# Triggered from the dashboard (Settings → System) or run manually.
 
-INSTALL_DIR="${INSTALL_DIR:-/opt/openagentcrm}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/agenticcrm}"
 COMPOSE_FILE="$INSTALL_DIR/deploy/docker-compose.yml"
-# Use /tmp — INSTALL_DIR may be mounted read-only inside the API container
-LOG_FILE="/tmp/openagentcrm-update.log"
+LOG_FILE="/tmp/agenticcrm-update.log"
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# ── ANSI ──────────────────────────────────────────────────────────────────────
+R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'
+C='\033[0;36m'; W='\033[1;37m'; DIM='\033[2m'; BOLD='\033[1m'; NC='\033[0m'
+
 ts()   { date '+%Y-%m-%d %H:%M:%S'; }
 info() { echo "[$(ts)] INFO  $*" | tee -a "$LOG_FILE"; }
 warn() { echo "[$(ts)] WARN  $*" | tee -a "$LOG_FILE"; }
 fail() { echo "[$(ts)] ERROR $*" | tee -a "$LOG_FILE"; exit 1; }
 ok()   { echo "[$(ts)] OK    $*" | tee -a "$LOG_FILE"; }
 
-# ── Start ────────────────────────────────────────────────────────────────────
+# ── Spinner ───────────────────────────────────────────────────────────────────
+_SPIN_PID=""
+spinner_start() {
+  local msg="$1"; local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  (local i=0; while true; do
+    printf "\r  ${C}%s${NC}  ${DIM}%s${NC}" "${frames[$i]}" "$msg"
+    i=$(( (i+1) % ${#frames[@]} )); sleep 0.08
+  done) &
+  _SPIN_PID=$!; disown "$_SPIN_PID" 2>/dev/null || true
+}
+spinner_stop() {
+  [[ -n "$_SPIN_PID" ]] && { kill "$_SPIN_PID" 2>/dev/null || true; wait "$_SPIN_PID" 2>/dev/null || true; _SPIN_PID=""; printf "\r\033[K"; }
+}
+trap 'spinner_stop' EXIT
+
+# ── Start ─────────────────────────────────────────────────────────────────────
 echo "" > "$LOG_FILE"
-info "═══ Open Agent CRM Update Started ═══"
+
+echo ""
+echo -e "${W}${BOLD}"
+echo "  ┌─────────────────────────────────────────────────────┐"
+echo "  │         AgenticCRM — Updater                        │"
+echo "  │         A Sapheron Project                          │"
+echo "  └─────────────────────────────────────────────────────┘"
+echo -e "${NC}"
+
+info "═══ AgenticCRM Update Started ═══"
 info "Install directory: $INSTALL_DIR"
 
 cd "$INSTALL_DIR" || fail "Cannot cd to $INSTALL_DIR"
 
-# Allow git to operate even when running as a different user (e.g. root inside API container)
 git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
 git config --global --add safe.directory /host 2>/dev/null || true
 
-# ── Step 1: Save current version ─────────────────────────────────────────────
+# ── Step 1: Current version ───────────────────────────────────────────────────
+echo -e "\n  ${W}${BOLD}[1/6]${NC}  Reading current version..."
 OLD_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-info "Current version: $OLD_HASH"
+OLD_VERSION=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "unknown")
+info "Current: v$OLD_VERSION ($OLD_HASH)"
+echo -e "  ${DIM}Current version : v$OLD_VERSION ($OLD_HASH)${NC}"
 
-# ── Step 2: Pull latest code ─────────────────────────────────────────────────
-info "Pulling latest code from origin/main..."
-git fetch origin main || fail "git fetch failed"
-git reset --hard origin/main || fail "git reset failed"
+# ── Step 2: Pull latest ───────────────────────────────────────────────────────
+echo -e "\n  ${W}${BOLD}[2/6]${NC}  Pulling latest code..."
+spinner_start "Fetching from origin/main..."
+git fetch origin main 2>&1 | tee -a "$LOG_FILE" > /dev/null || { spinner_stop; fail "git fetch failed"; }
+git reset --hard origin/main 2>&1 | tee -a "$LOG_FILE" > /dev/null || { spinner_stop; fail "git reset failed"; }
+spinner_stop
+
 NEW_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 NEW_HASH_FULL=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
 NEW_DATE=$(git log -1 --format=%cI 2>/dev/null || echo "unknown")
 NEW_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-info "Updated to: $NEW_HASH"
+NEW_VERSION=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "1.0.0")
+
+echo -e "  ${G}✔${NC}  Updated to v$NEW_VERSION ($NEW_HASH)"
+info "Updated to: v$NEW_VERSION ($NEW_HASH)"
 
 if [ "$OLD_HASH" = "$NEW_HASH" ]; then
+  echo -e "  ${Y}⚠${NC}  Already up to date. Nothing to do."
   ok "Already up to date. Nothing to do."
   exit 0
 fi
 
-# ── Step 3: Read version from package.json ────────────────────────────────────
-APP_VERSION=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "1.0.0")
-info "App version: $APP_VERSION"
+echo -e "  ${DIM}$OLD_HASH → $NEW_HASH  (v$OLD_VERSION → v$NEW_VERSION)${NC}"
 
-# ── Step 4: Rebuild Docker images with version info ──────────────────────────
-info "Rebuilding Docker images..."
+# ── Step 3: Rebuild Docker images ─────────────────────────────────────────────
+echo -e "\n  ${W}${BOLD}[3/6]${NC}  Rebuilding Docker images..."
 if [ -f "$COMPOSE_FILE" ]; then
   export GIT_HASH="$NEW_HASH_FULL"
   export GIT_DATE="$NEW_DATE"
   export GIT_BRANCH="$NEW_BRANCH"
-  export APP_VERSION="$APP_VERSION"
+  export APP_VERSION="$NEW_VERSION"
 
-  docker compose -f "$COMPOSE_FILE" build api dashboard worker whatsapp 2>&1 | tee -a "$LOG_FILE"
-  if [ ${PIPESTATUS[0]} -ne 0 ]; then
-    fail "Docker build failed"
+  spinner_start "Building api, dashboard, worker, whatsapp — this takes a few minutes..."
+  docker compose -f "$COMPOSE_FILE" build api dashboard worker whatsapp > /tmp/agenticcrm-build.log 2>&1
+  BUILD_EXIT=$?
+  spinner_stop
+
+  if [ $BUILD_EXIT -ne 0 ]; then
+    cat /tmp/agenticcrm-build.log | tail -20 | tee -a "$LOG_FILE"
+    fail "Docker build failed (see /tmp/agenticcrm-build.log)"
   fi
   ok "Docker images rebuilt"
+  echo -e "  ${G}✔${NC}  Images rebuilt"
 else
   warn "No docker-compose.yml found at $COMPOSE_FILE — skipping build"
 fi
 
-# ── Step 5: Run database migrations ──────────────────────────────────────────
-info "Running database migrations..."
+# ── Step 4: Migrations ────────────────────────────────────────────────────────
+echo -e "\n  ${W}${BOLD}[4/6]${NC}  Running database migrations..."
 if [ -f "$COMPOSE_FILE" ]; then
-  docker compose -f "$COMPOSE_FILE" run --rm api npx prisma migrate deploy --schema=./node_modules/@wacrm/database/prisma/schema.prisma 2>&1 | tee -a "$LOG_FILE"
+  spinner_start "Applying schema migrations..."
+  docker compose -f "$COMPOSE_FILE" run --rm api npx prisma migrate deploy \
+    --schema=./node_modules/@wacrm/database/prisma/schema.prisma 2>&1 | tee -a "$LOG_FILE" > /dev/null
+  spinner_stop
   ok "Migrations applied"
+  echo -e "  ${G}✔${NC}  Migrations applied"
 fi
 
-# ── Step 6: Restart services ────────────────────────────────────────────────
-info "Restarting services..."
+# ── Step 5: Restart services ──────────────────────────────────────────────────
+echo -e "\n  ${W}${BOLD}[5/6]${NC}  Restarting services..."
 if [ -f "$COMPOSE_FILE" ]; then
-  docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1 | tee -a "$LOG_FILE"
+  spinner_start "Bringing services up..."
+  docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1 | tee -a "$LOG_FILE" > /dev/null
+  spinner_stop
   ok "Services restarted"
+  echo -e "  ${G}✔${NC}  Services restarted"
 fi
 
-# ── Step 7: Health check ────────────────────────────────────────────────────
-info "Waiting for API health check..."
+# ── Step 6: Health check ──────────────────────────────────────────────────────
+echo -e "\n  ${W}${BOLD}[6/6]${NC}  Health check..."
+spinner_start "Waiting for API..."
 for i in $(seq 1 30); do
   if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+    spinner_stop
     ok "API is healthy"
+    echo -e "  ${G}✔${NC}  API is healthy"
     break
   fi
   if [ "$i" -eq 30 ]; then
-    warn "API health check timed out after 30 seconds"
+    spinner_stop
+    warn "API health check timed out after 30s — check: docker compose logs api"
   fi
   sleep 1
 done
 
-# ── Done ─────────────────────────────────────────────────────────────────────
-info "═══ Update Complete: $OLD_HASH → $NEW_HASH ═══"
+# ── Done ──────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${G}${BOLD}"
+echo "  ┌─────────────────────────────────────────────────────┐"
+echo "  │    ✔  Update complete                               │"
+echo "  └─────────────────────────────────────────────────────┘"
+echo -e "${NC}"
+echo -e "  ${DIM}$OLD_HASH → $NEW_HASH  (v$OLD_VERSION → v$NEW_VERSION)${NC}"
+echo -e "  ${DIM}Log: $LOG_FILE${NC}"
+echo ""
+info "═══ Update Complete: v$OLD_VERSION ($OLD_HASH) → v$NEW_VERSION ($NEW_HASH) ═══"
 exit 0

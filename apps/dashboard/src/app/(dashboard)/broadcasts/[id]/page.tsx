@@ -195,7 +195,7 @@ export default function BroadcastDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {editable && !editMode && (
-            <button onClick={startEdit} className="text-[11px] text-violet-600 hover:text-violet-700">Edit</button>
+            <button onClick={startEdit} className="text-[11px] text-gray-900 hover:text-gray-900">Edit</button>
           )}
           {editMode && (
             <>
@@ -207,7 +207,7 @@ export default function BroadcastDetailPage() {
           )}
           <button
             onClick={() => duplicateMutation.mutate()}
-            className="text-gray-400 hover:text-violet-500 p-1"
+            className="text-gray-400 hover:text-gray-800 p-1"
             title="Duplicate"
           >
             <Copy size={12} />
@@ -241,14 +241,14 @@ export default function BroadcastDetailPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <div className="flex-1 bg-gray-100 rounded-full h-1">
-                        <div className="bg-violet-500 h-1 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                        <div className="bg-gray-800 h-1 rounded-full transition-all" style={{ width: `${progress}%` }} />
                       </div>
                       <span className="text-[10px] text-gray-500">{progress}%</span>
                     </div>
                     <div className="text-[10px] text-gray-500 space-y-0.5">
                       <div>✓ Sent: {broadcast.sentCount}</div>
                       <div className="text-emerald-600">📨 Delivered: {broadcast.deliveredCount}</div>
-                      <div className="text-blue-600">👁 Read: {broadcast.readCount}</div>
+                      <div className="text-gray-700">👁 Read: {broadcast.readCount}</div>
                       {broadcast.failedCount > 0 && <div className="text-red-600">✗ Failed: {broadcast.failedCount}</div>}
                       {broadcast.skippedCount > 0 && <div className="text-gray-400">↷ Skipped: {broadcast.skippedCount}</div>}
                     </div>
@@ -306,7 +306,7 @@ export default function BroadcastDetailPage() {
                 onClick={() => setTab(key)}
                 className={cn(
                   'text-[11px] py-2 border-b-2 transition flex items-center gap-1.5',
-                  tab === key ? 'border-violet-500 text-violet-700 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
+                  tab === key ? 'border-gray-800 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
                 )}
               >
                 <Icon size={11} /> {label}
@@ -319,7 +319,7 @@ export default function BroadcastDetailPage() {
             <div className="p-4 space-y-3">
               {/* Audience builder (only in DRAFT) */}
               {!audienceLocked && (
-                <div className="border border-violet-200 bg-violet-50/30 rounded p-3 space-y-2">
+                <div className="border border-gray-200 bg-gray-50/30 rounded p-3 space-y-2">
                   <p className="text-[11px] font-medium text-gray-700">Set audience by tags</p>
                   <div className="flex gap-2">
                     <input
@@ -399,7 +399,7 @@ export default function BroadcastDetailPage() {
                             r.status === 'SENT' || r.status === 'DELIVERED' || r.status === 'READ' ? 'bg-emerald-50 text-emerald-700' :
                             r.status === 'FAILED' ? 'bg-red-50 text-red-700' :
                             r.status === 'SKIPPED' ? 'bg-gray-100 text-gray-500' :
-                            'bg-blue-50 text-blue-700',
+                            'bg-gray-50 text-gray-900',
                           )}>
                             {r.status}
                           </span>
@@ -425,7 +425,7 @@ export default function BroadcastDetailPage() {
               <div className="border border-gray-200 rounded p-3 bg-gray-50/50">
                 <pre className="text-[12px] text-gray-800 whitespace-pre-wrap font-sans">{broadcast.message}</pre>
                 {broadcast.mediaUrl && (
-                  <p className="text-[10px] text-violet-600 mt-2">📎 Media: {broadcast.mediaUrl}</p>
+                  <p className="text-[10px] text-gray-900 mt-2">📎 Media: {broadcast.mediaUrl}</p>
                 )}
               </div>
               <p className="text-[10px] text-gray-400">
@@ -442,7 +442,7 @@ export default function BroadcastDetailPage() {
               ) : (
                 broadcast.activities.map((a) => (
                   <div key={a.id} className="flex gap-2">
-                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-violet-300 shrink-0" />
+                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-300 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
                         <span className="font-mono uppercase tracking-wider">{a.type}</span>
@@ -468,7 +468,7 @@ export default function BroadcastDetailPage() {
             <div className="space-y-1">
               {broadcast.status === 'DRAFT' && broadcast.totalRecipients > 0 && (
                 <>
-                  <div className="border border-violet-200 rounded p-2 space-y-1">
+                  <div className="border border-gray-200 rounded p-2 space-y-1">
                     <input
                       type="datetime-local"
                       value={scheduleAt}
@@ -532,7 +532,7 @@ export default function BroadcastDetailPage() {
               {broadcast.status === 'PAUSED' && (
                 <button
                   onClick={() => resumeMutation.mutate()}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <Play size={11} /> Resume
                 </button>
@@ -540,7 +540,7 @@ export default function BroadcastDetailPage() {
               {(broadcast.status === 'COMPLETED' || broadcast.status === 'FAILED' || broadcast.status === 'PAUSED') && broadcast.failedCount > 0 && (
                 <button
                   onClick={() => retryMutation.mutate()}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <RefreshCw size={11} /> Retry {broadcast.failedCount} failed
                 </button>

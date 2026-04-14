@@ -58,7 +58,7 @@ function WebhookRow({ gateway: _gateway, info }: { gateway: string; info: typeof
           <p className="text-xs text-gray-500 mt-0.5">Subscribe to these events in your {info.label} dashboard</p>
         </div>
         {info.setupUrl && (
-          <a href={info.setupUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
+          <a href={info.setupUrl} target="_blank" rel="noreferrer" className="text-gray-700 hover:text-gray-900 text-xs flex items-center gap-1">
             Open Dashboard <ExternalLink size={10} />
           </a>
         )}
@@ -73,7 +73,7 @@ function WebhookRow({ gateway: _gateway, info }: { gateway: string; info: typeof
 
       <div className="flex flex-wrap gap-2">
         {info.events.map((event) => (
-          <span key={event} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">{event}</span>
+          <span key={event} className="text-xs bg-gray-50 text-gray-900 px-2 py-0.5 rounded-full font-mono">{event}</span>
         ))}
       </div>
     </div>

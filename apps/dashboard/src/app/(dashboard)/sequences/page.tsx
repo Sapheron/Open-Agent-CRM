@@ -188,7 +188,7 @@ export default function SequencesPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Sequence name (required)"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-gray-400"
             autoFocus
           />
           <div className="flex gap-2">
@@ -223,13 +223,13 @@ export default function SequencesPage() {
             <div className="text-[10px] text-emerald-600 uppercase tracking-wider font-medium">Active</div>
             <div className="text-lg font-semibold text-emerald-700 mt-1">{stats.activeSequences}</div>
           </div>
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="text-[10px] text-blue-600 uppercase tracking-wider font-medium">Enrollments</div>
-            <div className="text-lg font-semibold text-blue-700 mt-1">{stats.totalEnrollments}</div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-[10px] text-gray-700 uppercase tracking-wider font-medium">Enrollments</div>
+            <div className="text-lg font-semibold text-gray-900 mt-1">{stats.totalEnrollments}</div>
           </div>
-          <div className="bg-violet-50 rounded-lg p-3">
-            <div className="text-[10px] text-violet-600 uppercase tracking-wider font-medium">Completion</div>
-            <div className="text-lg font-semibold text-violet-700 mt-1">{Math.round(stats.overallCompletionRate * 100)}%</div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-[10px] text-gray-900 uppercase tracking-wider font-medium">Completion</div>
+            <div className="text-lg font-semibold text-gray-900 mt-1">{Math.round(stats.overallCompletionRate * 100)}%</div>
           </div>
           <div className="bg-orange-50 rounded-lg p-3">
             <div className="text-[10px] text-orange-600 uppercase tracking-wider font-medium">Active Enroll</div>
@@ -246,13 +246,13 @@ export default function SequencesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search sequences..."
-            className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+          className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
         >
           <option value="">All Status</option>
           <option value="DRAFT">Draft</option>

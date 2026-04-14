@@ -53,8 +53,8 @@ interface Stats {
 }
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
-  OPEN: 'bg-blue-50 text-blue-600',
-  IN_PROGRESS: 'bg-violet-50 text-violet-700',
+  OPEN: 'bg-gray-50 text-gray-700',
+  IN_PROGRESS: 'bg-gray-50 text-gray-900',
   WAITING: 'bg-amber-50 text-amber-600',
   ESCALATED: 'bg-red-50 text-red-600',
   RESOLVED: 'bg-emerald-50 text-emerald-700',
@@ -63,7 +63,7 @@ const STATUS_COLORS: Record<TicketStatus, string> = {
 
 const PRIORITY_COLORS: Record<TicketPriority, string> = {
   LOW: 'text-gray-400',
-  MEDIUM: 'text-blue-600',
+  MEDIUM: 'text-gray-700',
   HIGH: 'text-amber-600',
   CRITICAL: 'text-red-600',
 };
@@ -140,13 +140,13 @@ export default function TicketsPage() {
     <div className="h-full flex flex-col">
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <LifeBuoy size={14} className="text-violet-500" />
+          <LifeBuoy size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Tickets</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tickets..." className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tickets..." className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-gray-400" />
           </div>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1 rounded text-[11px] font-medium">
             <Plus size={11} /> New Ticket
@@ -171,7 +171,7 @@ export default function TicketsPage() {
             <div className="space-y-1">
               {ALL_STATUSES.map((s) => (
                 <label key={s} className="flex items-center gap-2 cursor-pointer text-[11px]">
-                  <input type="checkbox" checked={selectedStatuses.has(s)} onChange={() => toggleStatus(s)} className="accent-violet-500 w-3 h-3" />
+                  <input type="checkbox" checked={selectedStatuses.has(s)} onChange={() => toggleStatus(s)} className="accent-gray-800 w-3 h-3" />
                   <span className={cn('px-1.5 py-0.5 rounded text-[10px]', STATUS_COLORS[s])}>{s}</span>
                 </label>
               ))}
@@ -182,14 +182,14 @@ export default function TicketsPage() {
             <div className="space-y-1">
               {ALL_PRIORITIES.map((p) => (
                 <label key={p} className="flex items-center gap-2 cursor-pointer text-[11px]">
-                  <input type="checkbox" checked={selectedPriorities.has(p)} onChange={() => togglePriority(p)} className="accent-violet-500 w-3 h-3" />
+                  <input type="checkbox" checked={selectedPriorities.has(p)} onChange={() => togglePriority(p)} className="accent-gray-800 w-3 h-3" />
                   <span className={cn('text-[10px]', PRIORITY_COLORS[p])}>{p}</span>
                 </label>
               ))}
             </div>
           </div>
           {(selectedStatuses.size > 0 || selectedPriorities.size > 0 || search) && (
-            <button onClick={() => { setSelectedStatuses(new Set()); setSelectedPriorities(new Set()); setSearch(''); }} className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700">
+            <button onClick={() => { setSelectedStatuses(new Set()); setSelectedPriorities(new Set()); setSearch(''); }} className="flex items-center gap-1 text-[10px] text-gray-900 hover:text-gray-900">
               <X size={10} /> Clear filters
             </button>
           )}
@@ -197,8 +197,8 @@ export default function TicketsPage() {
 
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           {selectedIds.size > 0 && (
-            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-violet-50">
-              <span className="text-[11px] text-violet-700 font-medium">{selectedIds.size} selected</span>
+            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-gray-50">
+              <span className="text-[11px] text-gray-900 font-medium">{selectedIds.size} selected</span>
               <div className="flex-1" />
               <button onClick={() => bulkClose.mutate()} className="flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-800 px-2 py-1 rounded hover:bg-white"><XCircle size={11} /> Close</button>
               <button onClick={() => { if (confirm(`Delete ${selectedIds.size} ticket(s)?`)) bulkDelete.mutate(); }} className="flex items-center gap-1 text-[11px] text-red-700 hover:text-red-800 px-2 py-1 rounded hover:bg-white"><Trash2 size={11} /> Delete</button>
@@ -219,7 +219,7 @@ export default function TicketsPage() {
                 <thead className="bg-gray-50/80 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     <th className="w-8 px-2 py-2">
-                      <input type="checkbox" checked={allSelected} onChange={(e) => { if (e.target.checked) setSelectedIds(new Set(items.map((t) => t.id))); else setSelectedIds(new Set()); }} className="accent-violet-500 w-3 h-3" />
+                      <input type="checkbox" checked={allSelected} onChange={(e) => { if (e.target.checked) setSelectedIds(new Set(items.map((t) => t.id))); else setSelectedIds(new Set()); }} className="accent-gray-800 w-3 h-3" />
                     </th>
                     {['Number', 'Title', 'Status', 'Priority', 'Category', 'SLA', 'Updated'].map((h) => (
                       <th key={h} className="text-left px-2 py-2 text-[9px] font-medium text-gray-400 uppercase tracking-wider">{h}</th>
@@ -232,10 +232,10 @@ export default function TicketsPage() {
                     return (
                       <tr key={t.id} className="hover:bg-gray-50/50">
                         <td className="px-2 py-2 w-8">
-                          <input type="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleSelect(t.id)} className="accent-violet-500 w-3 h-3" />
+                          <input type="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleSelect(t.id)} className="accent-gray-800 w-3 h-3" />
                         </td>
                         <td className="px-2 py-2">
-                          <Link href={`/tickets/${t.id}`} className="text-xs font-medium text-gray-900 hover:text-violet-600 font-mono">
+                          <Link href={`/tickets/${t.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900 font-mono">
                             {t.ticketNumber}
                           </Link>
                         </td>
@@ -281,7 +281,7 @@ export default function TicketsPage() {
 }
 
 function StatTile({ label, value, tint }: { label: string; value: string | number; tint?: 'emerald' | 'blue' | 'violet' | 'red' }) {
-  const tints: Record<string, string> = { emerald: 'text-emerald-600', blue: 'text-blue-600', violet: 'text-violet-600', red: 'text-red-600' };
+  const tints: Record<string, string> = { emerald: 'text-emerald-600', blue: 'text-gray-700', violet: 'text-gray-900', red: 'text-red-600' };
   return (
     <div className="bg-gray-50/80 border border-gray-100 rounded px-2.5 py-1.5">
       <div className="text-[9px] uppercase tracking-widest text-gray-400 font-medium">{label}</div>
@@ -312,8 +312,8 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
           <h3 className="text-xs font-semibold">New Ticket</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" autoFocus />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={3} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" autoFocus />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={3} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         <div className="grid grid-cols-2 gap-2">
           <label className="text-[10px] text-gray-500">
             <span className="block uppercase tracking-widest mb-0.5">Priority</span>

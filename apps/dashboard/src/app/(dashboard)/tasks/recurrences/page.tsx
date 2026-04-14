@@ -69,7 +69,7 @@ export default function TaskRecurrencesPage() {
           <button onClick={() => router.push('/tasks')} className="text-gray-400 hover:text-gray-600">
             <ArrowLeft size={14} />
           </button>
-          <Repeat size={14} className="text-violet-500" />
+          <Repeat size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Recurring Tasks</span>
         </div>
         <button
@@ -138,7 +138,7 @@ export default function TaskRecurrencesPage() {
                     <td className="px-3 py-2 flex items-center justify-end gap-1">
                       <button
                         onClick={() => pauseMutation.mutate({ id: r.id, action: r.isActive ? 'pause' : 'resume' })}
-                        className="text-gray-400 hover:text-violet-500"
+                        className="text-gray-400 hover:text-gray-800"
                         title={r.isActive ? 'Pause' : 'Resume'}
                       >
                         {r.isActive ? <Power size={11} /> : <PowerOff size={11} />}
@@ -208,7 +208,7 @@ function CreateRecurrenceModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
         </div>
 
-        <input value={templateTitle} onChange={(e) => setTitle(e.target.value)} placeholder="Task title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={templateTitle} onChange={(e) => setTitle(e.target.value)} placeholder="Task title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         <textarea value={templateBody} onChange={(e) => setBody(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none" />
 
         <div className="grid grid-cols-2 gap-2">
@@ -232,7 +232,7 @@ function CreateRecurrenceModal({ onClose }: { onClose: () => void }) {
                   className={cn(
                     'text-[10px] px-2 py-1 rounded border',
                     daysOfWeek.includes(i)
-                      ? 'bg-violet-100 text-violet-700 border-violet-300'
+                      ? 'bg-gray-100 text-gray-900 border-gray-300'
                       : 'bg-white text-gray-500 border-gray-200',
                   )}
                 >

@@ -210,7 +210,7 @@ export default function DealDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {!editMode ? (
-            <button onClick={startEdit} className="text-[11px] text-violet-600 hover:text-violet-700">Edit</button>
+            <button onClick={startEdit} className="text-[11px] text-gray-900 hover:text-gray-900">Edit</button>
           ) : (
             <>
               <button onClick={() => setEditMode(false)} className="text-[11px] text-gray-500">Cancel</button>
@@ -247,7 +247,7 @@ export default function DealDetailPage() {
               } />
               {deal.lead && (
                 <Field label="Source lead" value={
-                  <span className="text-[11px] text-violet-600">{deal.lead.title} ({deal.lead.status})</span>
+                  <span className="text-[11px] text-gray-900">{deal.lead.title} ({deal.lead.status})</span>
                 } />
               )}
               <Field label="Value" value={
@@ -257,7 +257,7 @@ export default function DealDetailPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-100 rounded-full h-1.5">
                     <div
-                      className={cn('h-1.5 rounded-full', deal.probability >= 70 ? 'bg-emerald-500' : deal.probability >= 40 ? 'bg-violet-500' : 'bg-gray-300')}
+                      className={cn('h-1.5 rounded-full', deal.probability >= 70 ? 'bg-emerald-500' : deal.probability >= 40 ? 'bg-gray-800' : 'bg-gray-300')}
                       style={{ width: `${deal.probability}%` }}
                     />
                   </div>
@@ -272,7 +272,7 @@ export default function DealDetailPage() {
               <Field label="Tags" value={
                 <div className="flex flex-wrap gap-1">
                   {deal.tags.length === 0 ? '—' : deal.tags.map((t) => (
-                    <span key={t} className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded">{t}</span>
+                    <span key={t} className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded">{t}</span>
                   ))}
                 </div>
               } />
@@ -304,7 +304,7 @@ export default function DealDetailPage() {
           ) : (
             <>
               <EditField label="Title">
-                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 rounded px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 rounded px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400" />
               </EditField>
               <EditField label="Value">
                 <div className="flex gap-1">
@@ -350,7 +350,7 @@ export default function DealDetailPage() {
                 onClick={() => setTab(t)}
                 className={cn(
                   'text-[11px] py-2 border-b-2 transition',
-                  tab === t ? 'border-violet-500 text-violet-700 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
+                  tab === t ? 'border-gray-800 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
                 )}
               >
                 {t === 'timeline' ? 'Activity' : t === 'lineItems' ? `Line items (${deal.lineItems.length})` : `Linked (${deal.payments.length + deal.tasks.length})`}
@@ -384,7 +384,7 @@ export default function DealDetailPage() {
                 ) : (
                   deal.activities.map((a) => (
                     <div key={a.id} className="flex gap-2">
-                      <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-violet-300 shrink-0" />
+                      <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-300 shrink-0" />
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
                           <span className="font-mono uppercase tracking-wider">{a.type}</span>
@@ -520,7 +520,7 @@ export default function DealDetailPage() {
               {!isClosed && deal.stage !== 'QUALIFIED' && (
                 <button
                   onClick={() => stageMutation.mutate({ stage: 'QUALIFIED' })}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <CheckCircle size={11} /> Qualify
                 </button>
@@ -552,7 +552,7 @@ export default function DealDetailPage() {
               {isClosed && (
                 <button
                   onClick={() => reopenMutation.mutate()}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <RefreshCw size={11} /> Reopen
                 </button>
@@ -599,7 +599,7 @@ function LineItemForm({
   const [taxRate, setTaxRate] = useState('0');
 
   return (
-    <div className="border border-violet-200 bg-violet-50/30 rounded p-2 space-y-2">
+    <div className="border border-gray-200 bg-gray-50/30 rounded p-2 space-y-2">
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="w-full border border-gray-200 rounded px-2 py-1 text-[11px]" />
       <div className="grid grid-cols-4 gap-1.5">
         <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" placeholder="Qty" className="border border-gray-200 rounded px-2 py-1 text-[11px]" />

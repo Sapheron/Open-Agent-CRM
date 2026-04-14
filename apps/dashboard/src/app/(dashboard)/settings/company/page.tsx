@@ -42,8 +42,8 @@ export default function CompanySettingsPage() {
   return (
     <div className="p-6 max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-          <Building2 size={20} className="text-purple-600" />
+        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
+          <Building2 size={20} className="text-gray-900" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">Company Settings</h1>
@@ -54,23 +54,23 @@ export default function CompanySettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <div>
           <label className="text-sm font-medium text-gray-700">Company Name *</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
+          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Business Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Phone</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Website</label>
-          <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400" />
+          <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400" />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Timezone</label>
-          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400">
+          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400">
             {timezones.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
           </select>
         </div>

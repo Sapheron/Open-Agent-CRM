@@ -361,7 +361,7 @@ export default function FormDetailPage() {
                     {form.autoTagContact.map((t) => (
                       <span
                         key={t}
-                        className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded"
+                        className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded"
                       >
                         {t}
                       </span>
@@ -407,7 +407,7 @@ export default function FormDetailPage() {
                 className={cn(
                   'text-[11px] py-1 border-b-2 transition-colors',
                   tab === t
-                    ? 'border-violet-500 text-gray-900'
+                    ? 'border-gray-800 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600',
                 )}
               >
@@ -435,7 +435,7 @@ export default function FormDetailPage() {
                   {form.fields.map((f, i) => (
                     <div
                       key={f.key}
-                      className="border border-gray-200 rounded p-2.5 hover:border-violet-200 group"
+                      className="border border-gray-200 rounded p-2.5 hover:border-gray-200 group"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -462,7 +462,7 @@ export default function FormDetailPage() {
                               {f.options.map((o) => (
                                 <span
                                   key={o.value}
-                                  className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded"
+                                  className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded"
                                 >
                                   {o.label}
                                 </span>
@@ -486,7 +486,7 @@ export default function FormDetailPage() {
               {form.status !== 'ARCHIVED' && (
                 <button
                   onClick={() => setShowAddField(true)}
-                  className="mt-3 w-full border border-dashed border-gray-200 rounded py-2 text-[11px] text-gray-500 hover:text-violet-600 hover:border-violet-300 flex items-center justify-center gap-1"
+                  className="mt-3 w-full border border-dashed border-gray-200 rounded py-2 text-[11px] text-gray-500 hover:text-gray-900 hover:border-gray-300 flex items-center justify-center gap-1"
                 >
                   <Plus size={11} /> Add field
                 </button>
@@ -528,7 +528,7 @@ export default function FormDetailPage() {
                                   ? 'bg-emerald-50 text-emerald-700'
                                   : s.status === 'SPAM'
                                     ? 'bg-red-50 text-red-600'
-                                    : 'bg-blue-50 text-blue-600',
+                                    : 'bg-gray-50 text-gray-700',
                               )}
                             >
                               {s.status}
@@ -539,7 +539,7 @@ export default function FormDetailPage() {
                             {s.leadId && (
                               <Link
                                 href={`/leads/${s.leadId}`}
-                                className="text-[10px] text-violet-600 hover:text-violet-700"
+                                className="text-[10px] text-gray-900 hover:text-gray-900"
                               >
                                 → lead
                               </Link>
@@ -617,7 +617,7 @@ export default function FormDetailPage() {
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Add a note to the form timeline..."
                 rows={4}
-                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 mb-2"
+                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2"
               />
               <button
                 onClick={() => addNoteM.mutate()}
@@ -677,7 +677,7 @@ export default function FormDetailPage() {
           {form.status === 'ARCHIVED' && (
             <button
               onClick={() => restoreM.mutate()}
-              className="w-full flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded text-[11px] font-medium"
+              className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"
             >
               <RotateCcw size={11} /> Restore
             </button>
@@ -722,7 +722,7 @@ export default function FormDetailPage() {
             <CopyChip icon={<Webhook size={10} />} text={webhookUrl ?? ''} />
             <p className="text-[9px] text-gray-400 mt-1 leading-relaxed">
               Requires an API key with scope <code>forms:write</code>. Manage keys at{' '}
-              <Link href="/leads/api-keys" className="text-violet-600 hover:text-violet-700">
+              <Link href="/leads/api-keys" className="text-gray-900 hover:text-gray-900">
                 /leads/api-keys
               </Link>
               .
@@ -732,7 +732,7 @@ export default function FormDetailPage() {
           <div className="pt-2 border-t border-gray-100">
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about form ${form.id}`)}`}
-              className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium"
+              className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"
             >
               <MessageSquare size={11} /> Ask AI
             </Link>
@@ -924,7 +924,7 @@ function AddFieldModal({
             type="checkbox"
             checked={required}
             onChange={(e) => setRequired(e.target.checked)}
-            className="accent-violet-500"
+            className="accent-gray-800"
           />
           Required
         </label>

@@ -50,14 +50,14 @@ const STATUS_COLORS: Record<IntegrationStatus, string> = {
   DISCONNECTED: 'bg-gray-100 text-gray-500',
   CONNECTED:    'bg-emerald-50 text-emerald-600',
   ERROR:        'bg-red-50 text-red-500',
-  SYNCING:      'bg-blue-50 text-blue-500',
+  SYNCING:      'bg-gray-50 text-gray-800',
 };
 
 const STATUS_ICON: Record<IntegrationStatus, React.ReactNode> = {
   DISCONNECTED: <XCircle size={13} className="text-gray-400" />,
   CONNECTED:    <CheckCircle2 size={13} className="text-emerald-500" />,
   ERROR:        <AlertCircle size={13} className="text-red-400" />,
-  SYNCING:      <RefreshCw size={13} className="text-blue-400 animate-spin" />,
+  SYNCING:      <RefreshCw size={13} className="text-gray-400 animate-spin" />,
 };
 
 export default function IntegrationDetailPage() {

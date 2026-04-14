@@ -158,7 +158,7 @@ export default function AiSettingsPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="h-11 border-b border-gray-200 px-4 flex items-center gap-2 shrink-0 bg-white">
-        <Bot size={14} className="text-violet-500" />
+        <Bot size={14} className="text-gray-800" />
         <span className="text-xs font-semibold text-gray-900">AI Configuration</span>
       </div>
 
@@ -174,7 +174,7 @@ export default function AiSettingsPage() {
                 <select
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
-                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 >
                   {PROVIDERS.map((p) => (
                     <option key={p.value} value={p.value}>{p.label} — {p.desc}</option>
@@ -187,7 +187,7 @@ export default function AiSettingsPage() {
                 <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 >
                   {(models ?? []).map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
@@ -198,14 +198,14 @@ export default function AiSettingsPage() {
 
               <div>
                 <label className="text-[11px] font-medium text-gray-600 mb-1 block">
-                  API Key {config?.apiKeySet && <span className="text-violet-500">(configured)</span>}
+                  API Key {config?.apiKeySet && <span className="text-gray-800">(configured)</span>}
                 </label>
                 <input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={config?.apiKeySet ? 'Enter new key to change...' : 'Paste your API key'}
-                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 placeholder:text-gray-300"
+                  className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder:text-gray-300"
                 />
               </div>
 
@@ -218,7 +218,7 @@ export default function AiSettingsPage() {
                     value={baseUrl}
                     onChange={(e) => setBaseUrl(e.target.value)}
                     placeholder="http://localhost:11434/v1"
-                    className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                   />
                 </div>
               )}
@@ -238,7 +238,7 @@ export default function AiSettingsPage() {
                   }}
                   className={`text-[10px] px-2 py-1 rounded transition ${
                     selectedPreset === preset.label
-                      ? 'bg-violet-100 text-violet-700 font-medium'
+                      ? 'bg-gray-100 text-gray-900 font-medium'
                       : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                   }`}
                 >
@@ -251,7 +251,7 @@ export default function AiSettingsPage() {
               onChange={(e) => { setSystemPrompt(e.target.value); setSelectedPreset('Custom'); }}
               rows={5}
               placeholder="Instructions for the AI assistant..."
-              className="w-full border border-gray-200 rounded px-2.5 py-2 text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none placeholder:text-gray-300"
+              className="w-full border border-gray-200 rounded px-2.5 py-2 text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none placeholder:text-gray-300"
             />
             <p className="text-[9px] text-gray-400 mt-1">
               This prompt defines how the AI behaves when replying to WhatsApp messages and in the admin chat.
@@ -267,7 +267,7 @@ export default function AiSettingsPage() {
                 type="range" min="0" max="1" step="0.05"
                 value={temperature}
                 onChange={(e) => setTemperature(Number(e.target.value))}
-                className="w-full mt-1 accent-violet-500"
+                className="w-full mt-1 accent-gray-800"
               />
               <div className="flex justify-between text-[9px] text-gray-400">
                 <span>Precise</span>
@@ -276,7 +276,7 @@ export default function AiSettingsPage() {
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={toolCalling} onChange={(e) => setToolCalling(e.target.checked)} className="rounded text-violet-500 w-3.5 h-3.5" />
+              <input type="checkbox" checked={toolCalling} onChange={(e) => setToolCalling(e.target.checked)} className="rounded text-gray-800 w-3.5 h-3.5" />
               <div>
                 <span className="text-xs text-gray-700 block">CRM Tool Calling</span>
                 <span className="text-[9px] text-gray-400">AI can create leads, deals, tasks from chats</span>
@@ -298,10 +298,10 @@ export default function AiSettingsPage() {
             {fallbacks.length > 0 && (
               <div className="space-y-1.5 mb-3">
                 {/* Primary */}
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-violet-50 border border-violet-100">
-                  <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
-                  <span className="text-[11px] font-medium text-violet-700 flex-1">
-                    {provider} / {model} <span className="font-normal text-violet-400">(primary)</span>
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-gray-50 border border-gray-100">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-800 shrink-0" />
+                  <span className="text-[11px] font-medium text-gray-900 flex-1">
+                    {provider} / {model} <span className="font-normal text-gray-400">(primary)</span>
                   </span>
                 </div>
                 {fallbacks.map((fb, i) => (
@@ -336,14 +336,14 @@ export default function AiSettingsPage() {
                   <select
                     value={fbProvider}
                     onChange={(e) => setFbProvider(e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400"
                   >
                     {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
                   <select
                     value={fbModel}
                     onChange={(e) => setFbModel(e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400"
                   >
                     {fbModels.map((m) => <option key={m} value={m}>{m}</option>)}
                   </select>
@@ -353,14 +353,14 @@ export default function AiSettingsPage() {
                   value={fbApiKey}
                   onChange={(e) => setFbApiKey(e.target.value)}
                   placeholder="API key (optional — uses primary key if blank)"
-                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400 placeholder:text-gray-300"
+                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder:text-gray-300"
                 />
                 {(fbProvider === 'OLLAMA' || fbProvider === 'CUSTOM') && (
                   <input
                     value={fbBaseUrl}
                     onChange={(e) => setFbBaseUrl(e.target.value)}
                     placeholder="Base URL (e.g. http://localhost:11434/v1)"
-                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400"
                   />
                 )}
                 <button

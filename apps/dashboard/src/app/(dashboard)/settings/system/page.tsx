@@ -120,14 +120,14 @@ export default function SystemSettingsPage() {
         <div className={cn(
           'border rounded-lg p-4',
           updateCheck?.updateAvailable
-            ? 'bg-violet-50 border-violet-200'
+            ? 'bg-gray-50 border-gray-200'
             : 'bg-white border-gray-200',
         )}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-2">
               {updateCheck?.updateAvailable ? (
                 <>
-                  <ArrowUpCircle size={14} className="text-violet-500" />
+                  <ArrowUpCircle size={14} className="text-gray-800" />
                   Update Available
                 </>
               ) : (
@@ -151,7 +151,7 @@ export default function SystemSettingsPage() {
             <div className="space-y-3">
               <div className="bg-white/80 rounded-md p-3 space-y-1.5">
                 <div className="flex items-center gap-2 text-xs">
-                  <GitCommit size={12} className="text-violet-500 shrink-0" />
+                  <GitCommit size={12} className="text-gray-800 shrink-0" />
                   <span className="font-medium text-gray-900">{latest.message}</span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-gray-400 pl-5">
@@ -169,7 +169,7 @@ export default function SystemSettingsPage() {
                     'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors',
                     isUpdating || updateMut.isPending
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-violet-600 text-white hover:bg-violet-700',
+                      : 'bg-gray-900 text-white hover:bg-gray-900',
                   )}
                 >
                   {isUpdating ? (
@@ -203,7 +203,7 @@ export default function SystemSettingsPage() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-2">
                 {isUpdating ? (
-                  <><Loader2 size={14} className="animate-spin text-violet-500" /> Update in Progress</>
+                  <><Loader2 size={14} className="animate-spin text-gray-800" /> Update in Progress</>
                 ) : updateStatus.lastUpdate.success ? (
                   <><CheckCircle2 size={14} className="text-green-500" /> Last Update Succeeded</>
                 ) : (

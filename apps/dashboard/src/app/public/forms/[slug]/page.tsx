@@ -162,7 +162,7 @@ export default function PublicFormPage() {
 
   const layoutClasses = useMemo(
     () =>
-      'min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-white to-blue-50 p-6',
+      'min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 p-6',
     [],
   );
 
@@ -242,7 +242,7 @@ export default function PublicFormPage() {
         </form>
 
         <p className="text-[10px] text-gray-400 text-center mt-4">
-          Powered by <span className="font-semibold">Open Agent CRM</span>
+          Powered by <span className="font-semibold">AgenticCRM</span>
         </p>
       </div>
     </div>
@@ -276,7 +276,7 @@ function FieldRenderer({
   );
 
   const baseInput =
-    'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400';
+    'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400';
   const errorClass = error ? ' border-red-300 focus:ring-red-300' : '';
 
   switch (field.type) {
@@ -387,7 +387,7 @@ function FieldRenderer({
                   checked={value === o.value}
                   onChange={(e) => onChange(e.target.value)}
                   required={field.required}
-                  className="accent-violet-500"
+                  className="accent-gray-800"
                 />
                 {o.label}
               </label>
@@ -406,7 +406,7 @@ function FieldRenderer({
               checked={Boolean(value)}
               onChange={(e) => onChange(e.target.checked)}
               required={field.required}
-              className="accent-violet-500 mt-1"
+              className="accent-gray-800 mt-1"
             />
             <span className="text-xs text-gray-700">
               {field.label}

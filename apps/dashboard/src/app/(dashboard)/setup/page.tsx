@@ -124,7 +124,7 @@ function StepContent({ step, onNext }: { step: number; onNext: () => void }) {
     <div className="text-center py-8">
       <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
       <h2 className="text-xl font-bold text-gray-900 mb-2">You&apos;re all set!</h2>
-      <p className="text-gray-500">Your WhatsApp AI CRM is configured and ready.</p>
+      <p className="text-gray-500">Your AgenticCRM is configured and ready.</p>
     </div>
   );
 }

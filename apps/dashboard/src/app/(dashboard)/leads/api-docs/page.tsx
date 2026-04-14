@@ -26,7 +26,7 @@ export default function LeadsApiDocsPage() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center gap-2 shrink-0 bg-white">
-        <BookOpen size={14} className="text-violet-500" />
+        <BookOpen size={14} className="text-gray-800" />
         <span className="text-xs font-semibold text-gray-900">Leads — API Documentation</span>
       </div>
 
@@ -342,14 +342,14 @@ export default function LeadsApiDocsPage() {
           </div>
 
           {/* Custom Webhook */}
-          <div className="bg-violet-50 border border-violet-200 rounded-lg p-5">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
             <div className="flex items-start gap-3">
-              <BookOpen size={16} className="text-violet-600 shrink-0 mt-0.5" />
+              <BookOpen size={16} className="text-gray-900 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-violet-900 mb-1">Custom Webhook</h3>
-                <p className="text-xs text-violet-700 leading-relaxed mb-2">
+                <h3 className="text-sm font-semibold text-gray-950 mb-1">Custom Webhook</h3>
+                <p className="text-xs text-gray-900 leading-relaxed mb-2">
                   For simple lead ingestion from any external source, use the custom webhook endpoint.
-                  Generate an API key with the <code className="bg-violet-100 px-1 rounded">leads:write</code> scope
+                  Generate an API key with the <code className="bg-gray-100 px-1 rounded">leads:write</code> scope
                   in <Link href="/leads/integrations" className="underline">Leads → Integrations</Link>.
                 </p>
                 <CodeBlock
@@ -426,10 +426,10 @@ function EndpointSection({
 }) {
   const methodColors: Record<string, string> = {
     GET: 'bg-emerald-100 text-emerald-700',
-    POST: 'bg-blue-100 text-blue-700',
+    POST: 'bg-gray-100 text-gray-900',
     PATCH: 'bg-amber-100 text-amber-700',
     DELETE: 'bg-red-100 text-red-700',
-    PUT: 'bg-purple-100 text-purple-700',
+    PUT: 'bg-gray-100 text-gray-900',
   };
 
   return (
@@ -450,7 +450,7 @@ function EndpointSection({
           <div className="bg-gray-50 rounded p-2 space-y-1">
             {queryParams.map((param) => (
               <div key={param.name} className="flex gap-2 text-[10px]">
-                <code className="text-violet-600 min-w-[80px]">{param.name}</code>
+                <code className="text-gray-900 min-w-[80px]">{param.name}</code>
                 <span className="text-gray-400">({param.type})</span>
                 <span className="text-gray-600">{param.desc}</span>
               </div>

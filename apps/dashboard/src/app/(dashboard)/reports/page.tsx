@@ -54,8 +54,8 @@ const STATUS_COLORS: Record<ReportStatus, string> = {
 };
 
 const TYPE_COLORS: Record<ReportType, string> = {
-  TABLE:  'bg-blue-50 text-blue-600',
-  CHART:  'bg-violet-50 text-violet-600',
+  TABLE:  'bg-gray-50 text-gray-700',
+  CHART:  'bg-gray-50 text-gray-900',
   FUNNEL: 'bg-amber-50 text-amber-600',
   METRIC: 'bg-emerald-50 text-emerald-600',
   COHORT: 'bg-pink-50 text-pink-600',
@@ -211,7 +211,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <span className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
-          <FileBarChart size={13} className="text-indigo-500" /> Reports
+          <FileBarChart size={13} className="text-gray-800" /> Reports
         </span>
         <button
           onClick={() => setShowCreate(true)}
@@ -237,7 +237,7 @@ export default function ReportsPage() {
           <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search reports..."
-            className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300" />
+            className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-gray-300" />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
               <X size={11} />
@@ -276,8 +276,8 @@ export default function ReportsPage() {
 
       {/* Bulk toolbar */}
       {selected.size > 0 && (
-        <div className="px-4 py-2 border-b border-indigo-100 bg-indigo-50 flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-medium text-indigo-700">{selected.size} selected</span>
+        <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-medium text-gray-900">{selected.size} selected</span>
           <button onClick={() => bulkArchiveMut.mutate(Array.from(selected))}
             className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded bg-gray-500 text-white hover:bg-gray-600">
             <Archive size={10} /> Archive
@@ -286,7 +286,7 @@ export default function ReportsPage() {
             className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded bg-red-500 text-white hover:bg-red-600">
             <Trash2 size={10} /> Delete
           </button>
-          <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-indigo-500 hover:underline">Clear</button>
+          <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-gray-800 hover:underline">Clear</button>
         </div>
       )}
 
@@ -315,14 +315,14 @@ export default function ReportsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {data.items.map((r) => (
-                <tr key={r.id} className={cn('hover:bg-gray-50/60 transition-colors', selected.has(r.id) && 'bg-indigo-50/40')}>
+                <tr key={r.id} className={cn('hover:bg-gray-50/60 transition-colors', selected.has(r.id) && 'bg-gray-50/40')}>
                   <td className="px-3 py-2.5">
-                    <button onClick={() => toggleOne(r.id)} className="text-gray-400 hover:text-indigo-500">
-                      {selected.has(r.id) ? <CheckSquare size={13} className="text-indigo-500" /> : <Square size={13} />}
+                    <button onClick={() => toggleOne(r.id)} className="text-gray-400 hover:text-gray-800">
+                      {selected.has(r.id) ? <CheckSquare size={13} className="text-gray-800" /> : <Square size={13} />}
                     </button>
                   </td>
                   <td className="px-3 py-2.5">
-                    <Link href={`/reports/${r.id}`} className="text-xs font-medium text-gray-900 hover:text-indigo-600">
+                    <Link href={`/reports/${r.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900">
                       {r.name}
                     </Link>
                     {r.description && (
@@ -331,7 +331,7 @@ export default function ReportsPage() {
                     {r.tags.length > 0 && (
                       <div className="flex gap-1 mt-0.5">
                         {r.tags.slice(0, 2).map((t) => (
-                          <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-indigo-50 text-indigo-500">{t}</span>
+                          <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-gray-50 text-gray-800">{t}</span>
                         ))}
                       </div>
                     )}
@@ -351,7 +351,7 @@ export default function ReportsPage() {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => runMut.mutate(r.id)} title="Run"
-                        className="p-1 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-500">
+                        className="p-1 rounded hover:bg-gray-50 text-gray-400 hover:text-gray-800">
                         <Play size={11} />
                       </button>
                       <button onClick={() => archiveMut.mutate(r.id)} title="Archive"
@@ -362,7 +362,7 @@ export default function ReportsPage() {
                         className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400">
                         <Trash2 size={11} />
                       </button>
-                      <Link href={`/reports/${r.id}`} className="p-1 rounded hover:bg-indigo-50 text-gray-300 hover:text-indigo-500">
+                      <Link href={`/reports/${r.id}`} className="p-1 rounded hover:bg-gray-50 text-gray-300 hover:text-gray-800">
                         <MoreHorizontal size={11} />
                       </Link>
                     </div>
@@ -401,20 +401,20 @@ export default function ReportsPage() {
                 <label className="text-[11px] font-medium text-gray-600 block mb-1">Name *</label>
                 <input value={newName} onChange={(e) => setNewName(e.target.value)}
                   placeholder="Report name"
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[11px] font-medium text-gray-600 block mb-1">Entity *</label>
                   <select value={newEntity} onChange={(e) => setNewEntity(e.target.value)}
-                    className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                    className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
                     {ENTITIES.map((e) => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-gray-600 block mb-1">Type</label>
                   <select value={newType} onChange={(e) => setNewType(e.target.value as ReportType)}
-                    className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                    className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
                     {(['TABLE', 'CHART', 'FUNNEL', 'METRIC', 'COHORT'] as ReportType[]).map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
@@ -424,7 +424,7 @@ export default function ReportsPage() {
               <div>
                 <label className="text-[11px] font-medium text-gray-600 block mb-1">Description</label>
                 <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={2}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-gray-400" />
               </div>
             </div>
             <div className="flex gap-2 pt-1">

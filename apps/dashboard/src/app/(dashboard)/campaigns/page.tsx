@@ -77,10 +77,10 @@ interface Stats {
 
 const STATUS_COLORS: Record<CampaignStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-500',
-  SCHEDULED: 'bg-blue-50 text-blue-600',
+  SCHEDULED: 'bg-gray-50 text-gray-700',
   SENDING: 'bg-emerald-50 text-emerald-700',
   PAUSED: 'bg-amber-50 text-amber-600',
-  COMPLETED: 'bg-violet-50 text-violet-700',
+  COMPLETED: 'bg-gray-50 text-gray-900',
   CANCELLED: 'bg-gray-50 text-gray-400',
   FAILED: 'bg-red-50 text-red-600',
 };
@@ -222,7 +222,7 @@ export default function CampaignsPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <Megaphone size={14} className="text-violet-500" />
+          <Megaphone size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Campaigns</span>
         </div>
         <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export default function CampaignsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search campaigns..."
-              className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
           </div>
           <button
@@ -273,7 +273,7 @@ export default function CampaignsPage() {
                     type="checkbox"
                     checked={selectedStatuses.has(s)}
                     onChange={() => toggleStatus(s)}
-                    className="accent-violet-500 w-3 h-3"
+                    className="accent-gray-800 w-3 h-3"
                   />
                   <span className={cn('px-1.5 py-0.5 rounded text-[10px]', STATUS_COLORS[s])}>
                     {s}
@@ -323,7 +323,7 @@ export default function CampaignsPage() {
                 setSelectedSendMode('');
                 setSearch('');
               }}
-              className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700"
+              className="flex items-center gap-1 text-[10px] text-gray-900 hover:text-gray-900"
             >
               <X size={10} /> Clear filters
             </button>
@@ -334,8 +334,8 @@ export default function CampaignsPage() {
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           {/* Bulk toolbar */}
           {selectedIds.size > 0 && (
-            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-violet-50">
-              <span className="text-[11px] text-violet-700 font-medium">
+            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-gray-50">
+              <span className="text-[11px] text-gray-900 font-medium">
                 {selectedIds.size} selected
               </span>
               <div className="flex-1" />
@@ -398,7 +398,7 @@ export default function CampaignsPage() {
                           if (e.target.checked) setSelectedIds(new Set(items.map((c) => c.id)));
                           else setSelectedIds(new Set());
                         }}
-                        className="accent-violet-500 w-3 h-3"
+                        className="accent-gray-800 w-3 h-3"
                       />
                     </th>
                     {['Name', 'Status', 'Channel', 'Mode', 'Progress', 'Replies', 'Schedule', 'Updated', ''].map(
@@ -426,13 +426,13 @@ export default function CampaignsPage() {
                             type="checkbox"
                             checked={selectedIds.has(c.id)}
                             onChange={() => toggleSelect(c.id)}
-                            className="accent-violet-500 w-3 h-3"
+                            className="accent-gray-800 w-3 h-3"
                           />
                         </td>
                         <td className="px-2 py-2">
                           <Link
                             href={`/campaigns/${c.id}`}
-                            className="text-xs font-medium text-gray-900 hover:text-violet-600"
+                            className="text-xs font-medium text-gray-900 hover:text-gray-900"
                           >
                             {c.name}
                           </Link>
@@ -460,7 +460,7 @@ export default function CampaignsPage() {
                               <div
                                 className={cn(
                                   'h-full rounded transition-all',
-                                  c.status === 'FAILED' ? 'bg-red-400' : 'bg-violet-500',
+                                  c.status === 'FAILED' ? 'bg-red-400' : 'bg-gray-800',
                                 )}
                                 style={{ width: `${progress}%` }}
                               />
@@ -555,8 +555,8 @@ function StatTile({
 }) {
   const tints: Record<string, string> = {
     emerald: 'text-emerald-600',
-    blue: 'text-blue-600',
-    violet: 'text-violet-600',
+    blue: 'text-gray-700',
+    violet: 'text-gray-900',
     red: 'text-red-600',
   };
   return (
@@ -654,7 +654,7 @@ function CreateCampaignModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Name (required)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
           autoFocus
         />
 
@@ -731,7 +731,7 @@ function CreateCampaignModal({
             value={audienceTags}
             onChange={(e) => setAudienceTags(e.target.value)}
             placeholder="vip, diwali, newsletter"
-            className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+            className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
           <span className="text-[9px] text-gray-400 mt-0.5 block">
             AND-joined. You can refine the audience from the detail page after creating.

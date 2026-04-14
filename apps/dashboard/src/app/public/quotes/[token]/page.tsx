@@ -162,7 +162,7 @@ export default function PublicQuotePage() {
   };
 
   const layoutClasses =
-    'min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 py-10 px-4';
+    'min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-10 px-4';
 
   if (loading) {
     return (
@@ -367,7 +367,7 @@ export default function PublicQuotePage() {
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}
                 placeholder="e.g. Out of budget, not the right timing…"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
               />
               <div className="flex gap-2 justify-end">
                 <button
@@ -420,7 +420,7 @@ export default function PublicQuotePage() {
         </div>
 
         <p className="text-[10px] text-gray-400 text-center mt-6">
-          Powered by <span className="font-semibold">Open Agent CRM</span>
+          Powered by <span className="font-semibold">AgenticCRM</span>
         </p>
       </div>
     </div>

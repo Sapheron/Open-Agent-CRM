@@ -6,8 +6,8 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'WhatsApp AI CRM',
-  description: 'Open-source self-hosted WhatsApp AI CRM',
+  title: 'AgenticCRM',
+  description: 'Self-hosted AI-powered WhatsApp CRM — a Sapheron Project',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

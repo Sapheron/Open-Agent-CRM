@@ -24,10 +24,10 @@ export default function SettingsPage() {
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-3 hover:border-violet-300 transition group"
+              className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition group"
             >
-              <div className="w-8 h-8 rounded bg-gray-50 flex items-center justify-center group-hover:bg-violet-50 transition shrink-0">
-                <Icon size={14} className="text-gray-400 group-hover:text-violet-500 transition" />
+              <div className="w-8 h-8 rounded bg-gray-50 flex items-center justify-center group-hover:bg-gray-50 transition shrink-0">
+                <Icon size={14} className="text-gray-400 group-hover:text-gray-800 transition" />
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-900">{title}</p>

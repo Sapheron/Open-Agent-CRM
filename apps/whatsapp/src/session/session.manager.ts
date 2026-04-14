@@ -46,7 +46,7 @@ export async function startSession(accountId: string): Promise<void> {
       },
       printQRInTerminal: false,
       logger: logger.child({ accountId }) as unknown as Parameters<typeof makeWASocket>[0]['logger'],
-      browser: ['WhatsApp AI CRM', 'Chrome', '124.0.0'],
+      browser: ['AgenticCRM', 'Chrome', '124.0.0'],
       markOnlineOnConnect: false, // prevents "online" status spam
       keepAliveIntervalMs: 30_000, // send WebSocket ping every 30s to prevent silent disconnects
     });

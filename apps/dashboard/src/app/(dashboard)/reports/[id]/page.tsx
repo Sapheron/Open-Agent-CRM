@@ -154,7 +154,7 @@ export default function ReportDetailPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-2">
         <p className="text-xs text-gray-400">Report not found</p>
-        <Link href="/reports" className="text-xs text-indigo-500 hover:underline">Back</Link>
+        <Link href="/reports" className="text-xs text-gray-800 hover:underline">Back</Link>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export default function ReportDetailPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center gap-3 shrink-0 bg-white">
         <Link href="/reports" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={14} /></Link>
-        <FileBarChart size={13} className="text-indigo-500 shrink-0" />
+        <FileBarChart size={13} className="text-gray-800 shrink-0" />
         <span className="text-xs font-semibold text-gray-900 flex-1 truncate">{report.name}</span>
         <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', STATUS_COLORS[report.status])}>
           {report.status}
@@ -194,7 +194,7 @@ export default function ReportDetailPage() {
               <hr className="border-gray-100" />
               <div className="flex flex-wrap gap-1">
                 {report.tags.map((t) => (
-                  <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-500">{t}</span>
+                  <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-800">{t}</span>
                 ))}
               </div>
             </>
@@ -228,7 +228,7 @@ export default function ReportDetailPage() {
             {(['builder', 'results', 'activity'] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)}
                 className={cn('py-2.5 text-[11px] font-medium capitalize border-b-2 transition-colors',
-                  tab === t ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-400 hover:text-gray-600')}>
+                  tab === t ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600')}>
                 {t}
               </button>
             ))}
@@ -275,7 +275,7 @@ export default function ReportDetailPage() {
                     <FileBarChart size={24} className="mx-auto mb-2 text-gray-200" />
                     <p className="text-xs text-gray-400">No results yet — click Run to execute this report</p>
                     <button onClick={() => runMut.mutate()} disabled={runMut.isPending}
-                      className="mt-3 flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 mx-auto disabled:opacity-40">
+                      className="mt-3 flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded bg-gray-900 text-white hover:bg-gray-900 mx-auto disabled:opacity-40">
                       <Play size={10} /> {runMut.isPending ? 'Running...' : 'Run Report'}
                     </button>
                   </div>
@@ -317,9 +317,9 @@ export default function ReportDetailPage() {
             {tab === 'activity' && (
               <div className="space-y-2">
                 {addingNote ? (
-                  <div className="bg-white border border-indigo-200 rounded-lg p-3 space-y-2">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
                     <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Add a note..."
-                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-gray-400" />
                     <div className="flex gap-2">
                       <button onClick={() => addNoteMut.mutate()} disabled={!note.trim() || addNoteMut.isPending}
                         className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-40">Save</button>
@@ -328,7 +328,7 @@ export default function ReportDetailPage() {
                   </div>
                 ) : (
                   <button onClick={() => setAddingNote(true)}
-                    className="flex items-center gap-1.5 text-[11px] text-indigo-500 hover:text-indigo-700">
+                    className="flex items-center gap-1.5 text-[11px] text-gray-800 hover:text-gray-900">
                     <MessageSquarePlus size={12} /> Add note
                   </button>
                 )}
@@ -343,7 +343,7 @@ export default function ReportDetailPage() {
                     {timeline.map((e, i) => (
                       <div key={e.id} className="relative pb-3">
                         {i < timeline.length - 1 && <span className="absolute left-[-9px] top-3.5 bottom-0 w-px bg-gray-100" />}
-                        <span className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-indigo-400 border-2 border-white" />
+                        <span className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-gray-400 border-2 border-white" />
                         <div className="bg-white border border-gray-100 rounded-lg px-3 py-2">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[11px] font-medium text-gray-700">{e.title}</p>
@@ -364,7 +364,7 @@ export default function ReportDetailPage() {
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Actions</p>
 
           <button onClick={() => runMut.mutate()} disabled={runMut.isPending}
-            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-medium w-full">
+            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded bg-gray-900 hover:bg-gray-900 text-white font-medium w-full">
             <Play size={10} /> {runMut.isPending ? 'Running...' : 'Run'}
           </button>
 
@@ -391,7 +391,7 @@ export default function ReportDetailPage() {
           )}
 
           {showSchedule && (
-            <div className="mt-1 p-2 border border-indigo-200 rounded-lg bg-indigo-50 space-y-1.5">
+            <div className="mt-1 p-2 border border-gray-200 rounded-lg bg-gray-50 space-y-1.5">
               <select value={schedFreq} onChange={(e) => setSchedFreq(e.target.value)}
                 className="w-full border border-gray-200 rounded px-2 py-1 text-[10px] focus:outline-none">
                 <option value="DAILY">Daily</option>
@@ -402,7 +402,7 @@ export default function ReportDetailPage() {
                 placeholder="email1@co, email2@co"
                 className="w-full border border-gray-200 rounded px-2 py-1 text-[10px] focus:outline-none" />
               <button onClick={() => scheduleMut.mutate()} disabled={scheduleMut.isPending || !schedEmails.trim()}
-                className="w-full text-[10px] py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40">
+                className="w-full text-[10px] py-1 rounded bg-gray-900 text-white hover:bg-gray-900 disabled:opacity-40">
                 Save Schedule
               </button>
             </div>

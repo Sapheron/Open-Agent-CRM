@@ -1,154 +1,167 @@
 #!/bin/bash
+# AgenticCRM — Complete Uninstaller
+# Removes ALL containers, volumes, networks, images, and files.
 
-# Open Agent CRM — Complete Uninstaller
-# Removes ALL containers, volumes, networks, images, and files created by install.sh
+R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'
+C='\033[0;36m'; W='\033[1;37m'; DIM='\033[2m'; BOLD='\033[1m'; NC='\033[0m'
 
-# Setup colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+_SPIN_PID=""
+spinner_start() {
+  local msg="$1"; local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  (local i=0; while true; do
+    printf "\r  ${C}%s${NC}  ${DIM}%s${NC}" "${frames[$i]}" "$msg"
+    i=$(( (i+1) % ${#frames[@]} )); sleep 0.08
+  done) &
+  _SPIN_PID=$!; disown "$_SPIN_PID" 2>/dev/null || true
+}
+spinner_stop() {
+  [[ -n "$_SPIN_PID" ]] && { kill "$_SPIN_PID" 2>/dev/null || true; wait "$_SPIN_PID" 2>/dev/null || true; _SPIN_PID=""; printf "\r\033[K"; }
+}
+trap 'spinner_stop' EXIT
 
-echo -e "${BLUE}"
-echo "  ╔═══════════════════════════════════════════════════╗"
-echo "  ║       Open Agent CRM — Complete Uninstaller      ║"
-echo "  ╚═══════════════════════════════════════════════════╝"
+clear
+echo ""
+echo -e "${W}${BOLD}"
+echo "  ┌─────────────────────────────────────────────────────┐"
+echo "  │         AgenticCRM — Uninstaller                    │"
+echo "  │         A Sapheron Project                          │"
+echo "  └─────────────────────────────────────────────────────┘"
 echo -e "${NC}"
 
-# Check if running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}Error: Please run as root (use sudo)${NC}"
+  echo -e "  ${R}✖  Error: Run as root (use sudo)${NC}"
   exit 1
 fi
 
-# Confirmation with detailed warning
-echo -e "${RED}═══════════════════════════════════════════════════${NC}"
-echo -e "${RED}WARNING: This will PERMANENTLY DELETE:${NC}"
-echo -e "${YELLOW}"
-echo "✗ All Docker containers (api, dashboard, whatsapp, worker, etc.)"
-echo "✗ All Docker volumes (postgres_data, redis_data, minio_data, etc.)"
-echo "✗ All Docker images (ghcr.io/sapheron/open-agent-crm/*)"
-echo "✗ Docker network (openagentcrm_default)"
-echo "✗ Installation directory: /opt/openagentcrm"
-echo "✗ Database: ALL data (contacts, leads, deals, messages, etc.)"
-echo "✗ WhatsApp sessions: ALL authenticated sessions"
-echo "✗ Media storage: ALL uploaded files (MinIO)"
-echo "✗ Backups: ALL database backups"
-echo "✗ Grafana/Prometheus data: ALL metrics and dashboards"
-echo -e "${NC}"
-echo -e "${RED}═══════════════════════════════════════════════════${NC}"
+echo -e "  ${R}${BOLD}WARNING — This will permanently delete:${NC}"
 echo ""
-read -p "Type 'DELETE' to confirm: " confirm </dev/tty
+echo -e "  ${DIM}✗  All Docker containers (api, dashboard, whatsapp, worker, ...)${NC}"
+echo -e "  ${DIM}✗  All Docker volumes (postgres_data, redis_data, minio_data, ...)${NC}"
+echo -e "  ${DIM}✗  All Docker images (ghcr.io/sapheron/agentic-crm/*)${NC}"
+echo -e "  ${DIM}✗  Docker network (agenticcrm_default)${NC}"
+echo -e "  ${DIM}✗  Installation directory: /opt/agenticcrm${NC}"
+echo -e "  ${DIM}✗  Database: ALL contacts, leads, deals, messages, and every other record${NC}"
+echo -e "  ${DIM}✗  WhatsApp sessions: ALL authenticated sessions${NC}"
+echo -e "  ${DIM}✗  Media storage: ALL uploaded files (MinIO)${NC}"
+echo -e "  ${DIM}✗  Backups: ALL database backups${NC}"
+echo -e "  ${DIM}✗  Grafana / Prometheus: ALL metrics and dashboards${NC}"
+echo ""
+echo -e "  ${R}There is NO undo.${NC}"
+echo ""
+read -p "  Type DELETE to confirm: " confirm < /dev/tty
 if [[ "$confirm" != "DELETE" ]]; then
-  echo -e "${YELLOW}Uninstall cancelled.${NC}"
+  echo -e "\n  ${Y}Uninstall cancelled.${NC}"
+  echo ""
   exit 0
 fi
 
-INSTALL_DIR="${INSTALL_DIR:-/opt/openagentcrm}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/agenticcrm}"
 COMPOSE_FILE="$INSTALL_DIR/deploy/docker-compose.yml"
+CLEANED=0; FAILED=0
 
-# Track what we've cleaned
-CLEANED=0
-FAILED=0
+echo ""
 
-# 1. Stop and remove all containers
-echo -e "${BLUE}Step 1/6: Stopping and removing containers...${NC}"
+# ── 1. Stop containers ────────────────────────────────────────────────────────
+echo -e "  ${W}[1/6]${NC}  Stopping and removing containers..."
 if [ -f "$COMPOSE_FILE" ]; then
+  spinner_start "Running docker compose down -v..."
   cd "$INSTALL_DIR/deploy"
   if docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Containers and volumes removed${NC}"
+    spinner_stop; echo -e "  ${G}✔${NC}  Containers and volumes removed"
     ((CLEANED++))
   else
-    echo -e "${YELLOW}  ⚠ Some containers/volumes may not have been removed${NC}"
+    spinner_stop; echo -e "  ${Y}⚠${NC}  Some containers/volumes may remain"
   fi
 else
-  echo -e "${YELLOW}  ⚠ docker-compose.yml not found at $COMPOSE_FILE${NC}"
+  echo -e "  ${Y}⚠${NC}  docker-compose.yml not found at $COMPOSE_FILE"
 fi
 
-# 2. Remove Docker volumes (in case docker compose down missed any)
-echo -e "${BLUE}Step 2/6: Removing Docker volumes...${NC}"
+# ── 2. Remove volumes ─────────────────────────────────────────────────────────
+echo -e "  ${W}[2/6]${NC}  Removing Docker volumes..."
 VOLUMES=(
-  "openagentcrm_postgres_data"
-  "openagentcrm_redis_data"
-  "openagentcrm_minio_data"
-  "openagentcrm_grafana_data"
-  "openagentcrm_prometheus_data"
-  "openagentcrm_backup_data"
-  "openagentcrm_wa_sessions"
+  "agenticcrm_postgres_data"
+  "agenticcrm_redis_data"
+  "agenticcrm_minio_data"
+  "agenticcrm_grafana_data"
+  "agenticcrm_prometheus_data"
+  "agenticcrm_backup_data"
+  "agenticcrm_wa_sessions"
 )
 VOL_COUNT=0
 for vol in "${VOLUMES[@]}"; do
   if docker volume rm "$vol" 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Removed volume: $vol${NC}"
     ((VOL_COUNT++))
   fi
 done
-
-# Remove any remaining volumes with the project prefix
-REMAINING=$(docker volume ls -q | grep "^openagentcrm_" || true)
+REMAINING=$(docker volume ls -q | grep "^agenticcrm_" 2>/dev/null || true)
 if [ -n "$REMAINING" ]; then
   echo "$REMAINING" | while read -r vol; do
-    docker volume rm "$vol" 2>/dev/null && ((VOL_COUNT++))
+    docker volume rm "$vol" 2>/dev/null && ((VOL_COUNT++)) || true
   done
 fi
-echo -e "${GREEN}  ✓ Processed $VOL_COUNT volumes${NC}"
+echo -e "  ${G}✔${NC}  Removed $VOL_COUNT volumes"
 ((CLEANED++))
 
-# 3. Remove Docker network
-echo -e "${BLUE}Step 3/6: Removing Docker network...${NC}"
-if docker network rm "openagentcrm_default" 2>/dev/null; then
-  echo -e "${GREEN}  ✓ Network removed${NC}"
-elif docker network ls -q | grep -q "openagentcrm_default"; then
-  echo -e "${YELLOW}  ⚠ Network still exists (may be in use)${NC}"
+# ── 3. Remove network ─────────────────────────────────────────────────────────
+echo -e "  ${W}[3/6]${NC}  Removing Docker network..."
+if docker network rm "agenticcrm_default" 2>/dev/null; then
+  echo -e "  ${G}✔${NC}  Network removed"
+elif docker network ls -q | grep -q "agenticcrm_default"; then
+  echo -e "  ${Y}⚠${NC}  Network still exists (may be in use)"
 else
-  echo -e "${YELLOW}  ℹ Network not found (already removed)${NC}"
+  echo -e "  ${DIM}ℹ  Network not found (already removed)${NC}"
 fi
 ((CLEANED++))
 
-# 4. Remove Docker images
-echo -e "${BLUE}Step 4/6: Removing Docker images...${NC}"
-if docker images -q "ghcr.io/sapheron/open-agent-crm/*" | grep -q .; then
-  docker images -q "ghcr.io/sapheron/open-agent-crm/*" | xargs -r docker rmi -f 2>/dev/null || true
-  echo -e "${GREEN}  ✓ All CRM images removed${NC}"
+# ── 4. Remove Docker images ───────────────────────────────────────────────────
+echo -e "  ${W}[4/6]${NC}  Removing Docker images..."
+IMG_IDS=$(docker images -q "ghcr.io/sapheron/agentic-crm/*" 2>/dev/null || true)
+if [ -n "$IMG_IDS" ]; then
+  spinner_start "Removing images..."
+  echo "$IMG_IDS" | xargs -r docker rmi -f 2>/dev/null || true
+  spinner_stop
+  echo -e "  ${G}✔${NC}  CRM images removed"
 else
-  echo -e "${YELLOW}  ℹ No CRM images found${NC}"
+  echo -e "  ${DIM}ℹ  No CRM images found${NC}"
 fi
 ((CLEANED++))
 
-# 5. Remove installation directory
-echo -e "${BLUE}Step 5/6: Removing installation directory...${NC}"
+# ── 5. Remove install directory ───────────────────────────────────────────────
+echo -e "  ${W}[5/6]${NC}  Removing installation directory..."
 if [ -d "$INSTALL_DIR" ]; then
+  spinner_start "Removing $INSTALL_DIR..."
   rm -rf "$INSTALL_DIR"
-  echo -e "${GREEN}  ✓ Removed $INSTALL_DIR${NC}"
+  spinner_stop
+  echo -e "  ${G}✔${NC}  Removed $INSTALL_DIR"
 else
-  echo -e "${YELLOW}  ℹ Directory not found: $INSTALL_DIR${NC}"
+  echo -e "  ${DIM}ℹ  Directory not found: $INSTALL_DIR${NC}"
 fi
 ((CLEANED++))
 
-# 6. Verify cleanup
-echo -e "${BLUE}Step 6/6: Verifying cleanup...${NC}"
-REMAINING_CONTAINERS=$(docker ps -a -q --filter "name=deploy-" | wc -l)
-REMAINING_VOLUMES=$(docker volume ls -q | grep -c "^openagentcrm_" || echo "0")
-REMAINING_IMAGES=$(docker images -q "ghcr.io/sapheron/open-agent-crm/*" | wc -l)
+# ── 6. Verify ─────────────────────────────────────────────────────────────────
+echo -e "  ${W}[6/6]${NC}  Verifying cleanup..."
+REMAINING_CONTAINERS=$(docker ps -a -q --filter "name=deploy-" 2>/dev/null | wc -l)
+REMAINING_VOLUMES=$(docker volume ls -q 2>/dev/null | grep -c "^agenticcrm_" || echo "0")
+REMAINING_IMAGES=$(docker images -q "ghcr.io/sapheron/agentic-crm/*" 2>/dev/null | wc -l)
 
 if [ "$REMAINING_CONTAINERS" -eq 0 ] && [ "$REMAINING_VOLUMES" -eq 0 ] && [ "$REMAINING_IMAGES" -eq 0 ]; then
-  echo -e "${GREEN}  ✓ Verification passed: All resources removed${NC}"
+  echo -e "  ${G}✔${NC}  All resources removed"
   ((CLEANED++))
 else
-  echo -e "${YELLOW}  ⚠ Some resources may remain:${NC}"
-  [ "$REMAINING_CONTAINERS" -gt 0 ] && echo "    - $REMAINING_CONTAINERS containers"
-  [ "$REMAINING_VOLUMES" -gt 0 ] && echo "    - $REMAINING_VOLUMES volumes"
-  [ "$REMAINING_IMAGES" -gt 0 ] && echo "    - $REMAINING_IMAGES images"
+  echo -e "  ${Y}⚠${NC}  Some resources may remain:"
+  [ "$REMAINING_CONTAINERS" -gt 0 ] && echo -e "    ${DIM}$REMAINING_CONTAINERS containers${NC}"
+  [ "$REMAINING_VOLUMES" -gt 0 ]    && echo -e "    ${DIM}$REMAINING_VOLUMES volumes${NC}"
+  [ "$REMAINING_IMAGES" -gt 0 ]     && echo -e "    ${DIM}$REMAINING_IMAGES images${NC}"
 fi
 
-# Summary
 echo ""
-echo -e "${GREEN}═══════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  ✔ Uninstall complete${NC}"
-echo -e "${GREEN}  Cleaned $CLEANED/6 categories successfully${NC}"
-echo -e "${GREEN}═══════════════════════════════════════════════════${NC}"
+echo -e "${G}${BOLD}"
+echo "  ┌─────────────────────────────────────────────────────┐"
+echo "  │    ✔  Uninstall complete  ($CLEANED/6 categories)           │"
+echo "  └─────────────────────────────────────────────────────┘"
+echo -e "${NC}"
+echo -e "  To reinstall:"
+echo -e "  ${DIM}curl -fsSL https://agenticcrm.sapheron.com/install.sh | bash${NC}"
 echo ""
-echo "To reinstall:"
-echo "  curl -fsSL https://openagentcrm.sapheron.com/install.sh | bash"
+echo -e "  ${DIM}A Sapheron Project  ·  TechnoTaLim Platform and Services LLP${NC}"
 echo ""

@@ -41,7 +41,7 @@ async function bootstrap() {
   // ── Swagger ───────────────────────────────────────────────────────────────
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('WhatsApp AI CRM')
+      .setTitle('AgenticCRM')
       .setDescription('API documentation')
       .setVersion('1.0')
       .addBearerAuth()

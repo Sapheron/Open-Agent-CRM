@@ -195,7 +195,7 @@ export default function TemplatesPage() {
           <StatTile label="Active" value={stats.activeTemplates} icon={<CheckCircle2 size={14} />} color="text-green-600" />
           <StatTile label="Draft" value={stats.draftTemplates} icon={<FileText size={14} />} color="text-gray-500" />
           <StatTile label="Archived" value={stats.archivedTemplates} icon={<Archive size={14} />} color="text-orange-500" />
-          <StatTile label="Total Uses" value={stats.totalUses} icon={<MessageSquare size={14} />} color="text-blue-500" />
+          <StatTile label="Total Uses" value={stats.totalUses} icon={<MessageSquare size={14} />} color="text-gray-800" />
         </div>
       )}
 
@@ -208,20 +208,20 @@ export default function TemplatesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+              className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               showFilters || selectedStatus || selectedCategory || selectedType
-                ? 'bg-violet-50 border-violet-200 text-violet-700'
+                ? 'bg-gray-50 border-gray-200 text-gray-900'
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             <Filter size={13} /> Filters
             {(showFilters || selectedStatus || selectedCategory || selectedType) && (
-              <span className="ml-1 w-4 h-4 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-[10px]">
+              <span className="ml-1 w-4 h-4 rounded-full bg-gray-200 text-gray-900 flex items-center justify-center text-[10px]">
                 {[selectedStatus, selectedCategory, selectedType].filter(Boolean).length}
               </span>
             )}
@@ -243,7 +243,7 @@ export default function TemplatesPage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as TemplateStatus | '')}
-              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
             >
               <option value="">All Statuses</option>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -251,7 +251,7 @@ export default function TemplatesPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as TemplateCategory | '')}
-              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
             >
               <option value="">All Categories</option>
               {CATEGORIES.map((c) => (
@@ -261,7 +261,7 @@ export default function TemplatesPage() {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value as TemplateType | '')}
-              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
             >
               <option value="">All Types</option>
               {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -311,16 +311,16 @@ export default function TemplatesPage() {
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
                         t.type === 'TEXT' ? 'bg-gray-50 text-gray-500 border-gray-200' :
-                        t.type === 'IMAGE' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                        t.type === 'IMAGE' ? 'bg-gray-50 text-gray-700 border-gray-200' :
                         t.type === 'DOCUMENT' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                        'bg-purple-50 text-purple-600 border-purple-200'
+                        'bg-gray-50 text-gray-900 border-gray-200'
                       }`}>
                         {t.type}
                       </span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-[10px] bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-gray-50 text-gray-900 px-2 py-0.5 rounded-full">
                       {t.category.replace('_', ' ')}
                     </span>
                   </td>
@@ -371,7 +371,7 @@ export default function TemplatesPage() {
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate({ id: t.id }); }}
-                        className="p-1.5 hover:bg-blue-50 rounded text-blue-600"
+                        className="p-1.5 hover:bg-gray-50 rounded text-gray-700"
                         title="Duplicate"
                       >
                         <Copy size={13} />
@@ -418,7 +418,7 @@ export default function TemplatesPage() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g., Welcome Message"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -427,7 +427,7 @@ export default function TemplatesPage() {
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as TemplateCategory)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c} value={c}>{c.replace('_', ' ')}</option>
@@ -439,7 +439,7 @@ export default function TemplatesPage() {
                   <select
                     value={newType}
                     onChange={(e) => setNewType(e.target.value as TemplateType)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                   >
                     {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -452,7 +452,7 @@ export default function TemplatesPage() {
                   onChange={(e) => setNewBody(e.target.value)}
                   rows={5}
                   placeholder="Use {{variable}} for personalization, e.g., Hi {{firstName}}, ..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none font-mono"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none font-mono"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
                   Variables found: {Array.from(newBody.matchAll(/\{\{(\w+)\}\}/g)).map((m) => m[1]).join(', ') || 'none'}
@@ -464,7 +464,7 @@ export default function TemplatesPage() {
                   value={newTags}
                   onChange={(e) => setNewTags(e.target.value)}
                   placeholder="e.g., sales, follow-up, urgent"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
             </div>

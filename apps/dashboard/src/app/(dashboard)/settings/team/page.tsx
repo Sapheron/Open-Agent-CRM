@@ -29,8 +29,8 @@ const ROLE_ICONS: Record<string, React.ElementType> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  SUPER_ADMIN: 'bg-purple-100 text-purple-700',
-  ADMIN: 'bg-blue-100 text-blue-700',
+  SUPER_ADMIN: 'bg-gray-100 text-gray-900',
+  ADMIN: 'bg-gray-100 text-gray-900',
   MANAGER: 'bg-orange-100 text-orange-700',
   AGENT: 'bg-gray-100 text-gray-600',
 };
@@ -145,8 +145,8 @@ export default function TeamSettingsPage() {
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-            <Users size={20} className="text-blue-600" />
+          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
+            <Users size={20} className="text-gray-700" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Team</h1>
@@ -178,7 +178,7 @@ export default function TeamSettingsPage() {
               <input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
               />
             </div>
             <div>
@@ -188,7 +188,7 @@ export default function TeamSettingsPage() {
               <input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
               />
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function TeamSettingsPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="team@example.com"
-              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
             />
           </div>
           <div className="mb-3">
@@ -213,7 +213,7 @@ export default function TeamSettingsPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Minimum 6 characters"
-              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
             />
           </div>
           <div className="mb-3">
@@ -225,7 +225,7 @@ export default function TeamSettingsPage() {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="+91 98765 43210"
-              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
             />
             <p className="text-[10px] text-gray-400 mt-1">
               Used for WhatsApp AI access. Auto-added to allowed numbers on all connected accounts.
@@ -236,7 +236,7 @@ export default function TeamSettingsPage() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+              className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -262,7 +262,7 @@ export default function TeamSettingsPage() {
                   <button
                     type="button"
                     onClick={selectAll}
-                    className="text-xs text-blue-600 hover:text-blue-700"
+                    className="text-xs text-gray-700 hover:text-gray-900"
                   >
                     Select All
                   </button>
@@ -290,7 +290,7 @@ export default function TeamSettingsPage() {
                           type="checkbox"
                           checked={selectedPermissions.has(perm as Permission)}
                           onChange={() => togglePermission(perm as Permission)}
-                          className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                          className="rounded border-gray-300 text-gray-900 focus:ring-gray-800"
                         />
                         {PERMISSION_LABELS[perm as Permission]}
                       </label>
@@ -339,7 +339,7 @@ export default function TeamSettingsPage() {
             return (
               <div key={member.id} className="p-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-gray-800 flex items-center justify-center text-white font-semibold text-sm shrink-0">
                     {member.firstName[0]}
                     {member.lastName[0]}
                   </div>
@@ -384,7 +384,7 @@ export default function TeamSettingsPage() {
                     {isStaff && (
                       <button
                         onClick={() => setEditingMember(member)}
-                        className="text-xs text-blue-600 hover:text-blue-700 px-2 py-1"
+                        className="text-xs text-gray-700 hover:text-gray-900 px-2 py-1"
                       >
                         Permissions
                       </button>
@@ -439,7 +439,7 @@ export default function TeamSettingsPage() {
                       const allPerms = Object.keys(PERMISSION_LABELS) as Permission[];
                       setEditingMember({ ...editingMember, permissions: allPerms });
                     }}
-                    className="text-xs text-blue-600 hover:text-blue-700"
+                    className="text-xs text-gray-700 hover:text-gray-900"
                   >
                     Select All
                   </button>
@@ -471,7 +471,7 @@ export default function TeamSettingsPage() {
                               : (editingMember.permissions ?? []).filter((p) => p !== perm);
                             setEditingMember({ ...editingMember, permissions: updated });
                           }}
-                          className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                          className="rounded border-gray-300 text-gray-900 focus:ring-gray-800"
                         />
                         {PERMISSION_LABELS[perm as Permission]}
                       </label>

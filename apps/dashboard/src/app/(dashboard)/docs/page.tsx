@@ -108,7 +108,7 @@ export default function AiDocsPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <Terminal size={14} className="text-violet-500" />
+          <Terminal size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">AI Commands</span>
           <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
             {totalTools} tools · {coreCount} core
@@ -157,7 +157,7 @@ export default function AiDocsPage() {
                   className={cn(
                     'w-full flex items-center justify-between text-left px-2.5 py-1.5 rounded text-[11px] mb-0.5 transition',
                     activeCategory === cat
-                      ? 'bg-violet-50 text-violet-700 font-medium'
+                      ? 'bg-gray-50 text-gray-900 font-medium'
                       : 'text-gray-600 hover:bg-gray-50',
                   )}
                 >
@@ -182,9 +182,9 @@ export default function AiDocsPage() {
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <h2 className="text-sm font-semibold text-gray-900 mb-1">How AI commands work</h2>
                   <p className="text-[11px] text-gray-600 leading-relaxed">
-                    Every tool below can be invoked by chatting with the AI assistant in <a href="/chat" className="text-violet-600 hover:underline">/chat</a>.
+                    Every tool below can be invoked by chatting with the AI assistant in <a href="/chat" className="text-gray-900 hover:underline">/chat</a>.
                     You don&rsquo;t need to know the tool names — just describe what you want in natural language and the AI will pick the right tool.
-                    Tools marked <span className="inline-flex items-center gap-0.5 bg-violet-50 text-violet-700 px-1 rounded text-[9px]"><Star size={8} /> CORE</span> are always sent to the model;
+                    Tools marked <span className="inline-flex items-center gap-0.5 bg-gray-50 text-gray-900 px-1 rounded text-[9px]"><Star size={8} /> CORE</span> are always sent to the model;
                     the rest are still callable when the AI knows them by name (e.g. you say <em>&ldquo;use bulk_assign_leads&rdquo;</em>).
                   </p>
                 </div>
@@ -230,12 +230,12 @@ function ToolCard({
   const propEntries = Object.entries(props);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 hover:border-violet-200 transition-colors">
+    <div className="bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-200 transition-colors">
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={onCopy}
-            className="font-mono text-[12px] font-semibold text-violet-700 hover:text-violet-800 flex items-center gap-1 group"
+            className="font-mono text-[12px] font-semibold text-gray-900 hover:text-gray-950 flex items-center gap-1 group"
             title="Copy tool name"
           >
             {tool.name}
@@ -246,7 +246,7 @@ function ToolCard({
             )}
           </button>
           {tool.core && (
-            <span className="inline-flex items-center gap-0.5 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded text-[9px] font-medium">
+            <span className="inline-flex items-center gap-0.5 bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded text-[9px] font-medium">
               <Star size={8} /> CORE
             </span>
           )}
@@ -267,7 +267,7 @@ function ToolCard({
                     {name}
                     {isRequired && <span className="text-red-500">*</span>}
                   </code>
-                  <span className="text-violet-500 font-mono shrink-0">{type}</span>
+                  <span className="text-gray-800 font-mono shrink-0">{type}</span>
                   {schema.description && (
                     <span className="text-gray-500 leading-relaxed">— {schema.description}</span>
                   )}

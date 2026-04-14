@@ -20,7 +20,7 @@ interface KanbanProps {
 
 const PRIORITY_DOTS: Record<string, string> = {
   LOW: 'bg-gray-300',
-  MEDIUM: 'bg-blue-400',
+  MEDIUM: 'bg-gray-400',
   HIGH: 'bg-orange-400',
   URGENT: 'bg-red-500',
 };
@@ -53,7 +53,7 @@ export function LeadKanban({ leads, onStatusChange }: KanbanProps) {
             }}
             className={cn(
               'w-64 shrink-0 rounded-lg border bg-gray-50/50 flex flex-col',
-              hoverCol === status ? 'border-violet-300 bg-violet-50/50' : 'border-gray-200',
+              hoverCol === status ? 'border-gray-300 bg-gray-50/50' : 'border-gray-200',
             )}
           >
             <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
@@ -70,7 +70,7 @@ export function LeadKanban({ leads, onStatusChange }: KanbanProps) {
                   onDragStart={() => setDraggedId(lead.id)}
                   onDragEnd={() => setDraggedId(null)}
                   className={cn(
-                    'bg-white rounded border border-gray-200 p-2 cursor-grab active:cursor-grabbing hover:border-violet-300 hover:shadow-sm transition-all',
+                    'bg-white rounded border border-gray-200 p-2 cursor-grab active:cursor-grabbing hover:border-gray-300 hover:shadow-sm transition-all',
                     draggedId === lead.id && 'opacity-50',
                   )}
                 >
@@ -85,7 +85,7 @@ export function LeadKanban({ leads, onStatusChange }: KanbanProps) {
                     <div className="flex items-center gap-1.5 mb-1">
                       <div className="flex-1 bg-gray-100 rounded-full h-1">
                         <div
-                          className={cn('h-1 rounded-full', lead.score >= 70 ? 'bg-emerald-500' : lead.score >= 40 ? 'bg-violet-500' : 'bg-gray-300')}
+                          className={cn('h-1 rounded-full', lead.score >= 70 ? 'bg-emerald-500' : lead.score >= 40 ? 'bg-gray-800' : 'bg-gray-300')}
                           style={{ width: `${lead.score}%` }}
                         />
                       </div>

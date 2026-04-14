@@ -77,8 +77,8 @@ export default function IntegrationsSettingsPage() {
     <div className="p-6 max-w-3xl">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
-          <Globe size={20} className="text-violet-600" />
+        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
+          <Globe size={20} className="text-gray-900" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">Public URL & lead intake</h1>
@@ -142,7 +142,7 @@ export default function IntegrationsSettingsPage() {
             setHasChanges(e.target.value !== (company?.publicUrl ?? ''));
           }}
           placeholder="https://yourdomain.com"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
         />
 
         <div className="flex items-center justify-between mt-3">
@@ -210,7 +210,7 @@ export default function IntegrationsSettingsPage() {
       <div className="mt-6 flex items-center gap-3">
         <Link
           href="/leads/integrations"
-          className="text-[11px] text-violet-600 hover:text-violet-700 flex items-center gap-1"
+          className="text-[11px] text-gray-900 hover:text-gray-900 flex items-center gap-1"
         >
           Manage lead integrations <ExternalLink size={10} />
         </Link>

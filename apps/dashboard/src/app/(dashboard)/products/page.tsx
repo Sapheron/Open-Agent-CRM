@@ -138,7 +138,7 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-3">
-          <Package size={14} className="text-violet-500" />
+          <Package size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Products</span>
           {data && <span className="text-[10px] text-gray-400">{data.total} total</span>}
         </div>
@@ -150,7 +150,7 @@ export default function ProductsPage() {
       {/* Stats strip */}
       {stats && (
         <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0 grid grid-cols-5 gap-3">
-          <StatTile icon={<Package size={12} />} label="Active" value={String(stats.active)} accent="text-violet-600" />
+          <StatTile icon={<Package size={12} />} label="Active" value={String(stats.active)} accent="text-gray-900" />
           <StatTile icon={<AlertCircle size={12} />} label="Low stock" value={String(stats.lowStock)} accent="text-orange-600" />
           <StatTile icon={<AlertCircle size={12} />} label="Out of stock" value={String(stats.outOfStock)} accent="text-red-600" />
           <StatTile icon={<Archive size={12} />} label="Archived" value={String(stats.archived)} accent="text-gray-500" />
@@ -196,8 +196,8 @@ export default function ProductsPage() {
 
       {/* Bulk action toolbar */}
       {selected.size > 0 && (
-        <div className="px-4 py-1.5 bg-violet-50 border-b border-violet-100 flex items-center gap-3 shrink-0">
-          <span className="text-[11px] text-violet-700 font-medium">{selected.size} selected</span>
+        <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-gray-900 font-medium">{selected.size} selected</span>
           <button
             onClick={() => bulkArchiveMutation.mutate([...selected])}
             className="text-[10px] text-gray-700 hover:text-gray-900 flex items-center gap-1"
@@ -222,7 +222,7 @@ export default function ProductsPage() {
           <div className="p-12 text-center">
             <Package size={32} className="mx-auto text-gray-200 mb-2" />
             <p className="text-xs text-gray-300 mb-2">No products match those filters.</p>
-            <button onClick={clearFilters} className="text-[11px] text-violet-600 hover:text-violet-700">Clear filters</button>
+            <button onClick={clearFilters} className="text-[11px] text-gray-900 hover:text-gray-900">Clear filters</button>
           </div>
         ) : (
           <table className="w-full">
@@ -246,7 +246,7 @@ export default function ProductsPage() {
                       <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} className="h-3 w-3" />
                     </td>
                     <td className="px-3 py-2">
-                      <Link href={`/products/${p.id}`} className="text-xs font-medium text-gray-900 hover:text-violet-600">
+                      <Link href={`/products/${p.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900">
                         {p.name}
                       </Link>
                       {p.tags.length > 0 && (
@@ -287,7 +287,7 @@ export default function ProductsPage() {
                     <td className="px-3 py-2">
                       <button
                         onClick={() => p.archivedAt ? unarchiveMutation.mutate(p.id) : archiveMutation.mutate(p.id)}
-                        className="text-gray-400 hover:text-violet-500 p-1"
+                        className="text-gray-400 hover:text-gray-800 p-1"
                         title={p.archivedAt ? 'Unarchive' : 'Archive'}
                       >
                         {p.archivedAt ? <ArchiveRestore size={11} /> : <Archive size={11} />}
@@ -366,7 +366,7 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
           <h3 className="text-xs font-semibold">New Product</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
         </div>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Product name (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Product name (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none" />
         <div className="grid grid-cols-3 gap-2">
           <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="Currency" className="border border-gray-200 rounded px-2 py-1.5 text-xs" />

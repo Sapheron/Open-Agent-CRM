@@ -154,7 +154,7 @@ export default function MemoryPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <Brain size={14} className="text-violet-500" />
+          <Brain size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">AI Memory</span>
           {stats && (
             <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -208,7 +208,7 @@ export default function MemoryPage() {
                     }}
                     className={cn(
                       'w-full text-left px-3 py-1.5 flex items-center gap-2 text-[11px] hover:bg-gray-50',
-                      selectedPath === f.path && 'bg-violet-50 text-violet-700',
+                      selectedPath === f.path && 'bg-gray-50 text-gray-900',
                     )}
                   >
                     <FileText size={11} className="shrink-0" />
@@ -279,14 +279,14 @@ export default function MemoryPage() {
               value={newPath}
               onChange={(e) => setNewPath(e.target.value)}
               placeholder="path (e.g. memory/notes.md or MEMORY.md)"
-              className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             <textarea
               value={newContent}
               onChange={(e) => setNewContent(e.target.value)}
               rows={10}
               placeholder="# Markdown content&#10;&#10;Anything you write here will be chunked, embedded, and searchable by the AI."
-              className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono leading-relaxed"
+              className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono leading-relaxed"
             />
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowCreate(false)} className="text-gray-500 text-[11px] px-2 py-1">
@@ -347,7 +347,7 @@ function FileView({
               <button
                 onClick={onSave}
                 disabled={saving}
-                className="flex items-center gap-1 bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-0.5 rounded text-[11px] disabled:opacity-50"
+                className="flex items-center gap-1 bg-gray-900 hover:bg-gray-900 text-white px-2.5 py-0.5 rounded text-[11px] disabled:opacity-50"
               >
                 <Save size={11} /> {saving ? 'Saving…' : 'Save'}
               </button>
@@ -356,7 +356,7 @@ function FileView({
             <>
               <button
                 onClick={() => setEditing(true)}
-                className="text-violet-600 hover:text-violet-700 text-[11px] px-2 py-0.5"
+                className="text-gray-900 hover:text-gray-900 text-[11px] px-2 py-0.5"
               >
                 Edit
               </button>
@@ -414,7 +414,7 @@ function SearchResults({
           >
             <div className="flex items-center gap-2 mb-1">
               <FileText size={11} className="text-gray-400" />
-              <span className="text-[11px] font-medium text-violet-600">{h.path}</span>
+              <span className="text-[11px] font-medium text-gray-900">{h.path}</span>
               <span className="text-[9px] text-gray-400">L{h.startLine}-{h.endLine}</span>
               <span className="text-[9px] text-gray-400 ml-auto">
                 score {h.score.toFixed(3)} · vec {h.vecScore.toFixed(2)} · text {h.textScore.toFixed(2)}

@@ -188,7 +188,7 @@ export default function DocumentDetailPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-2">
         <p className="text-xs text-gray-400">Document not found</p>
-        <Link href="/documents" className="text-xs text-blue-500 hover:underline">Back to documents</Link>
+        <Link href="/documents" className="text-xs text-gray-800 hover:underline">Back to documents</Link>
       </div>
     );
   }
@@ -200,7 +200,7 @@ export default function DocumentDetailPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center gap-3 shrink-0 bg-white">
         <Link href="/documents" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={14} /></Link>
-        <FileText size={13} className="text-blue-500 shrink-0" />
+        <FileText size={13} className="text-gray-800 shrink-0" />
         <span className="text-xs font-semibold text-gray-900 truncate flex-1">{doc.name}</span>
         {doc.isTemplate && <Star size={12} className="text-amber-400 shrink-0" />}
         <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', STATUS_COLORS[doc.status])}>
@@ -240,7 +240,7 @@ export default function DocumentDetailPage() {
 
             {doc.fileUrl && (
               <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[11px] text-blue-500 hover:underline">
+                className="flex items-center gap-1.5 text-[11px] text-gray-800 hover:underline">
                 <ExternalLink size={10} /> View File
               </a>
             )}
@@ -250,7 +250,7 @@ export default function DocumentDetailPage() {
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">Tags</p>
                 <div className="flex flex-wrap gap-1">
                   {doc.tags.map((t) => (
-                    <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-500">{t}</span>
+                    <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-800">{t}</span>
                   ))}
                 </div>
               </div>
@@ -288,7 +288,7 @@ export default function DocumentDetailPage() {
               <button key={t} onClick={() => setTab(t)}
                 className={cn(
                   'py-2.5 text-[11px] font-medium capitalize border-b-2 transition-colors',
-                  tab === t ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600',
+                  tab === t ? 'border-gray-800 text-gray-700' : 'border-transparent text-gray-400 hover:text-gray-600',
                 )}>
                 {t}
               </button>
@@ -332,14 +332,14 @@ export default function DocumentDetailPage() {
               <div className="space-y-3">
                 {/* Request sig form */}
                 {addingSig ? (
-                  <div className="bg-white border border-blue-200 rounded-lg p-3 space-y-2">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
                     <p className="text-xs font-medium text-gray-700">Request Signature</p>
                     <input value={signerName} onChange={(e) => setSignerName(e.target.value)}
                       placeholder="Signer name *"
-                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
                     <input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)}
                       placeholder="Signer email (optional)"
-                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
                     <div className="flex gap-2">
                       <button
                         onClick={() => requestSigMut.mutate()}
@@ -353,7 +353,7 @@ export default function DocumentDetailPage() {
                   </div>
                 ) : (
                   <button onClick={() => setAddingSig(true)}
-                    className="flex items-center gap-1.5 text-[11px] text-blue-500 hover:text-blue-700">
+                    className="flex items-center gap-1.5 text-[11px] text-gray-800 hover:text-gray-900">
                     <PenSquare size={12} /> Request signature
                   </button>
                 )}
@@ -400,10 +400,10 @@ export default function DocumentDetailPage() {
             {tab === 'activity' && (
               <div className="space-y-2">
                 {addingNote ? (
-                  <div className="bg-white border border-blue-200 rounded-lg p-3 space-y-2">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
                     <textarea value={note} onChange={(e) => setNote(e.target.value)}
                       placeholder="Add a note..." rows={2}
-                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                      className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-gray-400" />
                     <div className="flex gap-2">
                       <button onClick={() => addNoteMut.mutate()} disabled={!note.trim() || addNoteMut.isPending}
                         className="bg-gray-900 text-white px-3 py-1 rounded text-[11px] disabled:opacity-40">Save</button>
@@ -412,7 +412,7 @@ export default function DocumentDetailPage() {
                   </div>
                 ) : (
                   <button onClick={() => setAddingNote(true)}
-                    className="flex items-center gap-1.5 text-[11px] text-blue-500 hover:text-blue-700">
+                    className="flex items-center gap-1.5 text-[11px] text-gray-800 hover:text-gray-900">
                     <MessageSquarePlus size={12} /> Add note
                   </button>
                 )}
@@ -429,7 +429,7 @@ export default function DocumentDetailPage() {
                         {i < timeline.length - 1 && (
                           <span className="absolute left-[-9px] top-3.5 bottom-0 w-px bg-gray-100" />
                         )}
-                        <span className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-blue-400 border-2 border-white" />
+                        <span className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-gray-400 border-2 border-white" />
                         <div className="bg-white border border-gray-100 rounded-lg px-3 py-2">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[11px] font-medium text-gray-700">{e.title}</p>

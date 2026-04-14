@@ -62,7 +62,7 @@ const STATUSES: BroadcastStatus[] = ['DRAFT', 'SCHEDULED', 'SENDING', 'COMPLETED
 export const STATUS_COLORS: Record<BroadcastStatus, string> = {
   DRAFT: 'bg-gray-50 text-gray-600 border-gray-100',
   SCHEDULED: 'bg-amber-50 text-amber-700 border-amber-100',
-  SENDING: 'bg-blue-50 text-blue-700 border-blue-100',
+  SENDING: 'bg-gray-50 text-gray-900 border-gray-100',
   COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   CANCELLED: 'bg-red-50 text-red-500 border-red-100',
   PAUSED: 'bg-orange-50 text-orange-700 border-orange-100',
@@ -137,7 +137,7 @@ export default function BroadcastsPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-3">
-          <Megaphone size={14} className="text-violet-500" />
+          <Megaphone size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Broadcasts</span>
           {data && <span className="text-[10px] text-gray-400">{data.total} total</span>}
         </div>
@@ -149,9 +149,9 @@ export default function BroadcastsPage() {
       {/* Stats strip */}
       {stats && (
         <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0 grid grid-cols-5 gap-3">
-          <StatTile icon={<TrendingUp size={12} />} label="Sent (30d)" value={String(stats.sent)} accent="text-violet-600" />
+          <StatTile icon={<TrendingUp size={12} />} label="Sent (30d)" value={String(stats.sent)} accent="text-gray-900" />
           <StatTile icon={<CheckCircle size={12} />} label="Delivered" value={String(stats.delivered)} accent="text-emerald-600" />
-          <StatTile icon={<Send size={12} />} label="Delivery rate" value={`${stats.deliveryRate}%`} accent="text-blue-600" />
+          <StatTile icon={<Send size={12} />} label="Delivery rate" value={`${stats.deliveryRate}%`} accent="text-gray-700" />
           <StatTile icon={<TrendingUp size={12} />} label="Open rate" value={`${stats.openRate}%`} accent="text-orange-600" />
           <StatTile icon={<AlertCircle size={12} />} label="Failed" value={String(stats.failed)} accent={stats.failed > 0 ? 'text-red-600' : 'text-gray-500'} />
         </div>
@@ -188,7 +188,7 @@ export default function BroadcastsPage() {
           <div className="p-12 text-center">
             <Megaphone size={32} className="mx-auto text-gray-200 mb-2" />
             <p className="text-xs text-gray-300 mb-2">No broadcasts yet.</p>
-            <button onClick={() => setShowCreate(true)} className="text-[11px] text-violet-600 hover:text-violet-700">+ New Broadcast</button>
+            <button onClick={() => setShowCreate(true)} className="text-[11px] text-gray-900 hover:text-gray-900">+ New Broadcast</button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -199,7 +199,7 @@ export default function BroadcastsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <Link href={`/broadcasts/${b.id}`} className="text-xs font-medium text-gray-900 hover:text-violet-600">
+                        <Link href={`/broadcasts/${b.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900">
                           {b.name}
                         </Link>
                         <StatusBadge status={b.status} />
@@ -217,7 +217,7 @@ export default function BroadcastsPage() {
                       {b.status === 'SENDING' && b.totalRecipients > 0 && (
                         <div className="mt-1.5 flex items-center gap-2">
                           <div className="flex-1 bg-gray-100 rounded-full h-1 max-w-xs">
-                            <div className="bg-violet-500 h-1 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                            <div className="bg-gray-800 h-1 rounded-full transition-all" style={{ width: `${progress}%` }} />
                           </div>
                           <span className="text-[10px] text-gray-400">{progress}%</span>
                         </div>
@@ -302,19 +302,19 @@ function CreateBroadcastModal({ onClose }: { onClose: () => void }) {
           <h3 className="text-xs font-semibold">New Broadcast</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
         </div>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Broadcast name (internal — not shown to recipients)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Broadcast name (internal — not shown to recipients)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={4}
           placeholder="Message body (use {{firstName}}, {{name}}, {{phoneNumber}} for personalization)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none"
         />
         <input
           value={tagsRaw}
           onChange={(e) => setTagsRaw(e.target.value)}
           placeholder="Audience tags (comma-separated, optional)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
         <p className="text-[10px] text-gray-400">
           The broadcast starts in DRAFT. Open it to set audience, schedule, or send.

@@ -69,7 +69,7 @@ const PRIORITIES: DealPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
 const PRIORITY_DOTS: Record<DealPriority, string> = {
   LOW: 'bg-gray-300',
-  MEDIUM: 'bg-blue-400',
+  MEDIUM: 'bg-gray-400',
   HIGH: 'bg-orange-400',
   URGENT: 'bg-red-500',
 };
@@ -84,7 +84,7 @@ function DealCard({ deal }: { deal: Deal }) {
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        'bg-white rounded border border-gray-200 p-2 hover:border-violet-300 hover:shadow-sm transition-all',
+        'bg-white rounded border border-gray-200 p-2 hover:border-gray-300 hover:shadow-sm transition-all',
         isDragging && 'opacity-50 shadow-md',
       )}
     >
@@ -98,7 +98,7 @@ function DealCard({ deal }: { deal: Deal }) {
           <span className={cn('block w-1.5 h-1.5 rounded-full', PRIORITY_DOTS[deal.priority])} />
         </button>
         <Link href={`/deals/${deal.id}`} className="flex-1 min-w-0">
-          <p className="text-[11px] font-medium text-gray-900 truncate hover:text-violet-600">{deal.title}</p>
+          <p className="text-[11px] font-medium text-gray-900 truncate hover:text-gray-900">{deal.title}</p>
           <p className="text-[10px] text-gray-400 truncate">{deal.contact?.displayName ?? deal.contact?.phoneNumber ?? '—'}</p>
         </Link>
       </div>
@@ -257,11 +257,11 @@ export default function DealsPage() {
       {/* Forecast strip */}
       {forecast && (
         <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0 grid grid-cols-5 gap-3">
-          <StatTile icon={<TrendingUp size={12} />} label="Pipeline (raw)" value={`₹${Math.round(forecast.pipelineValueRaw).toLocaleString()}`} accent="text-violet-600" />
-          <StatTile icon={<Activity size={12} />} label="Pipeline (wgt)" value={`₹${Math.round(forecast.pipelineValueWeighted).toLocaleString()}`} accent="text-violet-600" />
+          <StatTile icon={<TrendingUp size={12} />} label="Pipeline (raw)" value={`₹${Math.round(forecast.pipelineValueRaw).toLocaleString()}`} accent="text-gray-900" />
+          <StatTile icon={<Activity size={12} />} label="Pipeline (wgt)" value={`₹${Math.round(forecast.pipelineValueWeighted).toLocaleString()}`} accent="text-gray-900" />
           <StatTile icon={<Award size={12} />} label="Won (30d)" value={`${forecast.wonCount} · ₹${Math.round(forecast.wonValue).toLocaleString()}`} accent="text-emerald-600" />
           <StatTile icon={<Flame size={12} />} label="Conv. rate" value={`${forecast.conversionRate}%`} accent="text-orange-600" />
-          <StatTile icon={<Clock size={12} />} label="Avg cycle" value={`${forecast.avgSalesCycleDays}d`} accent="text-blue-600" />
+          <StatTile icon={<Clock size={12} />} label="Avg cycle" value={`${forecast.avgSalesCycleDays}d`} accent="text-gray-700" />
         </div>
       )}
 
@@ -293,8 +293,8 @@ export default function DealsPage() {
 
       {/* Bulk action toolbar */}
       {selected.size > 0 && (
-        <div className="px-4 py-1.5 bg-violet-50 border-b border-violet-100 flex items-center gap-3 shrink-0">
-          <span className="text-[11px] text-violet-700 font-medium">{selected.size} selected</span>
+        <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-gray-900 font-medium">{selected.size} selected</span>
           <select
             onChange={(e) => {
               if (e.target.value) {
@@ -302,7 +302,7 @@ export default function DealsPage() {
                 e.target.value = '';
               }
             }}
-            className="text-[10px] border border-violet-200 rounded px-1.5 py-0.5 bg-white"
+            className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white"
           >
             <option value="">Move to stage…</option>
             {DEAL_STAGE_ORDER.map((s) => <option key={s} value={s}>{DEAL_STAGE_LABELS[s]}</option>)}
@@ -355,7 +355,7 @@ export default function DealsPage() {
         ) : items.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-xs text-gray-400 mb-2">No deals match those filters.</p>
-            <button onClick={clearFilters} className="text-[11px] text-violet-600 hover:text-violet-700">Clear filters</button>
+            <button onClick={clearFilters} className="text-[11px] text-gray-900 hover:text-gray-900">Clear filters</button>
           </div>
         ) : (
           <table className="w-full">
@@ -376,7 +376,7 @@ export default function DealsPage() {
                     <input type="checkbox" checked={selected.has(deal.id)} onChange={() => toggleOne(deal.id)} className="h-3 w-3" />
                   </td>
                   <td className="px-3 py-2">
-                    <Link href={`/deals/${deal.id}`} className="text-xs font-medium text-gray-900 hover:text-violet-600 flex items-center gap-1.5">
+                    <Link href={`/deals/${deal.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900 flex items-center gap-1.5">
                       <span className={cn('w-1.5 h-1.5 rounded-full', PRIORITY_DOTS[deal.priority])} />
                       {deal.title}
                     </Link>
@@ -468,7 +468,7 @@ function CreateDealModal({ onClose }: { onClose: () => void }) {
           <h3 className="text-xs font-semibold">New Deal</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Deal title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Deal title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         <div className="grid grid-cols-2 gap-2">
           <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Contact phone" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs" />
           <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Contact name (opt)" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs" />

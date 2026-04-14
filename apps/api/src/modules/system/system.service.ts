@@ -48,7 +48,7 @@ interface GitHubCommit {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const GITHUB_REPO = 'Sapheron/Open-Agent-CRM';
+const GITHUB_REPO = 'Sapheron/AgenticCRM';
 const GITHUB_BRANCH = 'main';
 const VERSION_FILE = 'version.json'; // baked at build time
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -94,9 +94,9 @@ export class SystemService {
   private cacheExpiry = 0;
 
   constructor() {
-    // In production Docker: /opt/openagentcrm is mounted at /host
+    // In production Docker: /opt/agenticcrm is mounted at /host
     // Env var INSTALL_DIR tells us where the host repo lives
-    this.hostDir = process.env.HOST_INSTALL_DIR || process.env.INSTALL_DIR || '/opt/openagentcrm';
+    this.hostDir = process.env.HOST_INSTALL_DIR || process.env.INSTALL_DIR || '/opt/agenticcrm';
     this.versionInfo = this.detectVersion();
     this.logger.log(`Version: v${this.versionInfo.version} (${this.versionInfo.commitHash})`);
   }
@@ -121,7 +121,7 @@ export class SystemService {
       //    Using raw.githubusercontent instead of the API avoids rate-limit headers.
       const pkgUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/package.json`;
       const pkgRes = await fetch(pkgUrl, {
-        headers: { 'User-Agent': 'OpenAgentCRM-Updater' },
+        headers: { 'User-Agent': 'AgenticCRM-Updater' },
         signal: AbortSignal.timeout(10_000),
       });
 
@@ -145,7 +145,7 @@ export class SystemService {
         const commitRes = await fetch(commitUrl, {
           headers: {
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'OpenAgentCRM-Updater',
+            'User-Agent': 'AgenticCRM-Updater',
           },
           signal: AbortSignal.timeout(10_000),
         }).catch(() => null);
@@ -255,7 +255,7 @@ export class SystemService {
       const res = await fetch(url, {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'OpenAgentCRM-Updater',
+          'User-Agent': 'AgenticCRM-Updater',
         },
         signal: AbortSignal.timeout(10_000),
       });

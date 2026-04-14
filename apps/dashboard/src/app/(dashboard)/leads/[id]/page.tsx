@@ -189,7 +189,7 @@ export default function LeadDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {!editMode ? (
-            <button onClick={startEdit} className="text-[11px] text-violet-600 hover:text-violet-700">Edit</button>
+            <button onClick={startEdit} className="text-[11px] text-gray-900 hover:text-gray-900">Edit</button>
           ) : (
             <>
               <button onClick={() => setEditMode(false)} className="text-[11px] text-gray-500">Cancel</button>
@@ -228,12 +228,12 @@ export default function LeadDetailPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-100 rounded-full h-1.5">
                     <div
-                      className={cn('h-1.5 rounded-full', lead.score >= 70 ? 'bg-emerald-500' : lead.score >= 40 ? 'bg-violet-500' : 'bg-gray-300')}
+                      className={cn('h-1.5 rounded-full', lead.score >= 70 ? 'bg-emerald-500' : lead.score >= 40 ? 'bg-gray-800' : 'bg-gray-300')}
                       style={{ width: `${lead.score}%` }}
                     />
                   </div>
                   <span className="text-[11px] font-semibold text-gray-700 w-6">{lead.score}</span>
-                  <button onClick={() => recalcMutation.mutate()} className="text-gray-400 hover:text-violet-500" title="Recalculate">
+                  <button onClick={() => recalcMutation.mutate()} className="text-gray-400 hover:text-gray-800" title="Recalculate">
                     <RefreshCw size={11} />
                   </button>
                 </div>
@@ -245,7 +245,7 @@ export default function LeadDetailPage() {
               <Field label="Tags" value={
                 <div className="flex flex-wrap gap-1">
                   {lead.tags.length === 0 ? '—' : lead.tags.map((t) => (
-                    <span key={t} className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded">{t}</span>
+                    <span key={t} className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded">{t}</span>
                   ))}
                 </div>
               } />
@@ -285,7 +285,7 @@ export default function LeadDetailPage() {
           ) : (
             <>
               <EditField label="Title">
-                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 rounded px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 rounded px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400" />
               </EditField>
               <EditField label="Priority">
                 <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full border border-gray-200 rounded px-2 py-1 text-[11px] bg-white">
@@ -355,7 +355,7 @@ export default function LeadDetailPage() {
               ) : (
                 lead.activities.map((a) => (
                   <div key={a.id} className="flex gap-2">
-                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-violet-300 shrink-0" />
+                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-300 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
                         <span className="font-mono uppercase tracking-wider">{a.type}</span>
@@ -382,7 +382,7 @@ export default function LeadDetailPage() {
               {lead.status !== 'QUALIFIED' && lead.status !== 'WON' && (
                 <button
                   onClick={() => statusMutation.mutate('QUALIFIED')}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <CheckCircle size={11} /> Qualify
                 </button>

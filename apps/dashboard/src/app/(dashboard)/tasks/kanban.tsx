@@ -55,7 +55,7 @@ export function TaskKanban({ tasks, onMove }: Props) {
             }}
             className={cn(
               'w-64 shrink-0 rounded-lg border bg-gray-50/50 flex flex-col',
-              hoverCol === status ? 'border-violet-300 bg-violet-50/50' : 'border-gray-200',
+              hoverCol === status ? 'border-gray-300 bg-gray-50/50' : 'border-gray-200',
             )}
           >
             <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
@@ -74,7 +74,7 @@ export function TaskKanban({ tasks, onMove }: Props) {
                     onDragStart={() => setDraggedId(task.id)}
                     onDragEnd={() => setDraggedId(null)}
                     className={cn(
-                      'bg-white rounded border border-gray-200 p-2 cursor-grab active:cursor-grabbing hover:border-violet-300 hover:shadow-sm transition-all',
+                      'bg-white rounded border border-gray-200 p-2 cursor-grab active:cursor-grabbing hover:border-gray-300 hover:shadow-sm transition-all',
                       draggedId === task.id && 'opacity-50',
                     )}
                   >

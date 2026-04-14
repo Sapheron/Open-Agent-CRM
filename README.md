@@ -1,6 +1,8 @@
-# Open Agent CRM
+# AgenticCRM
 
-A full-stack, AI-powered CRM built around WhatsApp. Connect your WhatsApp number, configure an AI provider, and your AI agent handles customer conversations, creates leads, manages deals, sends invoices, and controls the entire CRM — autonomously or on demand from the dashboard.
+A self-hosted, AI-powered CRM built around WhatsApp. Connect your WhatsApp number, configure an AI provider, and your AI agent handles customer conversations, creates leads, manages deals, sends invoices, and controls the entire CRM — autonomously or on demand from the dashboard.
+
+**A [Sapheron](https://sapheron.com) Project** · From [TechnoTaLim Platform and Services LLP](https://technotalim.com)
 
 ---
 
@@ -62,12 +64,12 @@ Supports **fallback chains** — if the primary model fails, the system automati
 **Requirements:** A Linux server with Docker and Docker Compose installed.
 
 ```bash
-curl -fsSL https://openagentcrm.sapheron.com/install.sh | bash
+curl -fsSL https://agenticcrm.sapheron.com/install.sh | bash
 ```
 
 The installer will:
 1. Ask for your domain, database password, and other config
-2. Clone the repository to `/opt/openagentcrm`
+2. Clone the repository to `/opt/agenticcrm`
 3. Generate a `.env` file
 4. Build and start all Docker services
 5. Run database migrations and seed an admin user
@@ -108,7 +110,9 @@ The stack runs 11 Docker services:
 
 **Allowlist:** Only numbers in the allowed list trigger the AI agent or staff AI chat. Go to **Settings → WhatsApp → Allowed Numbers** to manage it.
 
-**Staff chat:** Message your own connected WhatsApp number to yourself. The AI responds with full CRM access — same as the dashboard `/chat` page. Typing indicators appear on WhatsApp while the AI is processing.
+**Staff chat:** Message your own connected WhatsApp number to yourself. The AI responds with full CRM access — same as the dashboard `/chat` page.
+
+**24/7 uptime:** Three layers protect the connection — native WebSocket keepalive ping every 30s, exponential backoff reconnect on disconnect (unlimited retries), and a 2-minute watchdog for silent drops. Session credentials survive container restarts via PostgreSQL storage.
 
 ---
 
@@ -120,6 +124,12 @@ The stack runs 11 Docker services:
 | `/chat` | Chat with the AI agent — full CRM control via natural language |
 | `/memory` | Manage the AI's persistent memory files |
 | `/docs` | Browse all available AI commands and tools |
+
+### Analytics
+| Page | Description |
+|---|---|
+| `/analytics` | Revenue trends, conversion funnel, agent performance, message volume, ticket stats |
+| `/reports` | Custom report builder with scheduling and export |
 
 ### CRM
 | Page | Description |
@@ -162,12 +172,6 @@ The stack runs 11 Docker services:
 |---|---|
 | `/documents` | Document management with e-signature requests and tracking |
 | `/integrations` | Third-party integrations, webhooks, calendar events |
-
-### Analytics
-| Page | Description |
-|---|---|
-| `/analytics` | Revenue trends, conversion funnel, agent performance, message volume, ticket stats |
-| `/reports` | Custom report builder with scheduling and export |
 
 ---
 
@@ -295,7 +299,7 @@ Admins assign per-user permissions from **Settings → Team**. Each dashboard mo
 
 **System (`/settings/system`)**
 - View current installed version
-- Check for new releases
+- Check for new releases (version-based — only shows update when package.json version is bumped)
 - View changelog
 - Trigger in-place update
 
@@ -309,7 +313,7 @@ Go to **Settings → System** and click **Update Now**. The system will:
 3. Run any new database migrations
 4. Restart all services
 
-The update banner only appears when the remote `package.json` version is greater than the installed version. Pushing test commits to the repo does not trigger update notifications for clients — only intentional version bumps do.
+The update banner only appears when the remote `package.json` version is greater than the installed version. Pushing test commits to the repo does not trigger update notifications — only intentional version bumps do.
 
 ---
 
@@ -347,7 +351,7 @@ AI provider API keys are stored encrypted in the database, configured from **Set
 ## Project Structure
 
 ```
-whatsapp-ai-crm/
+agenticcrm/
 ├── apps/
 │   ├── api/           # NestJS REST API + WebSocket gateway
 │   ├── dashboard/     # Next.js dashboard (React, Tailwind)
@@ -368,3 +372,7 @@ whatsapp-ai-crm/
 ## License
 
 MIT
+
+---
+
+**A [Sapheron](https://sapheron.com) Project** · From [TechnoTaLim Platform and Services LLP](https://technotalim.com)

@@ -59,7 +59,7 @@ interface Stats {
 }
 
 const STATUS_COLORS: Record<PaymentStatus, string> = {
-  PENDING: 'bg-blue-50 text-blue-600',
+  PENDING: 'bg-gray-50 text-gray-700',
   PAID: 'bg-emerald-50 text-emerald-700',
   FAILED: 'bg-red-50 text-red-600',
   REFUNDED: 'bg-amber-50 text-amber-700',
@@ -186,7 +186,7 @@ export default function PaymentsPage() {
     <div className="h-full flex flex-col">
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <CreditCard size={14} className="text-violet-500" />
+          <CreditCard size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Payments</span>
         </div>
         <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function PaymentsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search payments..."
-              className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
           </div>
           <button
@@ -235,7 +235,7 @@ export default function PaymentsPage() {
                     type="checkbox"
                     checked={selectedStatuses.has(s)}
                     onChange={() => toggleStatus(s)}
-                    className="accent-violet-500 w-3 h-3"
+                    className="accent-gray-800 w-3 h-3"
                   />
                   <span className={cn('px-1.5 py-0.5 rounded text-[10px]', STATUS_COLORS[s])}>
                     {s}
@@ -255,7 +255,7 @@ export default function PaymentsPage() {
                     type="checkbox"
                     checked={selectedProviders.has(p)}
                     onChange={() => toggleProvider(p)}
-                    className="accent-violet-500 w-3 h-3"
+                    className="accent-gray-800 w-3 h-3"
                   />
                   <span className="text-[10px] text-gray-600">{p}</span>
                 </label>
@@ -269,7 +269,7 @@ export default function PaymentsPage() {
                 setSelectedProviders(new Set());
                 setSearch('');
               }}
-              className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700"
+              className="flex items-center gap-1 text-[10px] text-gray-900 hover:text-gray-900"
             >
               <X size={10} /> Clear filters
             </button>
@@ -278,8 +278,8 @@ export default function PaymentsPage() {
 
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           {selectedIds.size > 0 && (
-            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-violet-50">
-              <span className="text-[11px] text-violet-700 font-medium">
+            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-gray-50">
+              <span className="text-[11px] text-gray-900 font-medium">
                 {selectedIds.size} selected
               </span>
               <div className="flex-1" />
@@ -329,7 +329,7 @@ export default function PaymentsPage() {
                           if (e.target.checked) setSelectedIds(new Set(items.map((p) => p.id)));
                           else setSelectedIds(new Set());
                         }}
-                        className="accent-violet-500 w-3 h-3"
+                        className="accent-gray-800 w-3 h-3"
                       />
                     </th>
                     {['Amount', 'Status', 'Provider', 'Description', 'Contact', 'Paid / Created', ''].map(
@@ -352,13 +352,13 @@ export default function PaymentsPage() {
                           type="checkbox"
                           checked={selectedIds.has(p.id)}
                           onChange={() => toggleSelect(p.id)}
-                          className="accent-violet-500 w-3 h-3"
+                          className="accent-gray-800 w-3 h-3"
                         />
                       </td>
                       <td className="px-2 py-2">
                         <Link
                           href={`/payments/${p.id}`}
-                          className="text-xs font-medium text-gray-900 hover:text-violet-600 tabular-nums"
+                          className="text-xs font-medium text-gray-900 hover:text-gray-900 tabular-nums"
                         >
                           {formatMoney(p.amount, p.currency)}
                         </Link>
@@ -387,7 +387,7 @@ export default function PaymentsPage() {
                         {p.invoiceId && (
                           <Link
                             href={`/invoices/${p.invoiceId}`}
-                            className="block text-[9px] text-violet-600 hover:text-violet-700"
+                            className="block text-[9px] text-gray-900 hover:text-gray-900"
                           >
                             → invoice
                           </Link>
@@ -397,7 +397,7 @@ export default function PaymentsPage() {
                         {p.contact ? (
                           <Link
                             href={`/contacts/${p.contact.id}`}
-                            className="hover:text-violet-600"
+                            className="hover:text-gray-900"
                           >
                             {p.contact.displayName ?? p.contact.phoneNumber}
                           </Link>
@@ -415,7 +415,7 @@ export default function PaymentsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Open payment link"
-                            className="text-blue-600 hover:text-blue-700 p-0.5 inline-block"
+                            className="text-gray-700 hover:text-gray-900 p-0.5 inline-block"
                           >
                             <ExternalLink size={11} />
                           </a>
@@ -461,8 +461,8 @@ function StatTile({
 }) {
   const tints: Record<string, string> = {
     emerald: 'text-emerald-600',
-    blue: 'text-blue-600',
-    violet: 'text-violet-600',
+    blue: 'text-gray-700',
+    violet: 'text-gray-900',
     amber: 'text-amber-600',
     red: 'text-red-600',
   };
@@ -574,19 +574,19 @@ function CreatePaymentModal({
           value={contactId}
           onChange={(e) => setContactId(e.target.value)}
           placeholder={mode === 'link' ? 'Contact id (required)' : 'Contact id (optional)'}
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono"
         />
         <input
           value={invoiceId}
           onChange={(e) => setInvoiceId(e.target.value)}
           placeholder="Invoice id (optional — auto-reconciles)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono"
         />
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
         <div className="grid grid-cols-2 gap-2">
           <label className="text-[10px] text-gray-500">

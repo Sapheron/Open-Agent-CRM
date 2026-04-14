@@ -46,9 +46,9 @@ interface ContactNote {
 
 const LIFECYCLE_COLORS: Record<string, string> = {
   SUBSCRIBER: 'bg-gray-100 text-gray-600',
-  LEAD: 'bg-blue-50 text-blue-600',
-  MQL: 'bg-violet-50 text-violet-600',
-  SQL: 'bg-indigo-50 text-indigo-600',
+  LEAD: 'bg-gray-50 text-gray-700',
+  MQL: 'bg-gray-50 text-gray-900',
+  SQL: 'bg-gray-50 text-gray-900',
   OPPORTUNITY: 'bg-amber-50 text-amber-600',
   CUSTOMER: 'bg-emerald-50 text-emerald-600',
   EVANGELIST: 'bg-pink-50 text-pink-600',
@@ -192,7 +192,7 @@ export default function ContactDetailPage() {
         <button onClick={() => router.push('/contacts')} className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={14} />
         </button>
-        <div className="w-7 h-7 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-bold">
+        <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-xs font-bold">
           {initials}
         </div>
         <div className="flex-1 min-w-0">
@@ -215,7 +215,7 @@ export default function ContactDetailPage() {
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Contact Info</p>
               {!editMode ? (
-                <button onClick={startEdit} className="text-[10px] text-violet-500 hover:text-violet-600 font-medium">
+                <button onClick={startEdit} className="text-[10px] text-gray-800 hover:text-gray-900 font-medium">
                   Edit
                 </button>
               ) : (
@@ -250,7 +250,7 @@ export default function ContactDetailPage() {
                         value={form[key] || ''}
                         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                         type={type || 'text'}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400"
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                       />
                     </div>
                   </div>
@@ -285,7 +285,7 @@ export default function ContactDetailPage() {
               <select
                 value={contact.lifecycleStage}
                 onChange={(e) => updateMutation.mutate({ lifecycleStage: e.target.value })}
-                className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
               >
                 {LIFECYCLE_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -296,9 +296,9 @@ export default function ContactDetailPage() {
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Tags</p>
               <div className="flex flex-wrap gap-1 mb-2">
                 {(contact.tags || []).map((tag) => (
-                  <span key={tag} className="text-[10px] bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                  <span key={tag} className="text-[10px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="text-violet-400 hover:text-violet-600 ml-0.5">×</button>
+                    <button onClick={() => handleRemoveTag(tag)} className="text-gray-400 hover:text-gray-900 ml-0.5">×</button>
                   </span>
                 ))}
                 {(contact.tags || []).length === 0 && <span className="text-[10px] text-gray-300 italic">No tags</span>}
@@ -307,7 +307,7 @@ export default function ContactDetailPage() {
                 <select
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded px-2 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="flex-1 border border-gray-200 rounded px-2 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-gray-400"
                 >
                   <option value="">Add tag...</option>
                   {(tags || []).filter((t) => !(contact.tags || []).includes(t.name)).map((t) => (
@@ -344,13 +344,13 @@ export default function ContactDetailPage() {
                   <div key={i} className="flex items-start gap-2">
                     <div className={cn('w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5', {
                       'bg-green-50': item.type === 'lead',
-                      'bg-violet-50': item.type === 'deal',
+                      'bg-gray-50': item.type === 'deal',
                       'bg-amber-50': item.type === 'task',
                       'bg-emerald-50': item.type === 'payment',
                       'bg-gray-100': item.type === 'note',
                     })}>
                       {item.type === 'lead' && <TrendingUp size={10} className="text-green-500" />}
-                      {item.type === 'deal' && <Briefcase size={10} className="text-violet-500" />}
+                      {item.type === 'deal' && <Briefcase size={10} className="text-gray-800" />}
                       {item.type === 'task' && <CheckSquare size={10} className="text-amber-500" />}
                       {item.type === 'payment' && <CreditCard size={10} className="text-emerald-500" />}
                       {item.type === 'note' && <StickyNote size={10} className="text-gray-400" />}
@@ -380,7 +380,7 @@ export default function ContactDetailPage() {
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Write a note..."
                 rows={3}
-                className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none placeholder:text-gray-300"
+                className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none placeholder:text-gray-300"
               />
               <button
                 onClick={() => addNoteMutation.mutate()}

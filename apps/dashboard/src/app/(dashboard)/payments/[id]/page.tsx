@@ -75,7 +75,7 @@ interface Payment {
 }
 
 const STATUS_COLORS: Record<PaymentStatus, string> = {
-  PENDING: 'bg-blue-50 text-blue-600',
+  PENDING: 'bg-gray-50 text-gray-700',
   PAID: 'bg-emerald-50 text-emerald-700',
   FAILED: 'bg-red-50 text-red-600',
   REFUNDED: 'bg-amber-50 text-amber-700',
@@ -246,7 +246,7 @@ export default function PaymentDetailPage() {
                   href={payment.linkUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-violet-600 hover:text-violet-700 flex items-center gap-1 mt-1"
+                  className="text-[10px] text-gray-900 hover:text-gray-900 flex items-center gap-1 mt-1"
                 >
                   <ExternalLink size={10} /> Open hosted link
                 </a>
@@ -257,7 +257,7 @@ export default function PaymentDetailPage() {
               {payment.contact ? (
                 <Link
                   href={`/contacts/${payment.contact.id}`}
-                  className="text-[11px] text-violet-600 hover:text-violet-700 block truncate"
+                  className="text-[11px] text-gray-900 hover:text-gray-900 block truncate"
                 >
                   → {payment.contact.displayName ?? payment.contact.phoneNumber}
                 </Link>
@@ -267,7 +267,7 @@ export default function PaymentDetailPage() {
               {payment.deal ? (
                 <Link
                   href={`/deals/${payment.deal.id}`}
-                  className="text-[11px] text-violet-600 hover:text-violet-700 block truncate"
+                  className="text-[11px] text-gray-900 hover:text-gray-900 block truncate"
                 >
                   → Deal: {payment.deal.title}
                 </Link>
@@ -277,7 +277,7 @@ export default function PaymentDetailPage() {
               {payment.invoiceId ? (
                 <Link
                   href={`/invoices/${payment.invoiceId}`}
-                  className="text-[11px] text-violet-600 hover:text-violet-700 block"
+                  className="text-[11px] text-gray-900 hover:text-gray-900 block"
                 >
                   → Invoice
                 </Link>
@@ -327,7 +327,7 @@ export default function PaymentDetailPage() {
                 className={cn(
                   'text-[11px] py-1 border-b-2 transition-colors',
                   tab === t
-                    ? 'border-violet-500 text-gray-900'
+                    ? 'border-gray-800 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600',
                 )}
               >
@@ -357,7 +357,7 @@ export default function PaymentDetailPage() {
                       ) : a.type === 'MANUAL_RECORDED' ? (
                         <DollarSign size={11} className="text-emerald-500" />
                       ) : a.type === 'WEBHOOK_RECEIVED' ? (
-                        <CreditCard size={11} className="text-blue-500" />
+                        <CreditCard size={11} className="text-gray-800" />
                       ) : (
                         <Clock size={11} className="text-gray-400" />
                       )}
@@ -385,7 +385,7 @@ export default function PaymentDetailPage() {
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Add a note to the payment timeline..."
                 rows={4}
-                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 mb-2"
+                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2"
               />
               <button
                 onClick={() => addNoteM.mutate()}
@@ -467,7 +467,7 @@ export default function PaymentDetailPage() {
           <div className="pt-2 mt-2 border-t border-gray-100">
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about payment ${payment.id}`)}`}
-              className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium"
+              className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"
             >
               <MessageSquare size={11} /> Ask AI
             </Link>

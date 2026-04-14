@@ -112,10 +112,10 @@ interface AudiencePreview {
 
 const STATUS_COLORS: Record<CampaignStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-500',
-  SCHEDULED: 'bg-blue-50 text-blue-600',
+  SCHEDULED: 'bg-gray-50 text-gray-700',
   SENDING: 'bg-emerald-50 text-emerald-700',
   PAUSED: 'bg-amber-50 text-amber-600',
-  COMPLETED: 'bg-violet-50 text-violet-700',
+  COMPLETED: 'bg-gray-50 text-gray-900',
   CANCELLED: 'bg-gray-50 text-gray-400',
   FAILED: 'bg-red-50 text-red-600',
 };
@@ -123,19 +123,19 @@ const STATUS_COLORS: Record<CampaignStatus, string> = {
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   CREATED: <FileText size={11} className="text-gray-400" />,
   LAUNCHED: <Rocket size={11} className="text-emerald-500" />,
-  SCHEDULED: <Calendar size={11} className="text-blue-500" />,
+  SCHEDULED: <Calendar size={11} className="text-gray-800" />,
   PAUSED: <Pause size={11} className="text-amber-500" />,
   RESUMED: <Play size={11} className="text-emerald-500" />,
   CANCELLED: <XCircle size={11} className="text-red-500" />,
-  COMPLETED: <CheckCircle2 size={11} className="text-violet-500" />,
+  COMPLETED: <CheckCircle2 size={11} className="text-gray-800" />,
   AUDIENCE_UPDATED: <Users size={11} className="text-gray-400" />,
   NOTE_ADDED: <MessageSquare size={11} className="text-gray-400" />,
   FIELD_UPDATED: <FileText size={11} className="text-gray-400" />,
   ERROR: <AlertTriangle size={11} className="text-red-500" />,
   RECIPIENT_SENT: <Send size={11} className="text-gray-400" />,
   RECIPIENT_DELIVERED: <CheckCircle2 size={11} className="text-emerald-400" />,
-  RECIPIENT_READ: <Eye size={11} className="text-blue-400" />,
-  RECIPIENT_REPLIED: <MessageSquare size={11} className="text-violet-500" />,
+  RECIPIENT_READ: <Eye size={11} className="text-gray-400" />,
+  RECIPIENT_REPLIED: <MessageSquare size={11} className="text-gray-800" />,
   RECIPIENT_FAILED: <AlertTriangle size={11} className="text-red-400" />,
 };
 
@@ -314,7 +314,7 @@ export default function CampaignDetailPage() {
                   {campaign.audienceTags.map((t) => (
                     <span
                       key={t}
-                      className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                      className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded flex items-center gap-0.5"
                     >
                       <Tag size={8} /> {t}
                     </span>
@@ -363,7 +363,7 @@ export default function CampaignDetailPage() {
                   <div
                     className={cn(
                       'h-full rounded transition-all',
-                      campaign.status === 'FAILED' ? 'bg-red-400' : 'bg-violet-500',
+                      campaign.status === 'FAILED' ? 'bg-red-400' : 'bg-gray-800',
                     )}
                     style={{ width: `${progress}%` }}
                   />
@@ -440,7 +440,7 @@ export default function CampaignDetailPage() {
                 className={cn(
                   'text-[11px] py-1 border-b-2 transition-colors',
                   tab === t
-                    ? 'border-violet-500 text-gray-900'
+                    ? 'border-gray-800 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600',
                 )}
               >
@@ -530,7 +530,7 @@ export default function CampaignDetailPage() {
                                 r.status === 'FAILED' || r.status === 'OPTED_OUT'
                                   ? 'bg-red-50 text-red-600'
                                   : r.status === 'REPLIED'
-                                    ? 'bg-violet-50 text-violet-700'
+                                    ? 'bg-gray-50 text-gray-900'
                                     : r.status === 'READ' || r.status === 'DELIVERED'
                                       ? 'bg-emerald-50 text-emerald-700'
                                       : 'bg-gray-100 text-gray-500',
@@ -567,7 +567,7 @@ export default function CampaignDetailPage() {
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Add a note to the campaign timeline..."
                 rows={4}
-                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 mb-2"
+                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2"
               />
               <button
                 onClick={() => addNoteM.mutate()}
@@ -654,7 +654,7 @@ export default function CampaignDetailPage() {
           <div className="pt-2 mt-2 border-t border-gray-100">
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about campaign ${campaign.id}`)}`}
-              className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium"
+              className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"
             >
               <MessageSquare size={11} /> Ask AI
             </Link>

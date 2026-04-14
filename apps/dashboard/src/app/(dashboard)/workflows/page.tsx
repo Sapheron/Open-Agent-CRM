@@ -259,7 +259,7 @@ export default function WorkflowsPage() {
       {/* Header */}
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <span className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
-          <Zap size={13} className="text-violet-500" /> Workflows
+          <Zap size={13} className="text-gray-800" /> Workflows
         </span>
         <button
           onClick={() => setShowCreate(true)}
@@ -289,7 +289,7 @@ export default function WorkflowsPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search workflows..."
-            className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-violet-300"
+            className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-gray-300"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
@@ -301,7 +301,7 @@ export default function WorkflowsPage() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as WorkflowStatus | ''); setPage(1); }}
-          className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-300"
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-300"
         >
           <option value="">All Statuses</option>
           {STATUS_OPTIONS.map((s) => (
@@ -312,7 +312,7 @@ export default function WorkflowsPage() {
         <select
           value={triggerFilter}
           onChange={(e) => { setTriggerFilter(e.target.value); setPage(1); }}
-          className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-300"
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-300"
         >
           <option value="">All Triggers</option>
           {TRIGGER_OPTIONS.map((t) => (
@@ -323,7 +323,7 @@ export default function WorkflowsPage() {
         <select
           value={sort}
           onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }}
-          className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-300"
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-300"
         >
           <option value="recent">Sort: Recent</option>
           <option value="name">Sort: Name</option>
@@ -334,8 +334,8 @@ export default function WorkflowsPage() {
 
       {/* Bulk toolbar */}
       {selected.size > 0 && (
-        <div className="px-4 py-2 border-b border-violet-100 bg-violet-50 flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-medium text-violet-700">{selected.size} selected</span>
+        <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-medium text-gray-900">{selected.size} selected</span>
           <button
             onClick={() => bulkActivateMut.mutate(Array.from(selected))}
             className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700"
@@ -363,7 +363,7 @@ export default function WorkflowsPage() {
           >
             <Trash2 size={10} /> Delete
           </button>
-          <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-violet-500 hover:underline">
+          <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-gray-800 hover:underline">
             Clear
           </button>
         </div>
@@ -380,7 +380,7 @@ export default function WorkflowsPage() {
             {(search || statusFilter || triggerFilter) && (
               <button
                 onClick={() => { setSearch(''); setStatusFilter(''); setTriggerFilter(''); }}
-                className="mt-2 text-[11px] text-violet-500 hover:underline"
+                className="mt-2 text-[11px] text-gray-800 hover:underline"
               >
                 Clear filters
               </button>
@@ -404,14 +404,14 @@ export default function WorkflowsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {data.items.map((w) => (
-                <tr key={w.id} className={cn('hover:bg-gray-50/60 transition-colors', selected.has(w.id) && 'bg-violet-50/40')}>
+                <tr key={w.id} className={cn('hover:bg-gray-50/60 transition-colors', selected.has(w.id) && 'bg-gray-50/40')}>
                   <td className="px-3 py-2.5">
-                    <button onClick={() => toggleOne(w.id)} className="text-gray-400 hover:text-violet-500">
-                      {selected.has(w.id) ? <CheckSquare size={13} className="text-violet-500" /> : <Square size={13} />}
+                    <button onClick={() => toggleOne(w.id)} className="text-gray-400 hover:text-gray-800">
+                      {selected.has(w.id) ? <CheckSquare size={13} className="text-gray-800" /> : <Square size={13} />}
                     </button>
                   </td>
                   <td className="px-3 py-2.5">
-                    <Link href={`/workflows/${w.id}`} className="text-xs font-medium text-gray-900 hover:text-violet-600">
+                    <Link href={`/workflows/${w.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900">
                       {w.name}
                     </Link>
                     {w.description && (
@@ -420,7 +420,7 @@ export default function WorkflowsPage() {
                     {w.tags.length > 0 && (
                       <div className="flex gap-1 mt-0.5 flex-wrap">
                         {w.tags.slice(0, 3).map((t) => (
-                          <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-violet-50 text-violet-500">{t}</span>
+                          <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-gray-50 text-gray-800">{t}</span>
                         ))}
                       </div>
                     )}
@@ -460,7 +460,7 @@ export default function WorkflowsPage() {
                       <button
                         onClick={() => runMut.mutate(w.id)}
                         title="Run now"
-                        className="p-1 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-500"
+                        className="p-1 rounded hover:bg-gray-50 text-gray-400 hover:text-gray-800"
                       >
                         <RefreshCw size={11} />
                       </button>
@@ -480,7 +480,7 @@ export default function WorkflowsPage() {
                       >
                         <Trash2 size={11} />
                       </button>
-                      <Link href={`/workflows/${w.id}`} className="p-1 rounded hover:bg-violet-50 text-gray-300 hover:text-violet-500">
+                      <Link href={`/workflows/${w.id}`} className="p-1 rounded hover:bg-gray-50 text-gray-300 hover:text-gray-800">
                         <MoreHorizontal size={11} />
                       </Link>
                     </div>
@@ -533,7 +533,7 @@ export default function WorkflowsPage() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. Welcome new contacts"
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
               <div>
@@ -543,7 +543,7 @@ export default function WorkflowsPage() {
                   onChange={(e) => setNewDesc(e.target.value)}
                   rows={2}
                   placeholder="What does this workflow do?"
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none"
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none"
                 />
               </div>
             </div>

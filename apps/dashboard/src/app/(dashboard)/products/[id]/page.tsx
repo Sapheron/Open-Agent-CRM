@@ -177,7 +177,7 @@ export default function ProductDetailPage() {
           <button onClick={() => router.push('/products')} className="text-gray-400 hover:text-gray-600">
             <ArrowLeft size={14} />
           </button>
-          <Package size={14} className="text-violet-500 shrink-0" />
+          <Package size={14} className="text-gray-800 shrink-0" />
           <span className="text-xs font-semibold text-gray-900 truncate max-w-md">{product.name}</span>
           <span className={cn(
             'text-[10px] px-1.5 py-0.5 rounded font-medium',
@@ -189,7 +189,7 @@ export default function ProductDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {!editMode ? (
-            <button onClick={startEdit} className="text-[11px] text-violet-600 hover:text-violet-700">Edit</button>
+            <button onClick={startEdit} className="text-[11px] text-gray-900 hover:text-gray-900">Edit</button>
           ) : (
             <>
               <button onClick={() => setEditMode(false)} className="text-[11px] text-gray-500">Cancel</button>
@@ -200,7 +200,7 @@ export default function ProductDetailPage() {
           )}
           <button
             onClick={() => product.archivedAt ? unarchiveMutation.mutate() : archiveMutation.mutate()}
-            className="text-gray-400 hover:text-violet-500 p-1"
+            className="text-gray-400 hover:text-gray-800 p-1"
             title={product.archivedAt ? 'Unarchive' : 'Archive'}
           >
             {product.archivedAt ? <ArchiveRestore size={12} /> : <Archive size={12} />}
@@ -243,7 +243,7 @@ export default function ProductDetailPage() {
               <Field label="Tags" value={
                 <div className="flex flex-wrap gap-1">
                   {product.tags.length === 0 ? '—' : product.tags.map((t) => (
-                    <span key={t} className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded">{t}</span>
+                    <span key={t} className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded">{t}</span>
                   ))}
                 </div>
               } />
@@ -354,7 +354,7 @@ export default function ProductDetailPage() {
                 onClick={() => setTab(key)}
                 className={cn(
                   'text-[11px] py-2 border-b-2 transition flex items-center gap-1.5',
-                  tab === key ? 'border-violet-500 text-violet-700 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
+                  tab === key ? 'border-gray-800 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
                 )}
               >
                 <Icon size={11} /> {label}
@@ -465,7 +465,7 @@ export default function ProductDetailPage() {
               ) : (
                 product.activities.map((a) => (
                   <div key={a.id} className="flex gap-2">
-                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-violet-300 shrink-0" />
+                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-300 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
                         <span className="font-mono uppercase tracking-wider">{a.type}</span>
@@ -523,7 +523,7 @@ function VariantForm({
   const [stock, setStock] = useState('');
 
   return (
-    <div className="border border-violet-200 bg-violet-50/30 rounded p-2 space-y-2">
+    <div className="border border-gray-200 bg-gray-50/30 rounded p-2 space-y-2">
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder='Variant name (e.g. "Red - Large")' className="w-full border border-gray-200 rounded px-2 py-1 text-[11px]" />
       <div className="grid grid-cols-3 gap-1.5">
         <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SKU" className="border border-gray-200 rounded px-2 py-1 text-[11px]" />

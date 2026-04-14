@@ -1002,7 +1002,7 @@ export class FormsService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'OpenAgentCRM-Forms/1.0',
+          'User-Agent': 'AgenticCRM-Forms/1.0',
         },
         body,
         signal: AbortSignal.timeout(10_000),

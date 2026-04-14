@@ -51,10 +51,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#0f0f10]">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2.5 justify-center mb-8">
-          <div className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center">
-            <Zap size={16} className="text-white" />
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+            <Zap size={16} className="text-black" />
           </div>
-          <span className="text-white text-sm font-semibold tracking-tight">Open Agent CRM</span>
+          <span className="text-white text-sm font-semibold tracking-tight">AgenticCRM</span>
         </div>
 
         <div className="bg-white rounded-lg p-6 shadow-2xl shadow-black/20">
@@ -66,7 +66,7 @@ export default function LoginPage() {
               <input
                 {...register('email')}
                 type="email"
-                className="w-full border border-gray-200 rounded-md px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400 placeholder:text-gray-300"
+                className="w-full border border-gray-200 rounded-md px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 placeholder:text-gray-300"
                 placeholder="admin@company.com"
               />
               {errors.email && <p className="text-red-500 text-[10px] mt-0.5">{errors.email.message}</p>}
@@ -77,7 +77,7 @@ export default function LoginPage() {
               <input
                 {...register('password')}
                 type="password"
-                className="w-full border border-gray-200 rounded-md px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-400 placeholder:text-gray-300"
+                className="w-full border border-gray-200 rounded-md px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 placeholder:text-gray-300"
                 placeholder="••••••••"
               />
               {errors.password && <p className="text-red-500 text-[10px] mt-0.5">{errors.password.message}</p>}
@@ -93,9 +93,18 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-[10px] text-gray-500 mt-6">
-          Open Agent CRM &middot; Self-hosted &middot; AI-powered
-        </p>
+        <div className="text-center mt-6 space-y-1">
+          <p className="text-[10px] text-gray-500">AgenticCRM &middot; Self-hosted &middot; AI-powered</p>
+          <p className="text-[10px]">
+            <a href="https://sapheron.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-300 transition-colors">
+              A Sapheron Project
+            </a>
+            <span className="text-gray-700 mx-1">&middot;</span>
+            <a href="https://technotalim.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-400 transition-colors">
+              TechnoTaLim Platform and Services LLP
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

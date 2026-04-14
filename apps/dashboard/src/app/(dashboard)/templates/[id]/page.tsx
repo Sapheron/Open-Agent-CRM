@@ -63,13 +63,13 @@ const STATUS_COLORS: Record<TemplateStatus, string> = {
 };
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
-  CREATED: <FileText size={12} className="text-blue-500" />,
+  CREATED: <FileText size={12} className="text-gray-800" />,
   UPDATED: <Edit3 size={12} className="text-amber-500" />,
   ACTIVATED: <CheckCircle2 size={12} className="text-green-500" />,
   ARCHIVED: <Archive size={12} className="text-orange-500" />,
   DELETED: <Trash2 size={12} className="text-red-500" />,
-  USED: <Eye size={12} className="text-purple-500" />,
-  SENT: <Send size={12} className="text-blue-500" />,
+  USED: <Eye size={12} className="text-gray-800" />,
+  SENT: <Send size={12} className="text-gray-800" />,
   PREVIEWED: <Play size={12} className="text-gray-500" />,
   CONVERTED: <TrendingUp size={12} className="text-green-600" />,
 };
@@ -270,7 +270,7 @@ export default function TemplateDetailPage() {
               const name = prompt('Duplicate as:', `${t.name} (copy)`);
               if (name) duplicateMutation.mutate(name);
             }}
-            className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600"
+            className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-700"
             title="Duplicate"
           >
             <Copy size={15} />
@@ -301,7 +301,7 @@ export default function TemplateDetailPage() {
               label="Conversion Rate"
               value={`${t.useCount > 0 ? Math.round((t.conversionCount / t.useCount) * 100) : 0}%`}
               icon={<TrendingUp size={14} />}
-              color="text-blue-600"
+              color="text-gray-700"
             />
           </div>
 
@@ -381,7 +381,7 @@ export default function TemplateDetailPage() {
                                 value={previewVars[variable] || t.variables?.[variable] || ''}
                                 onChange={(e) => setPreviewVars({ ...previewVars, [variable]: e.target.value })}
                                 placeholder={`Enter ${variable}`}
-                                className="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                className="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                               />
                             </div>
                           ))}
@@ -397,7 +397,7 @@ export default function TemplateDetailPage() {
                             value={testPhone}
                             onChange={(e) => setTestPhone(e.target.value)}
                             placeholder="Phone number (e.g., 919876543210)"
-                            className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                            className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                           />
                           <button
                             onClick={() => sendTestMutation.mutate()}
@@ -423,7 +423,7 @@ export default function TemplateDetailPage() {
                       <div className="space-y-2">
                         {variableList.map((variable) => (
                           <div key={variable} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                            <code className="text-xs font-mono text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                            <code className="text-xs font-mono text-gray-900 bg-gray-50 px-1.5 py-0.5 rounded">
                               {'{{'}{variable}{'}}'}
                             </code>
                             <span className="text-xs text-gray-400">→</span>
@@ -438,7 +438,7 @@ export default function TemplateDetailPage() {
                     {t.mediaUrl && (
                       <div className="pt-3 border-t border-gray-100">
                         <div className="text-[10px] text-gray-400 mb-1">Media Attachment</div>
-                        <a href={t.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                        <a href={t.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-700 hover:underline truncate block">
                           {t.mediaUrl}
                         </a>
                       </div>
@@ -526,7 +526,7 @@ export default function TemplateDetailPage() {
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors"
                   >
-                    <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600"><Copy size={14} /></div>
+                    <div className="p-1.5 rounded-lg bg-gray-50 text-gray-700"><Copy size={14} /></div>
                     <div>
                       <div className="text-xs font-medium text-gray-900">Duplicate</div>
                       <div className="text-[10px] text-gray-400">Create a copy as DRAFT</div>
@@ -568,7 +568,7 @@ export default function TemplateDetailPage() {
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
               <div>
@@ -576,7 +576,7 @@ export default function TemplateDetailPage() {
                 <select
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value as TemplateCategory)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 >
                   {['GREETING', 'FOLLOW_UP', 'PROMOTION', 'PAYMENT_REMINDER', 'ORDER_UPDATE', 'SUPPORT', 'FEEDBACK', 'REVIEW', 'APPOINTMENT', 'GENERAL'].map((c) => (
                     <option key={c} value={c}>{c.replace('_', ' ')}</option>
@@ -589,7 +589,7 @@ export default function TemplateDetailPage() {
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none font-mono"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none font-mono"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
                   Variables: {Array.from(editBody.matchAll(/\{\{(\w+)\}\}/g)).map((m) => m[1]).join(', ') || 'none'}
@@ -600,7 +600,7 @@ export default function TemplateDetailPage() {
                 <input
                   value={editTags}
                   onChange={(e) => setEditTags(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
             </div>
@@ -650,7 +650,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       onClick={onClick}
       className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors border-b-2 ${
         active
-          ? 'border-violet-500 text-violet-700 bg-violet-50/50'
+          ? 'border-gray-800 text-gray-900 bg-gray-50/50'
           : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
       }`}
     >

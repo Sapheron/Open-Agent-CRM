@@ -59,14 +59,14 @@ interface Stats {
 
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
   LOW: 'bg-gray-50 text-gray-500 border-gray-100',
-  MEDIUM: 'bg-blue-50 text-blue-600 border-blue-100',
+  MEDIUM: 'bg-gray-50 text-gray-700 border-gray-100',
   HIGH: 'bg-orange-50 text-orange-600 border-orange-100',
   URGENT: 'bg-red-50 text-red-600 border-red-100',
 };
 
 export const STATUS_COLORS: Record<TaskStatus, string> = {
   TODO: 'bg-gray-50 text-gray-600 border-gray-100',
-  IN_PROGRESS: 'bg-blue-50 text-blue-600 border-blue-100',
+  IN_PROGRESS: 'bg-gray-50 text-gray-700 border-gray-100',
   DONE: 'bg-emerald-50 text-emerald-600 border-emerald-100',
   CANCELLED: 'bg-red-50 text-red-500 border-red-100',
 };
@@ -194,7 +194,7 @@ export default function TasksPage() {
           <Link
             href="/tasks/recurrences"
             title="Recurring tasks"
-            className="flex items-center gap-1 border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
+            className="flex items-center gap-1 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
           >
             <Repeat size={11} /> Recurring
           </Link>
@@ -207,10 +207,10 @@ export default function TasksPage() {
       {/* Stats strip */}
       {stats && (
         <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0 grid grid-cols-5 gap-3">
-          <StatTile icon={<TrendingUp size={12} />} label="Open" value={String((stats.byStatus.TODO ?? 0) + (stats.byStatus.IN_PROGRESS ?? 0))} accent="text-violet-600" />
+          <StatTile icon={<TrendingUp size={12} />} label="Open" value={String((stats.byStatus.TODO ?? 0) + (stats.byStatus.IN_PROGRESS ?? 0))} accent="text-gray-900" />
           <StatTile icon={<AlertCircle size={12} />} label="Overdue" value={String(stats.overdue)} accent="text-red-600" />
           <StatTile icon={<Award size={12} />} label="Done (30d)" value={String(stats.completedRecently)} accent="text-emerald-600" />
-          <StatTile icon={<CheckSquare size={12} />} label="Completion" value={`${stats.completionRate}%`} accent="text-blue-600" />
+          <StatTile icon={<CheckSquare size={12} />} label="Completion" value={`${stats.completionRate}%`} accent="text-gray-700" />
           <StatTile icon={<Clock size={12} />} label="Avg cycle" value={`${stats.avgCycleHours}h`} accent="text-orange-600" />
         </div>
       )}
@@ -256,8 +256,8 @@ export default function TasksPage() {
 
       {/* Bulk action toolbar */}
       {selected.size > 0 && (
-        <div className="px-4 py-1.5 bg-violet-50 border-b border-violet-100 flex items-center gap-3 shrink-0">
-          <span className="text-[11px] text-violet-700 font-medium">{selected.size} selected</span>
+        <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-gray-900 font-medium">{selected.size} selected</span>
           <button
             onClick={() => bulkStatusMutation.mutate({ ids: [...selected], status: 'DONE' })}
             className="text-[10px] text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
@@ -272,7 +272,7 @@ export default function TasksPage() {
                 e.target.value = '';
               }
             }}
-            className="text-[10px] border border-violet-200 rounded px-1.5 py-0.5 bg-white"
+            className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white"
           >
             <option value="">Snooze…</option>
             <option value="60">1 hour</option>
@@ -308,7 +308,7 @@ export default function TasksPage() {
           <div className="p-12 text-center">
             <CheckSquare size={24} className="mx-auto text-gray-200 mb-2" />
             <p className="text-xs text-gray-300">No tasks match those filters.</p>
-            <button onClick={clearFilters} className="text-[11px] text-violet-600 hover:text-violet-700 mt-2">Clear filters</button>
+            <button onClick={clearFilters} className="text-[11px] text-gray-900 hover:text-gray-900 mt-2">Clear filters</button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -328,14 +328,14 @@ export default function TasksPage() {
                     onClick={() => completeMutation.mutate(task.id)}
                     className={cn(
                       'mt-0.5 w-4 h-4 rounded border shrink-0 flex items-center justify-center transition-colors',
-                      task.status === 'DONE' ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-violet-400',
+                      task.status === 'DONE' ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400',
                     )}
                   >
-                    {task.status === 'DONE' && <div className="w-2 h-2 bg-violet-500 rounded-sm" />}
+                    {task.status === 'DONE' && <div className="w-2 h-2 bg-gray-800 rounded-sm" />}
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <Link href={`/tasks/${task.id}`} className={cn('text-xs font-medium text-gray-900 hover:text-violet-600', task.status === 'DONE' && 'line-through text-gray-400')}>
+                      <Link href={`/tasks/${task.id}`} className={cn('text-xs font-medium text-gray-900 hover:text-gray-900', task.status === 'DONE' && 'line-through text-gray-400')}>
                         {task.title}
                       </Link>
                       <span className={cn('text-[9px] px-1.5 py-0.5 rounded font-medium border shrink-0', PRIORITY_COLORS[task.priority])}>
@@ -443,8 +443,8 @@ function CreateTaskModal({ onClose }: { onClose: () => void }) {
           <h3 className="text-xs font-semibold">New Task</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none" />
         <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Link contact phone (optional)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs" />
         <div className="grid grid-cols-2 gap-2">
           <input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} className="border border-gray-200 rounded px-2.5 py-1.5 text-xs" />

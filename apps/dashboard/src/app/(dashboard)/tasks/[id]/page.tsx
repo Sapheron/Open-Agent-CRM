@@ -191,7 +191,7 @@ export default function TaskDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {!editMode ? (
-            <button onClick={startEdit} className="text-[11px] text-violet-600 hover:text-violet-700">Edit</button>
+            <button onClick={startEdit} className="text-[11px] text-gray-900 hover:text-gray-900">Edit</button>
           ) : (
             <>
               <button onClick={() => setEditMode(false)} className="text-[11px] text-gray-500">Cancel</button>
@@ -234,7 +234,7 @@ export default function TaskDetailPage() {
               <Field label="Source" value={task.source} />
               {task.recurrence && (
                 <Field label="Recurring series" value={
-                  <span className="text-[11px] text-violet-600">{task.recurrence.templateTitle} · {task.recurrence.frequency}</span>
+                  <span className="text-[11px] text-gray-900">{task.recurrence.templateTitle} · {task.recurrence.frequency}</span>
                 } />
               )}
               <Field label="Assigned" value={
@@ -253,18 +253,18 @@ export default function TaskDetailPage() {
               )}
               {task.deal && (
                 <Field label="Deal" value={
-                  <span className="text-[11px] text-violet-600">{task.deal.title}</span>
+                  <span className="text-[11px] text-gray-900">{task.deal.title}</span>
                 } />
               )}
               {task.lead && (
                 <Field label="Lead" value={
-                  <span className="text-[11px] text-violet-600">{task.lead.title}</span>
+                  <span className="text-[11px] text-gray-900">{task.lead.title}</span>
                 } />
               )}
               <Field label="Tags" value={
                 <div className="flex flex-wrap gap-1">
                   {task.tags.length === 0 ? '—' : task.tags.map((t) => (
-                    <span key={t} className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded">{t}</span>
+                    <span key={t} className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded">{t}</span>
                   ))}
                 </div>
               } />
@@ -351,7 +351,7 @@ export default function TaskDetailPage() {
                 onClick={() => setTab(key)}
                 className={cn(
                   'text-[11px] py-2 border-b-2 transition flex items-center gap-1.5',
-                  tab === key ? 'border-violet-500 text-violet-700 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
+                  tab === key ? 'border-gray-800 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700',
                 )}
               >
                 <Icon size={11} /> {label}
@@ -368,7 +368,7 @@ export default function TaskDetailPage() {
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && newSubtaskTitle.trim()) subtaskMutation.mutate(newSubtaskTitle.trim()); }}
                   placeholder="Add subtask…"
-                  className="flex-1 border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="flex-1 border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
                 <button
                   onClick={() => { if (newSubtaskTitle.trim()) subtaskMutation.mutate(newSubtaskTitle.trim()); }}
@@ -388,10 +388,10 @@ export default function TaskDetailPage() {
                         onClick={() => subtaskCompleteMutation.mutate(s.id)}
                         className={cn(
                           'w-4 h-4 rounded border shrink-0 flex items-center justify-center',
-                          s.status === 'DONE' ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-violet-400',
+                          s.status === 'DONE' ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400',
                         )}
                       >
-                        {s.status === 'DONE' && <div className="w-2 h-2 bg-violet-500 rounded-sm" />}
+                        {s.status === 'DONE' && <div className="w-2 h-2 bg-gray-800 rounded-sm" />}
                       </button>
                       <span className={cn('text-[11px] flex-1', s.status === 'DONE' && 'line-through text-gray-400')}>
                         {s.title}
@@ -454,7 +454,7 @@ export default function TaskDetailPage() {
               ) : (
                 task.activities.map((a) => (
                   <div key={a.id} className="flex gap-2">
-                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-violet-300 shrink-0" />
+                    <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-300 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
                         <span className="font-mono uppercase tracking-wider">{a.type}</span>
@@ -492,7 +492,7 @@ export default function TaskDetailPage() {
               {!isClosed && task.status !== 'IN_PROGRESS' && (
                 <button
                   onClick={() => statusMutation.mutate('IN_PROGRESS')}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <Play size={11} /> Start
                 </button>
@@ -521,7 +521,7 @@ export default function TaskDetailPage() {
               {isClosed && (
                 <button
                   onClick={() => statusMutation.mutate('TODO')}
-                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="w-full text-left text-[11px] flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 text-gray-900 hover:bg-gray-50"
                 >
                   <RefreshCw size={11} /> Reopen
                 </button>
@@ -541,7 +541,7 @@ export default function TaskDetailPage() {
                 <button
                   key={label}
                   onClick={() => api.post(`/tasks/${id}/snooze`, { minutes: mins }).then(() => invalidate())}
-                  className="text-[10px] border border-gray-200 hover:border-violet-300 rounded px-2 py-1 flex items-center justify-center gap-1"
+                  className="text-[10px] border border-gray-200 hover:border-gray-300 rounded px-2 py-1 flex items-center justify-center gap-1"
                 >
                   <Clock size={9} /> {label}
                 </button>

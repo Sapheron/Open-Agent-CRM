@@ -74,12 +74,12 @@ export default function LeadsApiKeysPage() {
         >
           <ArrowLeft size={14} />
         </button>
-        <Key size={14} className="text-violet-500" />
+        <Key size={14} className="text-gray-800" />
         <span className="text-xs font-semibold text-gray-900">Leads — API Keys</span>
         <div className="ml-auto flex items-center gap-2">
           <Link
             href="/leads/api-docs"
-            className="flex items-center gap-1 border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
+            className="flex items-center gap-1 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
           >
             <BookOpen size={11} /> Documentation
           </Link>
@@ -148,7 +148,7 @@ export default function LeadsApiKeysPage() {
                             k.scopes.map((s) => (
                               <span
                                 key={s}
-                                className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded"
+                                className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded"
                               >
                                 {s}
                               </span>
@@ -247,7 +247,7 @@ function CreateApiKeyModal({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Key name (e.g. Tally form)"
-        className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+        className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
       />
       <div>
         <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Scopes</p>
@@ -260,7 +260,7 @@ function CreateApiKeyModal({
               className={cn(
                 'text-[10px] px-2 py-0.5 rounded border',
                 scopes.includes(s)
-                  ? 'bg-violet-100 text-violet-700 border-violet-300'
+                  ? 'bg-gray-100 text-gray-900 border-gray-300'
                   : 'bg-white text-gray-500 border-gray-200',
               )}
             >
@@ -317,7 +317,7 @@ function ApiKeyCreatedModal({
       <p className="text-[11px] text-gray-500 leading-relaxed">
         Send it as <code className="bg-gray-100 px-1 rounded">Authorization: Bearer wacrm_…</code>{' '}
         on every request. See{' '}
-        <Link href="/leads/api-docs" className="text-violet-600 underline">
+        <Link href="/leads/api-docs" className="text-gray-900 underline">
           Documentation
         </Link>{' '}
         for full endpoint reference.
@@ -388,7 +388,7 @@ function CopyField({
         {onToggleMask && (
           <button
             onClick={onToggleMask}
-            className="text-gray-400 hover:text-violet-500 p-1"
+            className="text-gray-400 hover:text-gray-800 p-1"
             title={masked ? 'Show' : 'Hide'}
           >
             {masked ? <Eye size={11} /> : <EyeOff size={11} />}
@@ -401,7 +401,7 @@ function CopyField({
             setTimeout(() => setCopied(false), 1500);
             toast.success('Copied');
           }}
-          className="text-gray-400 hover:text-violet-500 p-1"
+          className="text-gray-400 hover:text-gray-800 p-1"
         >
           {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
         </button>

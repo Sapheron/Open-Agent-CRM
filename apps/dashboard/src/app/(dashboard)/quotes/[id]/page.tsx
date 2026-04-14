@@ -97,8 +97,8 @@ interface Quote {
 
 const STATUS_COLORS: Record<QuoteStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-500',
-  SENT: 'bg-blue-50 text-blue-600',
-  VIEWED: 'bg-violet-50 text-violet-700',
+  SENT: 'bg-gray-50 text-gray-700',
+  VIEWED: 'bg-gray-50 text-gray-900',
   ACCEPTED: 'bg-emerald-50 text-emerald-700',
   REJECTED: 'bg-red-50 text-red-600',
   EXPIRED: 'bg-amber-50 text-amber-600',
@@ -293,7 +293,7 @@ export default function QuoteDetailPage() {
               {quote.contactId ? (
                 <Link
                   href={`/contacts/${quote.contactId}`}
-                  className="text-[11px] text-violet-600 hover:text-violet-700 block"
+                  className="text-[11px] text-gray-900 hover:text-gray-900 block"
                 >
                   → Contact
                 </Link>
@@ -303,7 +303,7 @@ export default function QuoteDetailPage() {
               {quote.dealId ? (
                 <Link
                   href={`/deals/${quote.dealId}`}
-                  className="text-[11px] text-violet-600 hover:text-violet-700 block"
+                  className="text-[11px] text-gray-900 hover:text-gray-900 block"
                 >
                   → Deal
                 </Link>
@@ -371,7 +371,7 @@ export default function QuoteDetailPage() {
                 className={cn(
                   'text-[11px] py-1 border-b-2 transition-colors',
                   tab === t
-                    ? 'border-violet-500 text-gray-900'
+                    ? 'border-gray-800 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600',
                 )}
               >
@@ -446,7 +446,7 @@ export default function QuoteDetailPage() {
               {editable && (
                 <button
                   onClick={() => setShowAddItem(true)}
-                  className="mt-3 w-full border border-dashed border-gray-200 rounded py-2 text-[11px] text-gray-500 hover:text-violet-600 hover:border-violet-300 flex items-center justify-center gap-1"
+                  className="mt-3 w-full border border-dashed border-gray-200 rounded py-2 text-[11px] text-gray-500 hover:text-gray-900 hover:border-gray-300 flex items-center justify-center gap-1"
                 >
                   <Plus size={11} /> Add line item
                 </button>
@@ -467,7 +467,7 @@ export default function QuoteDetailPage() {
                       ) : a.type === 'REJECTED' ? (
                         <XCircle size={11} className="text-red-500" />
                       ) : a.type === 'SENT' ? (
-                        <Send size={11} className="text-blue-500" />
+                        <Send size={11} className="text-gray-800" />
                       ) : a.type === 'ERROR' ? (
                         <AlertTriangle size={11} className="text-red-500" />
                       ) : (
@@ -497,7 +497,7 @@ export default function QuoteDetailPage() {
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Add a note to the quote timeline..."
                 rows={4}
-                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 mb-2"
+                className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2"
               />
               <button
                 onClick={() => addNoteM.mutate()}
@@ -531,7 +531,7 @@ export default function QuoteDetailPage() {
             <button
               onClick={() => sendM.mutate()}
               disabled={sendM.isPending || quote.lineItems.length === 0}
-              className="w-full flex items-center gap-2 bg-blue-50 hover:bg-blue-100 disabled:opacity-30 text-blue-700 px-2.5 py-1.5 rounded text-[11px] font-medium"
+              className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-30 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"
             >
               <Send size={11} /> Send
             </button>
@@ -599,7 +599,7 @@ export default function QuoteDetailPage() {
           <div className="pt-2 mt-2 border-t border-gray-100">
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about quote ${quote.quoteNumber}`)}`}
-              className="w-full flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded text-[11px] font-medium"
+              className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 px-2.5 py-1.5 rounded text-[11px] font-medium"
             >
               <MessageSquare size={11} /> Ask AI
             </Link>
@@ -717,7 +717,7 @@ function AddLineItemModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Name (e.g. Annual subscription)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
           autoFocus
         />
         <textarea
@@ -725,7 +725,7 @@ function AddLineItemModal({
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description (optional)"
           rows={2}
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
 
         <div className="grid grid-cols-3 gap-2">

@@ -79,7 +79,7 @@ const STATUS_COLORS = {
 };
 
 const ENROLLMENT_STATUS_COLORS = {
-  ACTIVE: 'bg-blue-50 text-blue-600',
+  ACTIVE: 'bg-gray-50 text-gray-700',
   PAUSED: 'bg-yellow-50 text-yellow-600',
   COMPLETED: 'bg-emerald-50 text-emerald-600',
   STOPPED: 'bg-red-50 text-red-600',
@@ -382,7 +382,7 @@ export default function SequenceDetailPage() {
                           <p className="text-xs text-gray-600 line-clamp-2 mt-1">{step.message}</p>
                         )}
                         {step.templateId && (
-                          <p className="text-[10px] text-violet-600 mt-1">Using template</p>
+                          <p className="text-[10px] text-gray-900 mt-1">Using template</p>
                         )}
                         {step.tagName && (
                           <p className="text-[10px] text-gray-500 mt-1">Tag: {step.tagName}</p>
@@ -525,7 +525,7 @@ export default function SequenceDetailPage() {
               {sequence.status === 'ACTIVE' && (
                 <button
                   onClick={() => router.push(`/contacts?enrollIn=${sequence.id}`)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-900 rounded-lg text-xs font-medium transition-colors"
                 >
                   <Users size={14} /> Enroll Contacts
                 </button>
@@ -566,7 +566,7 @@ export default function SequenceDetailPage() {
             <h3 className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2">Analytics</h3>
             <button
               onClick={() => router.push(`/analytics?sequence=${sequence.id}`)}
-              className="w-full flex items-center gap-2 px-3 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg text-xs font-medium transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-900 rounded-lg text-xs font-medium transition-colors"
             >
               <BarChart3 size={14} /> View Performance
             </button>

@@ -59,8 +59,8 @@ interface Stats {
 
 const STATUS_COLORS: Record<QuoteStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-500',
-  SENT: 'bg-blue-50 text-blue-600',
-  VIEWED: 'bg-violet-50 text-violet-700',
+  SENT: 'bg-gray-50 text-gray-700',
+  VIEWED: 'bg-gray-50 text-gray-900',
   ACCEPTED: 'bg-emerald-50 text-emerald-700',
   REJECTED: 'bg-red-50 text-red-600',
   EXPIRED: 'bg-amber-50 text-amber-600',
@@ -193,7 +193,7 @@ export default function QuotesPage() {
     <div className="h-full flex flex-col">
       <div className="h-11 border-b border-gray-200 px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <FileText size={14} className="text-violet-500" />
+          <FileText size={14} className="text-gray-800" />
           <span className="text-xs font-semibold text-gray-900">Quotes</span>
         </div>
         <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ export default function QuotesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search quotes..."
-              className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="w-52 pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
           </div>
           <button
@@ -255,7 +255,7 @@ export default function QuotesPage() {
                     type="checkbox"
                     checked={selectedStatuses.has(s)}
                     onChange={() => toggleStatus(s)}
-                    className="accent-violet-500 w-3 h-3"
+                    className="accent-gray-800 w-3 h-3"
                   />
                   <span className={cn('px-1.5 py-0.5 rounded text-[10px]', STATUS_COLORS[s])}>
                     {s}
@@ -270,7 +270,7 @@ export default function QuotesPage() {
                 setSelectedStatuses(new Set());
                 setSearch('');
               }}
-              className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700"
+              className="flex items-center gap-1 text-[10px] text-gray-900 hover:text-gray-900"
             >
               <X size={10} /> Clear filters
             </button>
@@ -281,8 +281,8 @@ export default function QuotesPage() {
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           {/* Bulk toolbar */}
           {selectedIds.size > 0 && (
-            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-violet-50">
-              <span className="text-[11px] text-violet-700 font-medium">
+            <div className="h-9 border-b border-gray-200 px-3 flex items-center gap-3 shrink-0 bg-gray-50">
+              <span className="text-[11px] text-gray-900 font-medium">
                 {selectedIds.size} selected
               </span>
               <div className="flex-1" />
@@ -338,7 +338,7 @@ export default function QuotesPage() {
                           if (e.target.checked) setSelectedIds(new Set(items.map((q) => q.id)));
                           else setSelectedIds(new Set());
                         }}
-                        className="accent-violet-500 w-3 h-3"
+                        className="accent-gray-800 w-3 h-3"
                       />
                     </th>
                     {['Number', 'Title', 'Status', 'Items', 'Total', 'Valid until', 'Updated', ''].map(
@@ -361,13 +361,13 @@ export default function QuotesPage() {
                           type="checkbox"
                           checked={selectedIds.has(q.id)}
                           onChange={() => toggleSelect(q.id)}
-                          className="accent-violet-500 w-3 h-3"
+                          className="accent-gray-800 w-3 h-3"
                         />
                       </td>
                       <td className="px-2 py-2">
                         <Link
                           href={`/quotes/${q.id}`}
-                          className="text-xs font-medium text-gray-900 hover:text-violet-600 font-mono"
+                          className="text-xs font-medium text-gray-900 hover:text-gray-900 font-mono"
                         >
                           {q.quoteNumber}
                         </Link>
@@ -400,7 +400,7 @@ export default function QuotesPage() {
                           <button
                             onClick={() => sendMutation.mutate(q.id)}
                             title="Send"
-                            className="text-blue-600 hover:text-blue-700 p-0.5"
+                            className="text-gray-700 hover:text-gray-900 p-0.5"
                           >
                             <Send size={11} />
                           </button>
@@ -446,8 +446,8 @@ function StatTile({
 }) {
   const tints: Record<string, string> = {
     emerald: 'text-emerald-600',
-    blue: 'text-blue-600',
-    violet: 'text-violet-600',
+    blue: 'text-gray-700',
+    violet: 'text-gray-900',
   };
   return (
     <div className="bg-gray-50/80 border border-gray-100 rounded px-2.5 py-1.5">
@@ -508,14 +508,14 @@ function CreateQuoteModal({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title (optional, e.g. Acme annual plan)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
           autoFocus
         />
         <input
           value={contactId}
           onChange={(e) => setContactId(e.target.value)}
           placeholder="Contact id (optional — can be set later)"
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono"
+          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono"
         />
         <div className="grid grid-cols-3 gap-2">
           <label className="text-[10px] text-gray-500">

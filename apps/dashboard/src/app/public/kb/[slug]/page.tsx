@@ -67,7 +67,7 @@ export default function PublicKBArticlePage() {
     return () => { cancelled = true; };
   }, [slug]);
 
-  const layoutClasses = 'min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 py-10 px-4';
+  const layoutClasses = 'min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-10 px-4';
 
   if (loading) {
     return (
@@ -99,7 +99,7 @@ export default function PublicKBArticlePage() {
             {article.company.name} · Knowledge Base
           </div>
           {article.category && (
-            <span className="text-[10px] bg-violet-50 text-violet-700 px-2 py-0.5 rounded mb-2 inline-block">
+            <span className="text-[10px] bg-gray-50 text-gray-900 px-2 py-0.5 rounded mb-2 inline-block">
               {article.category}
             </span>
           )}
@@ -133,7 +133,7 @@ export default function PublicKBArticlePage() {
         </div>
 
         <p className="text-[10px] text-gray-400 text-center mt-6">
-          Powered by <span className="font-semibold">Open Agent CRM</span>
+          Powered by <span className="font-semibold">AgenticCRM</span>
         </p>
       </div>
     </div>

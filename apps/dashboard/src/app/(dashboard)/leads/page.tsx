@@ -55,11 +55,11 @@ interface Stats {
 }
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {
-  NEW: 'bg-blue-50 text-blue-600 border-blue-100',
+  NEW: 'bg-gray-50 text-gray-700 border-gray-100',
   CONTACTED: 'bg-amber-50 text-amber-600 border-amber-100',
-  QUALIFIED: 'bg-violet-50 text-violet-600 border-violet-100',
+  QUALIFIED: 'bg-gray-50 text-gray-900 border-gray-100',
   PROPOSAL_SENT: 'bg-orange-50 text-orange-600 border-orange-100',
-  NEGOTIATING: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+  NEGOTIATING: 'bg-gray-50 text-gray-900 border-gray-100',
   WON: 'bg-emerald-50 text-emerald-600 border-emerald-100',
   LOST: 'bg-red-50 text-red-600 border-red-100',
   DISQUALIFIED: 'bg-gray-50 text-gray-400 border-gray-100',
@@ -67,7 +67,7 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
 
 const PRIORITY_DOTS: Record<LeadPriority, string> = {
   LOW: 'bg-gray-300',
-  MEDIUM: 'bg-blue-400',
+  MEDIUM: 'bg-gray-400',
   HIGH: 'bg-orange-400',
   URGENT: 'bg-red-500',
 };
@@ -207,7 +207,7 @@ export default function LeadsPage() {
           <Link
             href="/leads/api-keys"
             title="Manage API keys"
-            className="flex items-center gap-1 border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
+            className="flex items-center gap-1 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-2.5 py-1 rounded text-[11px] font-medium"
           >
             <Key size={11} /> API Keys
           </Link>
@@ -223,9 +223,9 @@ export default function LeadsPage() {
       {/* Stats strip */}
       {stats && (
         <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0 grid grid-cols-5 gap-3">
-          <StatTile icon={<TrendingUp size={12} />} label="Total (30d)" value={String(stats.total)} accent="text-violet-600" />
+          <StatTile icon={<TrendingUp size={12} />} label="Total (30d)" value={String(stats.total)} accent="text-gray-900" />
           <StatTile icon={<Award size={12} />} label="Won" value={String(stats.wonCount)} accent="text-emerald-600" />
-          <StatTile icon={<TrendingUp size={12} />} label="Conv. rate" value={`${stats.conversionRate}%`} accent="text-blue-600" />
+          <StatTile icon={<TrendingUp size={12} />} label="Conv. rate" value={`${stats.conversionRate}%`} accent="text-gray-700" />
           <StatTile icon={<Flame size={12} />} label="Avg score" value={String(stats.avgScore)} accent="text-orange-600" />
           <StatTile icon={<Clock size={12} />} label="Won value" value={`₹${stats.wonValue.toLocaleString()}`} accent="text-emerald-600" />
         </div>
@@ -300,8 +300,8 @@ export default function LeadsPage() {
 
       {/* Bulk action toolbar */}
       {selected.size > 0 && (
-        <div className="px-4 py-1.5 bg-violet-50 border-b border-violet-100 flex items-center gap-3 shrink-0">
-          <span className="text-[11px] text-violet-700 font-medium">{selected.size} selected</span>
+        <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-gray-900 font-medium">{selected.size} selected</span>
           <select
             onChange={(e) => {
               if (e.target.value) {
@@ -309,7 +309,7 @@ export default function LeadsPage() {
                 e.target.value = '';
               }
             }}
-            className="text-[10px] border border-violet-200 rounded px-1.5 py-0.5 bg-white"
+            className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white"
           >
             <option value="">Set status…</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
@@ -337,7 +337,7 @@ export default function LeadsPage() {
         ) : items.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-xs text-gray-400 mb-2">No leads match those filters.</p>
-            <button onClick={clearFilters} className="text-[11px] text-violet-600 hover:text-violet-700">Clear filters</button>
+            <button onClick={clearFilters} className="text-[11px] text-gray-900 hover:text-gray-900">Clear filters</button>
           </div>
         ) : (
           <table className="w-full">
@@ -365,7 +365,7 @@ export default function LeadsPage() {
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <Link href={`/leads/${lead.id}`} className="text-xs font-medium text-gray-900 hover:text-violet-600 flex items-center gap-1.5">
+                      <Link href={`/leads/${lead.id}`} className="text-xs font-medium text-gray-900 hover:text-gray-900 flex items-center gap-1.5">
                         <span className={cn('w-1.5 h-1.5 rounded-full', PRIORITY_DOTS[lead.priority])} title={lead.priority} />
                         {lead.title}
                       </Link>
@@ -393,7 +393,7 @@ export default function LeadsPage() {
                       <div className="flex items-center gap-1.5">
                         <div className="w-12 bg-gray-100 rounded-full h-1">
                           <div
-                            className={cn('h-1 rounded-full', lead.score >= 70 ? 'bg-emerald-500' : lead.score >= 40 ? 'bg-violet-500' : 'bg-gray-300')}
+                            className={cn('h-1 rounded-full', lead.score >= 70 ? 'bg-emerald-500' : lead.score >= 40 ? 'bg-gray-800' : 'bg-gray-300')}
                             style={{ width: `${lead.score}%` }}
                           />
                         </div>
@@ -515,11 +515,11 @@ function CreateLeadModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Lead title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Lead title (required)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
 
         <div className="grid grid-cols-2 gap-2">
-          <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Contact phone" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-          <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Contact name (opt)" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Contact phone" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+          <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Contact name (opt)" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -532,11 +532,11 @@ function CreateLeadModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <input value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} placeholder="Value (₹)" type="number" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-          <input value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} type="date" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          <input value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} placeholder="Value (₹)" type="number" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
+          <input value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} type="date" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
         </div>
 
-        <input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="Tags (comma-separated)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        <input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="Tags (comma-separated)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
 
         <label className="flex items-center gap-1.5 text-[10px] text-gray-500">
           <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} className="h-3 w-3" />

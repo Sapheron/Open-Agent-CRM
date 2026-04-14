@@ -133,7 +133,7 @@ export default function LeadsIntegrationsPage() {
         <button onClick={() => router.push('/leads')} className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={14} />
         </button>
-        <BookOpen size={14} className="text-violet-500" />
+        <BookOpen size={14} className="text-gray-800" />
         <span className="text-xs font-semibold text-gray-900">Leads — Integrations & API</span>
       </div>
 
@@ -168,7 +168,7 @@ export default function LeadsIntegrationsPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <Webhook size={13} className="text-violet-500" />
+                  <Webhook size={13} className="text-gray-800" />
                   <h2 className="text-xs font-semibold text-gray-900">Meta Ads Connections</h2>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-0.5">
@@ -228,7 +228,7 @@ export default function LeadsIntegrationsPage() {
                               id: i.id,
                               status: i.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
                             })}
-                            className="text-gray-400 hover:text-violet-500"
+                            className="text-gray-400 hover:text-gray-800"
                             title={i.status === 'ACTIVE' ? 'Pause' : 'Resume'}
                           >
                             {i.status === 'ACTIVE' ? <Power size={11} /> : <PowerOff size={11} />}
@@ -253,7 +253,7 @@ export default function LeadsIntegrationsPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <Key size={13} className="text-violet-500" />
+                  <Key size={13} className="text-gray-800" />
                   <h2 className="text-xs font-semibold text-gray-900">API Keys</h2>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-0.5">
@@ -288,7 +288,7 @@ export default function LeadsIntegrationsPage() {
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap gap-1">
                             {k.scopes.length === 0 ? <span className="text-[10px] text-gray-300">none</span> : k.scopes.map((s) => (
-                              <span key={s} className="text-[9px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded">{s}</span>
+                              <span key={s} className="text-[9px] bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded">{s}</span>
                             ))}
                           </div>
                         </td>
@@ -314,7 +314,7 @@ export default function LeadsIntegrationsPage() {
           {/* Section 3: Docs */}
           <section className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <BookOpen size={13} className="text-violet-500" />
+              <BookOpen size={13} className="text-gray-800" />
               <h2 className="text-xs font-semibold text-gray-900">Setup Docs</h2>
             </div>
             <DocsContent
@@ -407,7 +407,7 @@ function CreateMetaIntegrationModal({
 
   return (
     <Modal title="Connect Meta Page" onClose={onClose}>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Connection name (e.g. Acme FB Page)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Connection name (e.g. Acme FB Page)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
       <div className="grid grid-cols-2 gap-2">
         <input value={pageId} onChange={(e) => setPageId(e.target.value)} placeholder="Meta Page ID" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs" />
         <input value={pageName} onChange={(e) => setPageName(e.target.value)} placeholder="Page name (opt)" className="border border-gray-200 rounded px-2.5 py-1.5 text-xs" />
@@ -464,7 +464,7 @@ function IntegrationCreatedModal({ integration, onClose }: { integration: Integr
       </div>
 
       <p className="text-[11px] text-gray-600 leading-relaxed">
-        Then subscribe to the <code className="bg-gray-100 px-1 rounded">leadgen</code> field. Test by submitting a form via the Meta Lead Ads Testing Tool — a Lead row will appear in <Link href="/leads" className="text-violet-600 underline">/leads</Link> within ~1 minute.
+        Then subscribe to the <code className="bg-gray-100 px-1 rounded">leadgen</code> field. Test by submitting a form via the Meta Lead Ads Testing Tool — a Lead row will appear in <Link href="/leads" className="text-gray-900 underline">/leads</Link> within ~1 minute.
       </p>
 
       <div className="flex justify-end pt-1">
@@ -507,7 +507,7 @@ function CreateApiKeyModal({
 
   return (
     <Modal title="Generate API Key" onClose={onClose}>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Key name (e.g. Tally form)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Key name (e.g. Tally form)" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400" />
       <div>
         <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Scopes</p>
         <div className="flex flex-wrap gap-1">
@@ -519,7 +519,7 @@ function CreateApiKeyModal({
               className={cn(
                 'text-[10px] px-2 py-0.5 rounded border',
                 scopes.includes(s)
-                  ? 'bg-violet-100 text-violet-700 border-violet-300'
+                  ? 'bg-gray-100 text-gray-900 border-gray-300'
                   : 'bg-white text-gray-500 border-gray-200',
               )}
             >
@@ -610,7 +610,7 @@ function CopyField({
         {onToggleMask && (
           <button
             onClick={onToggleMask}
-            className="text-gray-400 hover:text-violet-500 p-1"
+            className="text-gray-400 hover:text-gray-800 p-1"
             title={masked ? 'Show' : 'Hide'}
           >
             {masked ? <Eye size={11} /> : <EyeOff size={11} />}
@@ -623,7 +623,7 @@ function CopyField({
             setTimeout(() => setCopied(false), 1500);
             toast.success('Copied');
           }}
-          className="text-gray-400 hover:text-violet-500 p-1"
+          className="text-gray-400 hover:text-gray-800 p-1"
         >
           {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
         </button>
@@ -651,14 +651,14 @@ function DocsContent({ eligibility }: { eligibility?: Eligibility }) {
       <div>
         <h3 className="text-xs font-semibold text-gray-900 mb-1">Connect Meta Ads</h3>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>In <a href="https://business.facebook.com" target="_blank" rel="noreferrer" className="text-violet-600 underline">Meta Business Suite</a>, go to your Page → <strong>Lead Access</strong> → <strong>Webhooks</strong>.</li>
+          <li>In <a href="https://business.facebook.com" target="_blank" rel="noreferrer" className="text-gray-900 underline">Meta Business Suite</a>, go to your Page → <strong>Lead Access</strong> → <strong>Webhooks</strong>.</li>
           <li>Click <strong>+ Add Webhook</strong>.</li>
           <li>Paste the <strong>Webhook callback URL</strong> from the success modal above (or click any existing connection&apos;s edit button to see it again).</li>
           <li>Paste the <strong>Verify token</strong>. The Meta UI will immediately call our <code>GET</code> handshake to confirm it.</li>
           <li>Subscribe to the <code>leadgen</code> field.</li>
           <li>Generate a <strong>long-lived Page Access Token</strong> via Tools → Graph API Explorer with these permissions: <code>leads_retrieval</code>, <code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>pages_manage_metadata</code>.</li>
           <li>Paste it back into the connection form here. (Edit any existing integration to update the token.)</li>
-          <li>Test by submitting a form via Meta&apos;s <a href="https://developers.facebook.com/tools/lead-ads-testing/" target="_blank" rel="noreferrer" className="text-violet-600 underline">Lead Ads Testing Tool</a>. A new Lead with <code>source: META_ADS</code> should appear in <Link href="/leads" className="text-violet-600 underline">/leads</Link> within a minute.</li>
+          <li>Test by submitting a form via Meta&apos;s <a href="https://developers.facebook.com/tools/lead-ads-testing/" target="_blank" rel="noreferrer" className="text-gray-900 underline">Lead Ads Testing Tool</a>. A new Lead with <code>source: META_ADS</code> should appear in <Link href="/leads" className="text-gray-900 underline">/leads</Link> within a minute.</li>
         </ol>
       </div>
 

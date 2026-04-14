@@ -189,10 +189,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {/* Logo */}
         <div className="h-12 flex items-center px-3 gap-2.5">
-          <div className="w-6 h-6 rounded bg-violet-500 flex items-center justify-center shrink-0">
-            <Zap size={12} className="text-white" />
+          <div className="w-6 h-6 rounded bg-white flex items-center justify-center shrink-0">
+            <Zap size={12} className="text-black" />
           </div>
-          {expanded && <span className="text-white text-xs font-semibold tracking-tight truncate">Open Agent CRM</span>}
+          {expanded && <span className="text-white text-xs font-semibold tracking-tight truncate">AgenticCRM</span>}
         </div>
 
         {/* Navigation */}
@@ -246,7 +246,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="border-t border-white/5 pt-2 mt-2">
             <div className="flex items-center gap-2 px-2 py-1">
-              <div className="w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center text-[9px] font-bold shrink-0">
+              <div className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
                 {user?.firstName?.[0]}
               </div>
               {expanded && (
@@ -266,12 +266,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </div>
+
+        {/* Branding */}
+        {expanded && (
+          <div className="px-3 pb-3 pt-1 border-t border-white/5">
+            <a
+              href="https://sapheron.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-[9px] text-gray-500 hover:text-gray-300 transition-colors leading-tight"
+            >
+              A Sapheron Project
+            </a>
+            <a
+              href="https://technotalim.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-[9px] text-gray-600 hover:text-gray-400 transition-colors leading-tight mt-0.5"
+            >
+              TechnoTaLim Platform and Services LLP
+            </a>
+          </div>
+        )}
       </aside>
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">
         {showUpdateBanner && (
-          <div className="bg-violet-600 text-white px-4 py-2 flex items-center justify-between text-xs">
+          <div className="bg-gray-900 text-white px-4 py-2 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <ArrowUpCircle size={14} />
               <span>

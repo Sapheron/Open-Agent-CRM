@@ -47,27 +47,27 @@ const STATUS_COLORS: Record<IntegrationStatus, string> = {
   DISCONNECTED: 'bg-gray-100 text-gray-500',
   CONNECTED:    'bg-emerald-50 text-emerald-600',
   ERROR:        'bg-red-50 text-red-500',
-  SYNCING:      'bg-blue-50 text-blue-500',
+  SYNCING:      'bg-gray-50 text-gray-800',
 };
 
 const STATUS_ICON: Record<IntegrationStatus, React.ReactNode> = {
   DISCONNECTED: <XCircle size={14} className="text-gray-400" />,
   CONNECTED:    <CheckCircle2 size={14} className="text-emerald-500" />,
   ERROR:        <AlertCircle size={14} className="text-red-400" />,
-  SYNCING:      <RefreshCw size={14} className="text-blue-400 animate-spin" />,
+  SYNCING:      <RefreshCw size={14} className="text-gray-400 animate-spin" />,
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  GOOGLE_CALENDAR: <Calendar size={18} className="text-blue-500" />,
+  GOOGLE_CALENDAR: <Calendar size={18} className="text-gray-800" />,
   GOOGLE_SHEETS:   <BarChart3 size={18} className="text-emerald-500" />,
   SLACK:           <Zap size={18} className="text-amber-500" />,
   ZAPIER:          <Zap size={18} className="text-orange-500" />,
-  WEBHOOK:         <Webhook size={18} className="text-violet-500" />,
-  EMAIL_SMTP:      <Mail size={18} className="text-blue-400" />,
-  FACEBOOK_ADS:    <BarChart3 size={18} className="text-blue-600" />,
+  WEBHOOK:         <Webhook size={18} className="text-gray-800" />,
+  EMAIL_SMTP:      <Mail size={18} className="text-gray-400" />,
+  FACEBOOK_ADS:    <BarChart3 size={18} className="text-gray-700" />,
   INSTAGRAM:       <Camera size={18} className="text-pink-500" />,
-  STRIPE:          <CreditCard size={18} className="text-violet-600" />,
-  RAZORPAY:        <CreditCard size={18} className="text-blue-500" />,
+  STRIPE:          <CreditCard size={18} className="text-gray-900" />,
+  RAZORPAY:        <CreditCard size={18} className="text-gray-800" />,
   CUSTOM:          <Settings size={18} className="text-gray-500" />,
 };
 
