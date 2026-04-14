@@ -26,8 +26,10 @@ export class InboundMonitor {
     private readonly sock: WASocket,
     private readonly accountId: string,
   ) {
-    this.redis = new Redis(redisUrl, { lazyConnect: true });
-    this.aiQueue = new Queue(QUEUES.AI_MESSAGE, { connection: this.redis });
+    // No lazyConnect — connect immediately so publish() is always ready.
+    // lazyConnect would silently drop publishes if connect() was never called.
+    this.redis = new Redis(redisUrl);
+    this.aiQueue = new Queue(QUEUES.AI_MESSAGE, { connection: new Redis(redisUrl) });
   }
 
   async init() {
@@ -432,11 +434,11 @@ export class InboundMonitor {
     // Only staff-owned accounts (userId set)
     if (!account?.userId) return;
 
-    // Only self-messages: compare phone digits (strip JID domain and device suffix)
+    // Only self-messages: compare digits-only on BOTH sides.
     // msg.key.remoteJid can be "91XXXXXXXXXX@s.whatsapp.net" or "91XXXXXXXXXX:62@s.whatsapp.net"
-    // account.phoneNumber may be "91XXXXXXXXXX" (digits only) or have @domain if saved incorrectly
+    // account.phoneNumber may be stored as "91XXXXXXXXXX" (digits only) or "+91XXXXXXXXXX"
     const ownPhone = (account.phoneNumber ?? '').replace(/\D/g, '');
-    const remotePhone = (msg.key.remoteJid as string).split('@')[0].split(':')[0];
+    const remotePhone = (msg.key.remoteJid as string).split('@')[0].split(':')[0].replace(/\D/g, '');
     if (!ownPhone || remotePhone !== ownPhone) return;
 
     // Extract text content

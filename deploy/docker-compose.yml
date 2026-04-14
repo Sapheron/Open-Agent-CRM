@@ -29,8 +29,8 @@ services:
       - NODE_ENV=production
       - HOST_INSTALL_DIR=/host
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock    # for triggering updates
-      - ${INSTALL_DIR:-/opt/openagentcrm}:/host:ro   # host repo for update.sh
+      - /var/run/docker.sock:/var/run/docker.sock   # for triggering updates
+      - ${INSTALL_DIR:-/opt/openagentcrm}:/host      # host repo for update.sh (needs rw for git)
     depends_on:
       postgres:
         condition: service_healthy

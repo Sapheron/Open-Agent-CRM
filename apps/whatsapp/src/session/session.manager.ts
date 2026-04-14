@@ -125,6 +125,7 @@ export async function startSession(accountId: string): Promise<void> {
 
     // ── Inbound messages ────────────────────────────────────────
     const monitor = new InboundMonitor(sock, accountId);
+    await monitor.init();
     monitor.start();
   };
 
