@@ -2,7 +2,8 @@
  * Inbound message monitor — hooks into Baileys sock.ev.on("messages.upsert").
  * Normalizes → deduplicates → stores → queues for AI processing.
  */
-import type { WASocket } from '@whiskeysockets/baileys';
+import type { WASocket, WAMessage } from '@whiskeysockets/baileys';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import { prisma } from '@wacrm/database';
 import { Queue } from 'bullmq';
@@ -167,17 +168,23 @@ export class InboundMonitor {
       _isNewConversation = true;
     }
 
-    // Upload media to MinIO if present
+    // Download media from WhatsApp and upload to MinIO (mirrors OpenClaw's downloadInboundMedia)
     let mediaUrl: string | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (normalized.mediaData && (normalized.mediaData as any).buffer && normalized.mediaData.mimetype) {
+    if (normalized.mediaType && normalized.mediaData?.mimetype) {
       try {
-        const ext = mimeToExtension(normalized.mediaData.mimetype);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mediaUrl = await uploadMedia((normalized.mediaData as any).buffer, normalized.mediaData.mimetype, ext);
-        logger.info({ mediaUrl }, 'Media uploaded to MinIO');
+        const buffer = await downloadMediaMessage(
+          msg as WAMessage,
+          'buffer',
+          {},
+          { reuploadRequest: this.sock.updateMediaMessage, logger: logger as Parameters<typeof downloadMediaMessage>[3]['logger'] },
+        );
+        if (buffer && Buffer.isBuffer(buffer)) {
+          const ext = mimeToExtension(normalized.mediaData.mimetype);
+          mediaUrl = await uploadMedia(buffer, normalized.mediaData.mimetype, ext);
+          logger.info({ mediaUrl, mediaType: normalized.mediaType }, 'Media downloaded and uploaded to MinIO');
+        }
       } catch (err: unknown) {
-        logger.error({ err }, 'Failed to upload media to MinIO');
+        logger.warn({ err, mediaType: normalized.mediaType }, 'Failed to download/upload media — message stored without media');
       }
     }
 
@@ -219,7 +226,17 @@ export class InboundMonitor {
     );
 
     // Route AI processing based on whether sender is an allowed number
-    if (isAllowedNumber && account.userId && normalized.body?.trim()) {
+    // Resolve userId: use account.userId if set, otherwise find any admin in the company
+    let staffUserId = account.userId;
+    if (isAllowedNumber && !staffUserId) {
+      const admin = await prisma.user.findFirst({
+        where: { companyId, role: { in: ['ADMIN', 'SUPER_ADMIN'] }, isActive: true },
+        select: { id: true },
+      });
+      staffUserId = admin?.id ?? null;
+    }
+
+    if (isAllowedNumber && staffUserId && normalized.body?.trim()) {
       // Allowed numbers get the full admin AI (same as staff self-chat):
       // routed through StaffWaBridgeService with full CRM tools + permissions.
       // This bypasses autoReplyEnabled since it's a staff control channel.
@@ -227,7 +244,7 @@ export class InboundMonitor {
         STAFF_AI_REQUEST_CHANNEL,
         JSON.stringify({
           companyId,
-          userId: account.userId,
+          userId: staffUserId,
           accountId: this.accountId,
           text: normalized.body.trim(),
           replyToPhone: normalized.fromPhone, // reply to the sender, not self
