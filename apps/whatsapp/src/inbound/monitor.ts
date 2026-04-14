@@ -176,7 +176,8 @@ export class InboundMonitor {
           msg as WAMessage,
           'buffer',
           {},
-          { reuploadRequest: this.sock.updateMediaMessage, logger: logger as Parameters<typeof downloadMediaMessage>[3]['logger'] },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { reuploadRequest: this.sock.updateMediaMessage, logger: logger as any },
         );
         if (buffer && Buffer.isBuffer(buffer)) {
           const ext = mimeToExtension(normalized.mediaData.mimetype);
@@ -488,23 +489,22 @@ export class InboundMonitor {
 
     // Unwrap container types using the same wrapper keys as normalizer.ts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let content = msg.message as Record<string, any> | undefined;
-    if (!content) return;
+    let content: Record<string, any> = msg.message ?? {};
     const WRAPPER_KEYS = ['botInvokeMessage', 'ephemeralMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension', 'documentWithCaptionMessage', 'groupMentionedMessage', 'editedMessage'];
     for (let depth = 0; depth < 4; depth++) {
       let unwrapped = false;
       for (const key of WRAPPER_KEYS) {
-        if (content[key]?.message) { content = content[key].message; unwrapped = true; break; }
+        if (content[key]?.message) { content = content[key].message as Record<string, unknown>; unwrapped = true; break; }
       }
       if (!unwrapped) break;
     }
 
     const text: string | undefined =
-      content.conversation ??
-      content.extendedTextMessage?.text ??
-      content.imageMessage?.caption ??
-      content.videoMessage?.caption ??
-      content.documentMessage?.caption;
+      (content.conversation as string | undefined) ??
+      (content.extendedTextMessage as { text?: string } | undefined)?.text ??
+      (content.imageMessage as { caption?: string } | undefined)?.caption ??
+      (content.videoMessage as { caption?: string } | undefined)?.caption ??
+      (content.documentMessage as { caption?: string } | undefined)?.caption;
 
     if (!text?.trim()) return;
 

@@ -13,6 +13,15 @@ const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 // Warmup stage daily limits (messages/day)
 const WARMUP_LIMITS = [20, 50, 100, 200, 400, 1000];
 
+// Retry config matching OpenClaw's sendWithRetry pattern
+const MAX_SEND_RETRIES = 3;
+const RETRY_BASE_MS = 500;
+const RETRYABLE_ERRORS = /closed|reset|timed\s*out|disconnect|no active socket/i;
+
+function isRetryableError(err: unknown): boolean {
+  return RETRYABLE_ERRORS.test(String((err as Error)?.message ?? err));
+}
+
 export async function sendTextMessage(
   accountId: string,
   toPhone: string,
@@ -52,21 +61,35 @@ export async function sendTextMessage(
   const delayMs = 500 + Math.random() * 2500;
   await sleep(delayMs);
 
-  try {
-    const jid = phoneToJid(toPhone);
-    const result = await sock.sendMessage(jid, { text });
+  const jid = phoneToJid(toPhone);
 
-    await prisma.whatsAppAccount.update({
-      where: { id: accountId },
-      data: { messagesSentToday: { increment: 1 } },
-    });
+  // Retry loop matching OpenClaw's sendWithRetry (deliver-reply.ts:61-82)
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_SEND_RETRIES; attempt++) {
+    try {
+      const result = await sock.sendMessage(jid, { text });
 
-    logger.info({ accountId, toPhone, waMessageId: result?.key.id }, 'Message sent');
-    return { success: true, waMessageId: result?.key?.id ?? undefined };
-  } catch (err: unknown) {
-    logger.error({ accountId, toPhone, err }, 'Failed to send message');
-    return { success: false, error: (err as Error).message };
+      await prisma.whatsAppAccount.update({
+        where: { id: accountId },
+        data: { messagesSentToday: { increment: 1 } },
+      });
+
+      logger.info({ accountId, toPhone, waMessageId: result?.key.id }, 'Message sent');
+      return { success: true, waMessageId: result?.key?.id ?? undefined };
+    } catch (err: unknown) {
+      lastErr = err;
+      if (attempt < MAX_SEND_RETRIES && isRetryableError(err)) {
+        const backoff = RETRY_BASE_MS * attempt;
+        logger.warn({ accountId, toPhone, attempt, backoff }, 'Send failed (retryable) — retrying');
+        await sleep(backoff);
+        continue;
+      }
+      break;
+    }
   }
+
+  logger.error({ accountId, toPhone, err: lastErr }, 'Failed to send message after retries');
+  return { success: false, error: (lastErr as Error).message };
 }
 
 export async function sendMediaMessage(
