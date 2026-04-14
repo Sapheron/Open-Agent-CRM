@@ -57,8 +57,13 @@ cd "$INSTALL_DIR" || fail "Cannot cd to $INSTALL_DIR"
 
 git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
 git config --global --add safe.directory /host 2>/dev/null || true
-# Try to fix .git permissions (works if run on host, best-effort inside container)
-chmod -R a+rw "$INSTALL_DIR/.git" 2>/dev/null || true
+# Fix permissions on entire install dir (runs as root via uid:0 in container)
+chmod -R a+rw "$INSTALL_DIR" 2>/dev/null || true
+
+# Verify docker compose is available
+if ! docker compose version &>/dev/null; then
+  fail "docker compose not available. Rebuild the API image: curl -fsSL https://agenticcrm.sapheron.com/install.sh | bash"
+fi
 
 # ── Auto-fix: ensure remote points to the correct repo ───────────────────────
 CORRECT_REPO="https://github.com/Sapheron/AgenticCRM.git"
@@ -130,7 +135,8 @@ if [ -f "$COMPOSE_FILE" ]; then
   export APP_VERSION="$NEW_VERSION"
 
   echo ""
-  docker compose -f "$COMPOSE_FILE" build api dashboard worker whatsapp 2>&1 | \
+  # Load .env so build args (DB passwords etc.) are available
+  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" build api dashboard worker whatsapp 2>&1 | \
     tee /tmp/agenticcrm-build.log | \
     while IFS= read -r line; do
       if echo "$line" | grep -qE '^\[.*\] (Building|Step |FROM |RUN |COPY |DONE |Successfully|CACHED)'; then
@@ -139,11 +145,12 @@ if [ -f "$COMPOSE_FILE" ]; then
         printf "\r\033[K  ${DIM}%s${NC}\n" "$(echo "$line" | cut -c1-80)"
       fi
     done
-  BUILD_EXIT=${PIPESTATUS[0]}
 
-  if [ $BUILD_EXIT -ne 0 ]; then
+  # PIPESTATUS[0] can be unreliable — verify build succeeded by checking images exist
+  BUILT_COUNT=$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -c "agentic-crm" || echo "0")
+  if [ "$BUILT_COUNT" -lt 4 ]; then
     tail -20 /tmp/agenticcrm-build.log | tee -a "$LOG_FILE"
-    fail "Docker build failed (see /tmp/agenticcrm-build.log)"
+    fail "Docker build failed — only $BUILT_COUNT/4 images found (see /tmp/agenticcrm-build.log)"
   fi
   ok "Docker images rebuilt"
   echo -e "  ${G}✔${NC}  Images rebuilt"
@@ -154,22 +161,31 @@ fi
 # ── Step 4: Migrations ────────────────────────────────────────────────────────
 echo -e "\n  ${W}${BOLD}[4/6]${NC}  Running database migrations..."
 if [ -f "$COMPOSE_FILE" ]; then
-  spinner_start "Applying schema migrations..."
-  docker compose -f "$COMPOSE_FILE" run --rm api npx prisma migrate deploy \
-    --schema=./node_modules/@wacrm/database/prisma/schema.prisma 2>&1 | tee -a "$LOG_FILE" > /dev/null
-  spinner_stop
-  ok "Migrations applied"
-  echo -e "  ${G}✔${NC}  Migrations applied"
+  info "Applying schema migrations..."
+  MIGRATE_LOG=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" run --rm api npx prisma migrate deploy \
+    --schema=./node_modules/@wacrm/database/prisma/schema.prisma 2>&1) && {
+    ok "Migrations applied"
+    echo -e "  ${G}✔${NC}  Migrations applied"
+  } || {
+    echo "$MIGRATE_LOG" >> "$LOG_FILE"
+    warn "Migration had issues (may be safe):"
+    echo "$MIGRATE_LOG" | tail -5
+  }
 fi
 
 # ── Step 5: Restart services ──────────────────────────────────────────────────
 echo -e "\n  ${W}${BOLD}[5/6]${NC}  Restarting services..."
 if [ -f "$COMPOSE_FILE" ]; then
-  spinner_start "Bringing services up..."
-  docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1 | tee -a "$LOG_FILE" > /dev/null
-  spinner_stop
-  ok "Services restarted"
-  echo -e "  ${G}✔${NC}  Services restarted"
+  info "Bringing services up..."
+  RESTART_LOG=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" up -d --remove-orphans 2>&1) && {
+    ok "Services restarted"
+    echo -e "  ${G}✔${NC}  Services restarted"
+  } || {
+    echo "$RESTART_LOG" >> "$LOG_FILE"
+    warn "Restart had issues:"
+    echo "$RESTART_LOG" | tail -5
+  }
+  echo "$RESTART_LOG" >> "$LOG_FILE"
 fi
 
 # ── Step 5b: Auto-patch nginx timeouts (prevents 504 on AI chat) ─────────────
@@ -195,20 +211,20 @@ fi
 
 # ── Step 6: Health check ──────────────────────────────────────────────────────
 echo -e "\n  ${W}${BOLD}[6/6]${NC}  Health check..."
-spinner_start "Waiting for API..."
-for i in $(seq 1 30); do
+info "Waiting for API health check (up to 60s)..."
+API_HEALTHY=0
+for i in $(seq 1 60); do
   if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
-    spinner_stop
     ok "API is healthy"
     echo -e "  ${G}✔${NC}  API is healthy"
+    API_HEALTHY=1
     break
-  fi
-  if [ "$i" -eq 30 ]; then
-    spinner_stop
-    warn "API health check timed out after 30s — check: docker compose logs api"
   fi
   sleep 1
 done
+if [ "$API_HEALTHY" -eq 0 ]; then
+  warn "API health check timed out after 60s — check: docker compose -f $COMPOSE_FILE logs api"
+fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
