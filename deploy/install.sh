@@ -472,22 +472,26 @@ docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   && { spinner_stop; ok "Pre-push migrations applied"; } \
   || { spinner_stop; warn "Pre-push migration had warnings (may be safe)"; }
 
-spinner_start "Pushing database schema..."
-docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+info "Pushing database schema..."
+if docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm api sh -c \
   "prisma db push --accept-data-loss --schema=packages/database/prisma/schema.prisma --url=\$DIRECT_DATABASE_URL" \
-  > /dev/null 2>&1
-spinner_stop
-ok "Database schema pushed"
+  2>&1 | tee -a /tmp/agenticcrm-schema.log | tail -5; then
+  ok "Database schema pushed"
+else
+  warn "Schema push had issues — check /tmp/agenticcrm-schema.log"
+fi
 
-spinner_start "Applying pgvector memory migration..."
-docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+info "Applying pgvector memory migration..."
+if docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   exec -T postgres sh -c \
   "psql -U \"\${POSTGRES_USER:-crm}\" -d \"\${POSTGRES_DB:-wacrm}\" -v ON_ERROR_STOP=1" \
   < "$INSTALL_DIR/packages/database/prisma/migrations/manual_pgvector.sql" \
-  > /dev/null 2>&1 \
-  && { spinner_stop; ok "pgvector memory migration applied"; } \
-  || { spinner_stop; warn "pgvector migration failed — memory system may not work"; }
+  2>&1 | tail -3; then
+  ok "pgvector memory migration applied"
+else
+  warn "pgvector migration failed — memory system may not work"
+fi
 
 source "$INSTALL_DIR/.env" 2>/dev/null || true
 
@@ -581,54 +585,59 @@ const ALL_PERMISSIONS = [
 })();
 PERMEOF
 
-spinner_start "Ensuring admin permissions..."
-docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+info "Ensuring admin permissions..."
+if docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
   run --rm \
   -v "$PERM_TMP:/tmp/perm-fix.js:ro" \
   api sh -c "NODE_PATH=/app/node_modules:/app/packages/database/node_modules:/app/apps/api/node_modules node /tmp/perm-fix.js" \
-  > /dev/null 2>&1
-spinner_stop
-ok "Admin permissions ensured"
+  2>&1 | tail -3; then
+  ok "Admin permissions ensured"
+else
+  warn "Permissions fix had issues (may already be set)"
+fi
 
 if [[ "${USER_COUNT:-0}" -gt 0 ]]; then
   if ask_skip "Admin user already seeded ($USER_COUNT users found)"; then
     ok "Skipping seed"
   else
-    spinner_start "Re-seeding admin user..."
-    docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+    info "Re-seeding admin user..."
+    if docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
       run --rm \
       -v "$SEED_TMP:/tmp/seed.js:ro" \
       api sh -c "NODE_PATH=/app/node_modules:/app/packages/database/node_modules:/app/apps/api/node_modules node /tmp/seed.js" \
-      > /dev/null 2>&1
-    spinner_stop
-    ok "Database re-seeded"
+      2>&1 | tail -3; then
+      ok "Database re-seeded"
+    else
+      warn "Seed had issues"
+    fi
   fi
 else
-  spinner_start "Creating admin user..."
-  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
+  info "Creating admin user..."
+  if docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" \
     run --rm \
     -v "$SEED_TMP:/tmp/seed.js:ro" \
     api sh -c "NODE_PATH=/app/node_modules:/app/packages/database/node_modules:/app/apps/api/node_modules node /tmp/seed.js" \
-    > /dev/null 2>&1
-  spinner_stop
-  ok "Admin user created"
+    2>&1 | tail -3; then
+    ok "Admin user created"
+  else
+    warn "Seed had issues — check manually"
+  fi
 fi
 
 rm -f "$SEED_TMP" "$PERM_TMP"
 
-spinner_start "Starting all services..."
-docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" up -d > /dev/null 2>&1
-spinner_stop
+info "Starting all services..."
+docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" up -d 2>&1 | tail -15
 ok "All services started"
 
-spinner_start "Waiting for API health check..."
+info "Waiting for API health check..."
 for i in $(seq 1 10); do
   HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "http://localhost:3000/api/health" 2>/dev/null || echo "000")
   if [[ "$HTTP_CODE" == "200" ]]; then
-    spinner_stop; ok "API is healthy"
+    ok "API is healthy"
     break
   fi
-  [[ $i -eq 10 ]] && { spinner_stop; warn "API not responding yet — run: docker compose logs api"; }
+  [[ $i -eq 10 ]] && warn "API not responding yet — run: docker compose logs api"
   sleep 3
 done
 
