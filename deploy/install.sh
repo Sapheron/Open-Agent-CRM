@@ -384,16 +384,16 @@ if [[ "$IMAGES_EXIST" -gt 0 ]]; then
   if ask_skip "Images already built ($IMAGES_EXIST found)"; then
     ok "Using cached images"
   else
-    info "Rebuilding all images..."
-    if build_images "--no-cache"; then
+    info "Rebuilding images (using cache for unchanged layers)..."
+    if build_images ""; then
       ok "Images rebuilt"
     else
       fail "Docker build failed — check /tmp/agenticcrm-build.log"
     fi
   fi
 else
-  info "Building images — this takes a few minutes..."
-  if build_images "--no-cache"; then
+  info "Building images — first build takes a few minutes..."
+  if build_images ""; then
     ok "Images built  ${DIM}(log: /tmp/agenticcrm-build.log)${NC}"
   else
     fail "Docker build failed — check /tmp/agenticcrm-build.log"
