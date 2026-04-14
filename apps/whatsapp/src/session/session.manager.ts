@@ -48,6 +48,7 @@ export async function startSession(accountId: string): Promise<void> {
       logger: logger.child({ accountId }) as unknown as Parameters<typeof makeWASocket>[0]['logger'],
       browser: ['WhatsApp AI CRM', 'Chrome', '124.0.0'],
       markOnlineOnConnect: false, // prevents "online" status spam
+      keepAliveIntervalMs: 30_000, // send WebSocket ping every 30s to prevent silent disconnects
     });
 
     activeSockets.set(accountId, sock);
@@ -177,4 +178,25 @@ export async function resumeAllSessions(): Promise<void> {
       logger.error({ accountId: account.id, err }, 'Failed to resume session');
     });
   }
+
+  // Watchdog: every 2 minutes, check DB for CONNECTED accounts that lost their socket
+  // and attempt reconnect. Guards against silent disconnects that miss connection.update.
+  setInterval(async () => {
+    try {
+      const connected = await prisma.whatsAppAccount.findMany({
+        where: { status: 'CONNECTED' },
+        select: { id: true },
+      });
+      for (const acc of connected) {
+        if (!activeSockets.has(acc.id)) {
+          logger.warn({ accountId: acc.id }, 'Watchdog: socket missing for CONNECTED account — reconnecting');
+          await startSession(acc.id).catch((err: unknown) =>
+            logger.error({ accountId: acc.id, err }, 'Watchdog reconnect failed'),
+          );
+        }
+      }
+    } catch (err: unknown) {
+      logger.warn({ err }, 'Watchdog check failed');
+    }
+  }, 2 * 60 * 1000);
 }

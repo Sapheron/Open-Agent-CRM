@@ -6,7 +6,8 @@
 
 INSTALL_DIR="${INSTALL_DIR:-/opt/openagentcrm}"
 COMPOSE_FILE="$INSTALL_DIR/deploy/docker-compose.yml"
-LOG_FILE="$INSTALL_DIR/deploy/update.log"
+# Use /tmp — INSTALL_DIR may be mounted read-only inside the API container
+LOG_FILE="/tmp/openagentcrm-update.log"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 ts()   { date '+%Y-%m-%d %H:%M:%S'; }
@@ -21,6 +22,10 @@ info "═══ Open Agent CRM Update Started ═══"
 info "Install directory: $INSTALL_DIR"
 
 cd "$INSTALL_DIR" || fail "Cannot cd to $INSTALL_DIR"
+
+# Allow git to operate even when running as a different user (e.g. root inside API container)
+git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
+git config --global --add safe.directory /host 2>/dev/null || true
 
 # ── Step 1: Save current version ─────────────────────────────────────────────
 OLD_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
