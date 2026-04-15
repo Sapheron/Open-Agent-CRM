@@ -60,8 +60,8 @@ export function normalizeMessage(msg: WAMessage): InternalMessage | null {
   const isGroup = jid.endsWith('@g.us');
   if (isGroup) return null; // skip group messages for now
 
-  // Skip non-standard JIDs (newsletters, status broadcasts, LID-based contacts)
-  if (!jid.endsWith('@s.whatsapp.net')) return null;
+  // Skip non-standard JIDs (newsletters, status broadcasts) but allow LID-based contacts
+  if (!jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@lid')) return null;
 
   const fromJid = key.participant ?? jid;
   const fromPhone = jidToPhone(fromJid);

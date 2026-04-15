@@ -512,11 +512,16 @@ export class InboundMonitor {
       return;
     }
 
+    // Detect self-chat: either phone matches OR JID is @lid (WhatsApp's Linked Identity format
+    // used for self-messaging). fromMe=true + @lid = self-chat.
+    const remoteJid = msg.key.remoteJid as string;
+    const isLidJid = remoteJid.endsWith('@lid');
     const ownPhone = (account.phoneNumber ?? '').replace(/\D/g, '');
-    const remotePhone = (msg.key.remoteJid as string).split('@')[0].split(':')[0].replace(/\D/g, '');
-    logger.info({ accountId: this.accountId, ownPhone, remotePhone }, 'staffChat: phone comparison');
-    if (!ownPhone || remotePhone !== ownPhone) {
-      logger.info({ accountId: this.accountId }, 'staffChat: not self-chat (phones differ), skipping');
+    const remotePhone = remoteJid.split('@')[0].split(':')[0].replace(/\D/g, '');
+    const isSelfChat = isLidJid || (ownPhone && remotePhone === ownPhone);
+    logger.info({ accountId: this.accountId, ownPhone, remotePhone, isLidJid, isSelfChat }, 'staffChat: self-chat check');
+    if (!isSelfChat) {
+      logger.info({ accountId: this.accountId }, 'staffChat: not self-chat, skipping');
       return;
     }
 
