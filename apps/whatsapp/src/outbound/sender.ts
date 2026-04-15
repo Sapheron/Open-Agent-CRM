@@ -26,6 +26,7 @@ export async function sendTextMessage(
   accountId: string,
   toPhone: string,
   text: string,
+  directJid?: string,
 ): Promise<{ success: boolean; waMessageId?: string; error?: string }> {
   const sock = getSocket(accountId);
   if (!sock) {
@@ -61,7 +62,7 @@ export async function sendTextMessage(
   const delayMs = 500 + Math.random() * 2500;
   await sleep(delayMs);
 
-  const jid = phoneToJid(toPhone);
+  const jid = directJid || phoneToJid(toPhone);
 
   // Retry loop matching OpenClaw's sendWithRetry (deliver-reply.ts:61-82)
   let lastErr: unknown;
@@ -98,11 +99,12 @@ export async function sendMediaMessage(
   mediaUrl: string,
   mimeType: string,
   caption?: string,
+  directJid?: string,
 ): Promise<{ success: boolean; waMessageId?: string; error?: string }> {
   const sock = getSocket(accountId);
   if (!sock) return { success: false, error: 'No active session' };
 
-  const jid = phoneToJid(toPhone);
+  const jid = directJid || phoneToJid(toPhone);
   const isImage = mimeType.startsWith('image/');
   const isVideo = mimeType.startsWith('video/');
   const isAudio = mimeType.startsWith('audio/');

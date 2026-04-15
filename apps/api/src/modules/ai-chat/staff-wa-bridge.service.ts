@@ -51,7 +51,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleRequest(raw: string): Promise<void> {
-    let payload: { companyId: string; userId: string; accountId: string; text: string; replyToPhone?: string };
+    let payload: { companyId: string; userId: string; accountId: string; text: string; replyToPhone?: string; replyToJid?: string };
     try {
       payload = JSON.parse(raw) as typeof payload;
     } catch {
@@ -59,7 +59,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const { companyId, userId, accountId, text, replyToPhone } = payload;
+    const { companyId, userId, accountId, text, replyToPhone, replyToJid } = payload;
     this.logger.log(`Staff AI chat: user=${userId} account=${accountId}${replyToPhone ? ` from=${replyToPhone}` : ''}`);
 
     try {
@@ -146,11 +146,12 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
       });
       if (!account) return;
       const replyTo = replyToPhone || account.phoneNumber;
+      const replyJid = replyToJid; // LID JID for direct addressing
 
       // Show "typing…" on WhatsApp before AI processes
       await this.publisher.publish(
         WA_TYPING_CHANNEL,
-        JSON.stringify({ accountId, toPhone: replyTo, action: 'composing' }),
+        JSON.stringify({ accountId, toPhone: replyTo, toJid: replyJid, action: 'composing' }),
       ).catch(() => null);
 
       // Run AI with the resolved sender's permissions (same as dashboard chat)
@@ -177,7 +178,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
       // Clear typing indicator and send the reply
       await this.publisher.publish(
         WA_TYPING_CHANNEL,
-        JSON.stringify({ accountId, toPhone: replyTo, action: 'paused' }),
+        JSON.stringify({ accountId, toPhone: replyTo, toJid: replyJid, action: 'paused' }),
       ).catch(() => null);
 
       await this.publisher.publish(
@@ -185,6 +186,7 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
         JSON.stringify({
           accountId,
           toPhone: replyTo,
+          toJid: replyJid,
           text: result.content,
         }),
       );
@@ -205,13 +207,14 @@ export class StaffWaBridgeService implements OnModuleInit, OnModuleDestroy {
           // Clear typing indicator on error
           await this.publisher.publish(
             WA_TYPING_CHANNEL,
-            JSON.stringify({ accountId, toPhone: replyTo, action: 'paused' }),
+            JSON.stringify({ accountId, toPhone: replyTo, toJid: replyToJid, action: 'paused' }),
           ).catch(() => null);
           await this.publisher.publish(
             WA_OUTBOUND_CHANNEL,
             JSON.stringify({
               accountId,
               toPhone: replyTo,
+              toJid: replyToJid,
               text: `⚠️ AI error: ${msg.slice(0, 200)}`,
             }),
           );

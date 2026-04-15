@@ -69,12 +69,12 @@ export function startOutboundSubscriber(): void {
  */
 async function handleTyping(raw: string): Promise<void> {
   try {
-    const payload = JSON.parse(raw) as { accountId: string; toPhone: string; action: 'composing' | 'paused' };
-    const { accountId, toPhone, action } = payload;
+    const payload = JSON.parse(raw) as { accountId: string; toPhone: string; toJid?: string; action: 'composing' | 'paused' };
+    const { accountId, toPhone, toJid, action } = payload;
     const sock = getSocket(accountId);
     if (!sock) return;
 
-    const jid = phoneToJid(toPhone);
+    const jid = toJid || phoneToJid(toPhone);
     await sock.sendPresenceUpdate(action, jid);
     logger.debug({ accountId, toPhone, action }, 'Presence update sent');
   } catch (err: unknown) {
@@ -88,6 +88,8 @@ async function handleOutbound(channel: string, raw: string): Promise<void> {
 
     const accountId = (payload as OutboundPayload).accountId;
     const toPhone = payload.toPhone;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const toJid = (payload as any).toJid as string | undefined;
 
     if (!accountId || !toPhone) {
       // For broadcasts without accountId, look up active account for the company
@@ -129,9 +131,9 @@ async function handleOutbound(channel: string, raw: string): Promise<void> {
     let result: { success: boolean; waMessageId?: string; error?: string };
 
     if (mediaUrl && mimeType) {
-      result = await sendMediaMessage(accountId, toPhone, mediaUrl, mimeType, p.caption ?? p.text);
+      result = await sendMediaMessage(accountId, toPhone, mediaUrl, mimeType, p.caption ?? p.text, toJid);
     } else if (p.text) {
-      result = await sendTextMessage(accountId, toPhone, p.text);
+      result = await sendTextMessage(accountId, toPhone, p.text, toJid);
     } else {
       logger.warn({ channel, payload }, 'Outbound payload has neither text nor media, skipping');
       return;

@@ -283,7 +283,8 @@ export class InboundMonitor {
     if (isAllowedNumber && staffUserId && normalized.body?.trim()) {
       // Allowed numbers get the full admin AI (same as staff self-chat):
       // routed through StaffWaBridgeService with full CRM tools + permissions.
-      // This bypasses autoReplyEnabled since it's a staff control channel.
+      // For LID contacts, pass the full JID so the reply goes to the right person.
+      // phoneToJid(lidNumber) would create a wrong @s.whatsapp.net JID.
       await this.redis.publish(
         STAFF_AI_REQUEST_CHANNEL,
         JSON.stringify({
@@ -291,7 +292,8 @@ export class InboundMonitor {
           userId: staffUserId,
           accountId: this.accountId,
           text: normalized.body.trim(),
-          replyToPhone: normalized.fromPhone, // reply to the sender, not self
+          replyToPhone: normalized.fromPhone,
+          replyToJid: isLidSender ? normalized.fromJid : undefined,
         }),
       );
       logger.info(
