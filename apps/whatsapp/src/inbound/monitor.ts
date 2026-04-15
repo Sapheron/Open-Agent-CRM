@@ -142,19 +142,23 @@ export class InboundMonitor {
     if (!account) return;
 
     // Determine if this sender is in the allowlist.
-    // LID JIDs have synthetic phone numbers that won't match — skip allowlist for them
-    // and let them through as regular (non-admin) contacts.
     const isLidSender = normalized.fromJid.endsWith('@lid');
     const digitsOnly = (p: string) => p.replace(/\D/g, '');
     const senderDigits = digitsOnly(normalized.fromPhone);
-    const isAllowedNumber = !isLidSender && account.allowedNumbers.length > 0
+    const isAllowedByPhone = account.allowedNumbers.length > 0
       && account.allowedNumbers.some((n) => {
         const allowed = digitsOnly(n);
         return allowed === senderDigits || senderDigits.endsWith(allowed) || allowed.endsWith(senderDigits);
       });
 
-    // If allowlist is set and sender is NOT in it and NOT a LID contact, skip
-    if (account.allowedNumbers.length > 0 && !isAllowedNumber && !isLidSender) {
+    // LID senders can't be matched by phone — but if an allowlist exists,
+    // treat ALL inbound as admin-allowed (LID numbers are real people messaging
+    // the connected number, and the allowlist controls who can reach it).
+    // Without an allowlist, everyone is allowed (open mode).
+    const isAllowedNumber = isAllowedByPhone || (isLidSender && account.allowedNumbers.length > 0);
+
+    // If allowlist is set and sender is NOT in it (and not LID), skip
+    if (account.allowedNumbers.length > 0 && !isAllowedNumber) {
       logger.info(
         { accountId: this.accountId, fromPhone: normalized.fromPhone, isLidSender },
         'Number not in allowlist, skipping',
