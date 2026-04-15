@@ -70,12 +70,6 @@ export class InboundMonitor {
 
         // Staff self-chat: handle BEFORE the type filter because self-sent messages
         // can arrive as type='append' on some Baileys versions, not just 'notify'.
-        // Skip LID echoes of self-messages — they arrive TWICE (once via @lid, once via @s.whatsapp.net).
-        // Only process the @s.whatsapp.net version to prevent double replies.
-        if (fromMe && remoteJid.endsWith('@lid')) {
-          logger.debug({ accountId: this.accountId }, 'Skipped: LID echo of fromMe message (processed via @s.whatsapp.net)');
-          continue;
-        }
         if (fromMe && remoteJid) {
           logger.info({ accountId: this.accountId, remoteJid: remoteJid.slice(0, 20) }, 'Routing to maybeHandleStaffChat (fromMe=true)');
           await this.maybeHandleStaffChat(msg).catch((err: unknown) =>
@@ -528,13 +522,36 @@ export class InboundMonitor {
    * message is forwarded to the API via Redis so AiChatService processes it with
    * the full admin tool set and sends the reply back to WhatsApp.
    */
+  // Track processed self-chat message IDs to prevent double processing
+  // when the same message arrives via both @lid and @s.whatsapp.net
+  private processedSelfMsgIds = new Set<string>();
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async maybeHandleStaffChat(msg: any): Promise<void> {
-    // Skip echoes of messages we sent (prevents infinite self-reply loops).
     const msgId = msg.key?.id as string | undefined;
+
+    // Skip echoes of messages we sent (prevents infinite self-reply loops).
     if (msgId && isRecentOutboundMessage(this.accountId, msg.key.remoteJid as string, msgId)) {
       logger.info({ msgId, accountId: this.accountId }, 'staffChat: skipped outbound echo');
       return;
+    }
+
+    // Dedup: same message can arrive via @lid AND @s.whatsapp.net — only process once
+    if (msgId) {
+      if (this.processedSelfMsgIds.has(msgId)) {
+        logger.debug({ msgId, accountId: this.accountId }, 'staffChat: duplicate msgId, skipping');
+        return;
+      }
+      this.processedSelfMsgIds.add(msgId);
+      // Keep set bounded
+      if (this.processedSelfMsgIds.size > 500) {
+        const iter = this.processedSelfMsgIds.values();
+        for (let i = 0; i < 250; i++) iter.next();
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const remaining = new Set<string>();
+        for (const v of iter) remaining.add(v);
+        this.processedSelfMsgIds = remaining;
+      }
     }
 
     const account = await prisma.whatsAppAccount.findUnique({
