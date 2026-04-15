@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api-client';
@@ -63,7 +63,8 @@ export default function SystemSettingsPage() {
   const { data: updateStatus, refetch: refetchStatus } = useQuery<UpdateStatus>({
     queryKey: ['system-update-status'],
     queryFn: () => api.get('/system/update-status').then((r) => r.data.data),
-    refetchInterval: updateCheck?.updateAvailable ? 5000 : false,
+    // Poll every 2s while updating (for live log), every 5s when update available, otherwise stop
+    refetchInterval: updateStatus?.isUpdating ? 2000 : updateCheck?.updateAvailable ? 5000 : false,
   });
 
   const { data: changelog } = useQuery<ChangelogEntry[]>({
@@ -84,6 +85,18 @@ export default function SystemSettingsPage() {
   const current = updateCheck?.current;
   const latest = updateCheck?.latest;
   const isUpdating = updateStatus?.isUpdating;
+  const logRef = useRef<HTMLPreElement>(null);
+
+  // Auto-show log and auto-scroll when updating
+  useEffect(() => {
+    if (isUpdating) setShowLog(true);
+  }, [isUpdating]);
+
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [updateStatus?.lastUpdate?.log]);
 
   return (
     <div className="h-full flex flex-col">
@@ -225,9 +238,9 @@ export default function SystemSettingsPage() {
               )}
             </div>
 
-            {showLog && updateStatus.lastUpdate.log && (
-              <pre className="mt-3 bg-gray-900 text-gray-300 text-[10px] p-3 rounded-md overflow-x-auto max-h-64 overflow-y-auto font-mono leading-relaxed">
-                {updateStatus.lastUpdate.log || 'No output yet...'}
+            {showLog && (
+              <pre ref={logRef} className="mt-3 bg-gray-900 text-gray-300 text-[10px] p-3 rounded-md overflow-x-auto max-h-80 overflow-y-auto font-mono leading-relaxed whitespace-pre-wrap">
+                {updateStatus.lastUpdate.log || 'Waiting for output...'}
               </pre>
             )}
           </div>
