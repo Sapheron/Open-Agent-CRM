@@ -36,9 +36,11 @@ export class InboundMonitor {
     private readonly accountId: string,
   ) {
     // No lazyConnect — connect immediately so publish() is always ready.
-    // lazyConnect would silently drop publishes if connect() was never called.
-    this.redis = new Redis(redisUrl);
-    this.aiQueue = new Queue(QUEUES.AI_MESSAGE, { connection: new Redis(redisUrl) });
+    this.redis = new Redis(redisUrl, { maxRetriesPerRequest: 3 });
+    this.redis.on('error', (err) => logger.error({ accountId, err: err.message }, 'Monitor Redis error'));
+    this.redis.on('connect', () => logger.info({ accountId }, 'Monitor Redis connected'));
+
+    this.aiQueue = new Queue(QUEUES.AI_MESSAGE, { connection: new Redis(redisUrl, { maxRetriesPerRequest: 3 }) });
   }
 
   async init() {
@@ -49,6 +51,7 @@ export class InboundMonitor {
     this.connectedAtMs = Date.now();
 
     this.sock.ev.on('messages.upsert', async ({ messages, type }) => {
+      logger.info({ accountId: this.accountId, count: messages.length, type }, 'messages.upsert received');
       for (const msg of messages) {
         // Track inbound activity for stale connection watchdog (OpenClaw pattern)
         noteInboundActivity(this.accountId);
