@@ -128,18 +128,21 @@ export async function startSession(accountId: string): Promise<void> {
 
         logger.warn({ accountId, statusCode, reason }, 'WhatsApp disconnected');
 
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+        // Don't reconnect if intentionally stopped via stopSession()
+        const intentionallyStopped = stoppingAccounts.has(accountId);
+        const shouldReconnect = !intentionallyStopped && statusCode !== DisconnectReason.loggedOut;
 
-        await prisma.whatsAppAccount.update({
-          where: { id: accountId },
-          data: {
-            status: shouldReconnect ? 'CONNECTING' : 'DISCONNECTED',
-            consecutiveErrors: { increment: 1 },
-            lastErrorAt: new Date(),
-          },
-        });
-
-        await publishDisconnected(accountId, String(reason));
+        if (!intentionallyStopped) {
+          await prisma.whatsAppAccount.update({
+            where: { id: accountId },
+            data: {
+              status: shouldReconnect ? 'CONNECTING' : 'DISCONNECTED',
+              consecutiveErrors: { increment: 1 },
+              lastErrorAt: new Date(),
+            },
+          });
+          await publishDisconnected(accountId, String(reason));
+        }
 
         if (shouldReconnect) {
           const backoffMs = Math.min(5000 * 2 ** (await getConsecutiveErrors(accountId)), 60000);
@@ -164,11 +167,25 @@ export async function startSession(accountId: string): Promise<void> {
   await connect();
 }
 
+// Track accounts being intentionally stopped to prevent reconnect race conditions
+const stoppingAccounts = new Set<string>();
+
 export async function stopSession(accountId: string, logout = false): Promise<void> {
   const sock = activeSockets.get(accountId);
   if (!sock) return;
 
+  // Mark as intentionally stopping so the close handler doesn't trigger reconnect
+  stoppingAccounts.add(accountId);
   activeSockets.delete(accountId);
+
+  // Clean up monitor (close Redis connections, BullMQ queue)
+  const monitor = activeMonitors.get(accountId);
+  if (monitor) {
+    await monitor.close().catch(() => null);
+    activeMonitors.delete(accountId);
+  }
+  clearInboundActivity(accountId);
+
   if (logout) {
     await sock.logout();
   } else {
@@ -182,6 +199,9 @@ export async function stopSession(accountId: string, logout = false): Promise<vo
       ...(logout ? { sessionDataEnc: null } : {}),
     },
   });
+
+  // Allow reconnect again after a short delay (avoids race with close handler)
+  setTimeout(() => stoppingAccounts.delete(accountId), 5000);
 
   logger.info({ accountId, logout }, 'Session stopped');
 }
