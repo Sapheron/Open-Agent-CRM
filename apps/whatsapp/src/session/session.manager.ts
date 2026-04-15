@@ -24,6 +24,8 @@ const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const activeSockets = new Map<string, WASocket>();
 // Active monitor map: accountId → InboundMonitor (for cleanup on reconnect)
 const activeMonitors = new Map<string, InboundMonitor>();
+// Track accounts currently in a reconnect cycle so the watchdog doesn't pile on
+const reconnectingAccounts = new Set<string>();
 
 // Stale connection watchdog config (matches OpenClaw's defaults)
 const WATCHDOG_CHECK_MS = 2 * 60 * 1000;  // check every 2 minutes
@@ -74,6 +76,7 @@ export async function startSession(accountId: string): Promise<void> {
       }
 
       if (connection === 'open') {
+        reconnectingAccounts.delete(accountId);
         const phone = sock.user?.id ? jidToPhone(sock.user.id) : '';
         const displayName = sock.user?.name ?? '';
         logger.info({ accountId, phone }, 'WhatsApp connected');
@@ -149,7 +152,8 @@ export async function startSession(accountId: string): Promise<void> {
         if (shouldReconnect) {
           const backoffMs = Math.min(5000 * 2 ** (await getConsecutiveErrors(accountId)), 60000);
           logger.info({ accountId, backoffMs }, 'Reconnecting after backoff');
-          setTimeout(() => void connect(), backoffMs);
+          reconnectingAccounts.add(accountId);
+          setTimeout(() => void connect().finally(() => reconnectingAccounts.delete(accountId)), backoffMs);
         }
       }
     });
@@ -245,6 +249,12 @@ export async function resumeAllSessions(): Promise<void> {
         select: { id: true },
       });
       for (const acc of connected) {
+        // Skip accounts already in a reconnect cycle to avoid connectionReplaced (440) loops
+        if (reconnectingAccounts.has(acc.id)) {
+          logger.debug({ accountId: acc.id }, 'Watchdog: skipping — reconnect already in progress');
+          continue;
+        }
+
         const sock = activeSockets.get(acc.id);
         if (!sock) {
           // Case 1: Socket completely missing

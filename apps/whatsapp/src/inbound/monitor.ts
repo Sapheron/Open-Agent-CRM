@@ -36,11 +36,21 @@ export class InboundMonitor {
     private readonly accountId: string,
   ) {
     // No lazyConnect — connect immediately so publish() is always ready.
-    this.redis = new Redis(redisUrl, { maxRetriesPerRequest: 3 });
+    // retryStrategy ensures ioredis reconnects automatically if the connection drops
+    // (default maxRetriesPerRequest:3 exhausts and permanently closes the connection).
+    this.redis = new Redis(redisUrl, {
+      maxRetriesPerRequest: null,           // never give up on individual commands
+      retryStrategy: (times) => Math.min(times * 500, 10_000), // reconnect backoff: 500ms, 1s, ..., 10s cap
+    });
     this.redis.on('error', (err) => logger.error({ accountId, err: err.message }, 'Monitor Redis error'));
     this.redis.on('connect', () => logger.info({ accountId }, 'Monitor Redis connected'));
 
-    this.aiQueue = new Queue(QUEUES.AI_MESSAGE, { connection: new Redis(redisUrl, { maxRetriesPerRequest: 3 }) });
+    this.aiQueue = new Queue(QUEUES.AI_MESSAGE, {
+      connection: new Redis(redisUrl, {
+        maxRetriesPerRequest: null,
+        retryStrategy: (times) => Math.min(times * 500, 10_000),
+      }),
+    });
   }
 
   async init() {

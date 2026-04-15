@@ -2,7 +2,11 @@ import Redis from 'ioredis';
 
 const redisUrl = (process.env.REDIS_URL || '').trim();
 
-export const publisher = new Redis(redisUrl, { lazyConnect: true });
+export const publisher = new Redis(redisUrl, {
+  lazyConnect: true,
+  maxRetriesPerRequest: null,
+  retryStrategy: (times) => Math.min(times * 500, 10_000),
+});
 
 export const CHANNELS = {
   WA_QR: (accountId: string) => `wa:qr:${accountId}`,
