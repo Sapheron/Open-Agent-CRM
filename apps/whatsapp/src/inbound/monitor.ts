@@ -135,20 +135,21 @@ export class InboundMonitor {
     if (!account) return;
 
     // Determine if this sender is in the allowlist.
-    // Normalize both sides to digits-only. Also check suffix match to handle
-    // cases where allowlist has "9876543210" but sender is "919876543210" (with country code).
+    // LID JIDs have synthetic phone numbers that won't match — skip allowlist for them
+    // and let them through as regular (non-admin) contacts.
+    const isLidSender = normalized.fromJid.endsWith('@lid');
     const digitsOnly = (p: string) => p.replace(/\D/g, '');
     const senderDigits = digitsOnly(normalized.fromPhone);
-    const isAllowedNumber = account.allowedNumbers.length > 0
+    const isAllowedNumber = !isLidSender && account.allowedNumbers.length > 0
       && account.allowedNumbers.some((n) => {
         const allowed = digitsOnly(n);
         return allowed === senderDigits || senderDigits.endsWith(allowed) || allowed.endsWith(senderDigits);
       });
 
-    // If allowlist is set and sender is NOT in it, skip entirely
-    if (account.allowedNumbers.length > 0 && !isAllowedNumber) {
-      logger.debug(
-        { accountId: this.accountId, fromPhone: normalized.fromPhone },
+    // If allowlist is set and sender is NOT in it and NOT a LID contact, skip
+    if (account.allowedNumbers.length > 0 && !isAllowedNumber && !isLidSender) {
+      logger.info(
+        { accountId: this.accountId, fromPhone: normalized.fromPhone, isLidSender },
         'Number not in allowlist, skipping',
       );
       return;
