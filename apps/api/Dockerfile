@@ -39,11 +39,11 @@ RUN apk update && apk upgrade && \
     apk add --no-cache libc6-compat git docker-cli docker-cli-compose curl bash
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nestjs && \
-    npm install -g prisma@7.7.0
+RUN npm install -g prisma@7.7.0
 
-COPY --from=installer --chown=nestjs:nodejs /app ./
-USER nestjs
+COPY --from=installer /app ./
+# Run as root — the update system needs docker.sock + git write access,
+# and docker.sock access is root-equivalent anyway (no security benefit
+# from dropping privileges when the socket is mounted).
 EXPOSE 3000
 CMD ["node", "apps/api/dist/apps/api/src/main.js"]
