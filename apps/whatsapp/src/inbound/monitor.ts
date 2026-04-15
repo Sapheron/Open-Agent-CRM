@@ -56,12 +56,22 @@ export class InboundMonitor {
         // Track inbound activity for stale connection watchdog (OpenClaw pattern)
         noteInboundActivity(this.accountId);
 
+        const fromMe = msg.key?.fromMe === true;
+        const remoteJid = msg.key?.remoteJid ?? '';
+        const hasMessage = !!msg.message;
+        const msgKeys = msg.message ? Object.keys(msg.message).join(',') : 'none';
+        logger.info({ accountId: this.accountId, fromMe, remoteJid: remoteJid.slice(0, 20), hasMessage, msgKeys, type }, 'Processing message');
+
         // Skip protocol-only messages (read receipts, key distribution, etc.)
-        if (!msg.message) continue;
+        if (!msg.message) {
+          logger.debug({ accountId: this.accountId }, 'Skipped: no message content');
+          continue;
+        }
 
         // Staff self-chat: handle BEFORE the type filter because self-sent messages
         // can arrive as type='append' on some Baileys versions, not just 'notify'.
-        if (msg.key?.fromMe === true && msg.key?.remoteJid) {
+        if (fromMe && remoteJid) {
+          logger.info({ accountId: this.accountId, remoteJid: remoteJid.slice(0, 20) }, 'Routing to maybeHandleStaffChat (fromMe=true)');
           await this.maybeHandleStaffChat(msg).catch((err: unknown) =>
             logger.warn({ err, accountId: this.accountId }, 'Staff chat handler failed'),
           );
@@ -69,7 +79,10 @@ export class InboundMonitor {
         }
 
         // Accept both 'notify' (real-time) and 'append' (history sync, reconnect catch-up).
-        if (type !== 'notify' && type !== 'append') continue;
+        if (type !== 'notify' && type !== 'append') {
+          logger.debug({ accountId: this.accountId, type }, 'Skipped: type not notify/append');
+          continue;
+        }
 
         // For 'append' type: only process messages within the grace window.
         // Older messages are history sync — store but don't trigger AI replies.
@@ -102,7 +115,11 @@ export class InboundMonitor {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async handleMessage(msg: any) {
     const normalized = normalizeMessage(msg as Parameters<typeof normalizeMessage>[0]);
-    if (!normalized) return;
+    if (!normalized) {
+      logger.info({ accountId: this.accountId }, 'handleMessage: normalizeMessage returned null');
+      return;
+    }
+    logger.info({ accountId: this.accountId, fromPhone: normalized.fromPhone, body: normalized.body?.slice(0, 50) }, 'handleMessage: normalized');
 
     // Dedup check
     if (await isAlreadyProcessed(normalized.whatsappMessageId)) {
@@ -479,10 +496,9 @@ export class InboundMonitor {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async maybeHandleStaffChat(msg: any): Promise<void> {
     // Skip echoes of messages we sent (prevents infinite self-reply loops).
-    // Mirrors OpenClaw's isRecentOutboundMessage dedup.
     const msgId = msg.key?.id as string | undefined;
     if (msgId && isRecentOutboundMessage(this.accountId, msg.key.remoteJid as string, msgId)) {
-      logger.debug({ msgId, accountId: this.accountId }, 'Skipping outbound echo (self-reply prevention)');
+      logger.info({ msgId, accountId: this.accountId }, 'staffChat: skipped outbound echo');
       return;
     }
 
@@ -491,15 +507,18 @@ export class InboundMonitor {
       select: { companyId: true, userId: true, phoneNumber: true },
     });
 
-    // Only staff-owned accounts (userId set)
-    if (!account?.userId) return;
+    if (!account?.userId) {
+      logger.info({ accountId: this.accountId, hasAccount: !!account, userId: account?.userId }, 'staffChat: no userId, skipping');
+      return;
+    }
 
-    // Only self-messages: compare digits-only on BOTH sides.
-    // msg.key.remoteJid can be "91XXXXXXXXXX@s.whatsapp.net" or "91XXXXXXXXXX:62@s.whatsapp.net"
-    // account.phoneNumber may be stored as "91XXXXXXXXXX" (digits only) or "+91XXXXXXXXXX"
     const ownPhone = (account.phoneNumber ?? '').replace(/\D/g, '');
     const remotePhone = (msg.key.remoteJid as string).split('@')[0].split(':')[0].replace(/\D/g, '');
-    if (!ownPhone || remotePhone !== ownPhone) return;
+    logger.info({ accountId: this.accountId, ownPhone, remotePhone }, 'staffChat: phone comparison');
+    if (!ownPhone || remotePhone !== ownPhone) {
+      logger.info({ accountId: this.accountId }, 'staffChat: not self-chat (phones differ), skipping');
+      return;
+    }
 
     // Unwrap container types using the same wrapper keys as normalizer.ts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
