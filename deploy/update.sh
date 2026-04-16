@@ -5,6 +5,12 @@
 INSTALL_DIR="${INSTALL_DIR:-/opt/agenticcrm}"
 COMPOSE_FILE="$INSTALL_DIR/deploy/docker-compose.yml"
 LOG_FILE="/tmp/agenticcrm-update.log"
+PERSISTENT_LOG_DIR="$INSTALL_DIR/logs"
+
+# Services that are built locally and need rollback protection
+BUILT_SERVICES=(api dashboard worker whatsapp)
+# All services that must be running after update (for verification)
+REQUIRED_SERVICES=(api dashboard worker whatsapp postgres redis pgbouncer minio)
 
 # ── ANSI ──────────────────────────────────────────────────────────────────────
 R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'
@@ -32,7 +38,78 @@ spinner_stop() {
 trap 'spinner_stop' EXIT
 
 # ── Start ─────────────────────────────────────────────────────────────────────
+# Persistent log (survives reboots and /tmp cleanup)
+mkdir -p "$PERSISTENT_LOG_DIR" 2>/dev/null || true
+PERSISTENT_LOG="$PERSISTENT_LOG_DIR/update-$(date +%Y%m%d-%H%M%S).log"
 echo "" > "$LOG_FILE"
+# Keep only the last 10 update logs
+ls -1t "$PERSISTENT_LOG_DIR"/update-*.log 2>/dev/null | tail -n +11 | xargs -r rm -f 2>/dev/null || true
+
+# Mirror all output to persistent log as well
+exec > >(tee -a "$PERSISTENT_LOG") 2>&1
+
+# ── Helpers: rollback + recovery ──────────────────────────────────────────────
+tag_rollback_images() {
+  # Before building, tag current working images as :rollback so we can restore on failure
+  for svc in "${BUILT_SERVICES[@]}"; do
+    local img="ghcr.io/sapheron/agentic-crm/${svc}:latest"
+    if docker image inspect "$img" &>/dev/null; then
+      docker tag "$img" "ghcr.io/sapheron/agentic-crm/${svc}:rollback" 2>/dev/null || true
+    fi
+  done
+  info "Tagged current images as :rollback for recovery"
+}
+
+restore_rollback_images() {
+  warn "Restoring rollback images..."
+  for svc in "${BUILT_SERVICES[@]}"; do
+    local rb="ghcr.io/sapheron/agentic-crm/${svc}:rollback"
+    local latest="ghcr.io/sapheron/agentic-crm/${svc}:latest"
+    if docker image inspect "$rb" &>/dev/null; then
+      docker tag "$rb" "$latest" 2>/dev/null || true
+      info "Restored $svc from rollback"
+    fi
+  done
+  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" up -d --remove-orphans 2>&1 | tail -20 >> "$LOG_FILE" || true
+}
+
+verify_all_containers_running() {
+  # Returns 0 if all REQUIRED_SERVICES are running, 1 otherwise
+  local missing=()
+  for svc in "${REQUIRED_SERVICES[@]}"; do
+    local status
+    status=$(docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" ps --status running --services 2>/dev/null | grep -x "$svc" || echo "")
+    if [ -z "$status" ]; then
+      missing+=("$svc")
+    fi
+  done
+  if [ ${#missing[@]} -gt 0 ]; then
+    warn "Missing services: ${missing[*]}"
+    return 1
+  fi
+  return 0
+}
+
+# ── Pre-flight: disk + memory checks ──────────────────────────────────────────
+check_preflight() {
+  # Require at least 3GB free disk (build + image storage)
+  local free_kb
+  free_kb=$(df -k "$INSTALL_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
+  local free_gb=$(( free_kb / 1024 / 1024 ))
+  if [ "$free_gb" -lt 3 ]; then
+    fail "Not enough disk space. Need at least 3GB free, have ${free_gb}GB. Run 'docker system prune -af' to free up space."
+  fi
+  info "Disk space OK: ${free_gb}GB free"
+
+  # Require at least 512MB free memory (warning only)
+  if command -v free &>/dev/null; then
+    local avail_mb
+    avail_mb=$(free -m 2>/dev/null | awk 'NR==2 {print $7}')
+    if [ -n "$avail_mb" ] && [ "$avail_mb" -lt 512 ]; then
+      warn "Low available memory: ${avail_mb}MB. Build may OOM-kill. Consider restarting or adding swap."
+    fi
+  fi
+}
 
 echo ""
 echo -e "${W}${BOLD}"
@@ -52,6 +129,9 @@ echo -e "${NC}"
 
 info "═══ AgenticCRM Update Started ═══"
 info "Install directory: $INSTALL_DIR"
+info "Persistent log: $PERSISTENT_LOG"
+
+check_preflight
 
 cd "$INSTALL_DIR" || fail "Cannot cd to $INSTALL_DIR"
 
@@ -134,6 +214,10 @@ if [ -f "$COMPOSE_FILE" ]; then
   export GIT_BRANCH="$NEW_BRANCH"
   export APP_VERSION="$NEW_VERSION"
 
+  # Tag currently-working images as :rollback BEFORE rebuilding
+  # If the new build breaks, we'll retag these back to :latest
+  tag_rollback_images
+
   echo ""
   # Load .env so build args (DB passwords etc.) are available
   docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" build api dashboard worker whatsapp 2>&1 | \
@@ -150,7 +234,10 @@ if [ -f "$COMPOSE_FILE" ]; then
   BUILT_COUNT=$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -c "agentic-crm" || echo "0")
   if [ "$BUILT_COUNT" -lt 4 ]; then
     tail -20 /tmp/agenticcrm-build.log | tee -a "$LOG_FILE"
-    fail "Docker build failed — only $BUILT_COUNT/4 images found (see /tmp/agenticcrm-build.log)"
+    warn "Docker build failed — only $BUILT_COUNT/4 images found. Rollback images are still tagged — system will continue running the previous version."
+    echo -e "  ${R}✖${NC}  Build failed. Previous version is still running."
+    echo -e "  ${DIM}Logs: /tmp/agenticcrm-build.log and $PERSISTENT_LOG${NC}"
+    exit 2
   fi
   ok "Docker images rebuilt"
   echo -e "  ${G}✔${NC}  Images rebuilt"
@@ -209,21 +296,64 @@ if command -v nginx &>/dev/null; then
   fi
 fi
 
-# ── Step 6: Health check ──────────────────────────────────────────────────────
-echo -e "\n  ${W}${BOLD}[6/6]${NC}  Health check..."
-info "Waiting for API health check (up to 60s)..."
+# ── Step 6: Health check + verify all containers + rollback on failure ───────
+echo -e "\n  ${W}${BOLD}[6/6]${NC}  Verifying all services..."
+info "Waiting for API health check (up to 90s)..."
+
 API_HEALTHY=0
-for i in $(seq 1 60); do
+for i in $(seq 1 90); do
   if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
-    ok "API is healthy"
-    echo -e "  ${G}✔${NC}  API is healthy"
     API_HEALTHY=1
     break
   fi
   sleep 1
 done
-if [ "$API_HEALTHY" -eq 0 ]; then
-  warn "API health check timed out after 60s — check: docker compose -f $COMPOSE_FILE logs api"
+
+# Verify ALL required containers are actually running (not just API responding)
+CONTAINERS_OK=1
+if ! verify_all_containers_running; then
+  CONTAINERS_OK=0
+fi
+
+if [ "$API_HEALTHY" -eq 1 ] && [ "$CONTAINERS_OK" -eq 1 ]; then
+  ok "All services healthy"
+  echo -e "  ${G}✔${NC}  API healthy + all containers running"
+else
+  # ── FAILURE RECOVERY ─────────────────────────────────────────────────────
+  echo -e "  ${R}✖${NC}  Update verification failed — attempting auto-recovery"
+  warn "API healthy: $API_HEALTHY | All containers running: $CONTAINERS_OK"
+
+  # Dump logs for debugging before rollback
+  info "Dumping recent logs from failed containers..."
+  for svc in "${BUILT_SERVICES[@]}"; do
+    echo "─── $svc logs (last 30 lines) ───" >> "$LOG_FILE"
+    docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" logs --tail=30 "$svc" 2>&1 >> "$LOG_FILE" || true
+  done
+
+  # Attempt 1: just bring services up again (sometimes works for transient issues)
+  info "Recovery attempt 1: docker compose up -d"
+  docker compose -f "$COMPOSE_FILE" --env-file "$INSTALL_DIR/.env" up -d --remove-orphans 2>&1 | tail -5 >> "$LOG_FILE"
+  sleep 10
+
+  if curl -sf http://localhost:3000/api/health > /dev/null 2>&1 && verify_all_containers_running; then
+    ok "Recovery attempt 1 succeeded"
+    echo -e "  ${G}✔${NC}  Recovered without rollback"
+  else
+    # Attempt 2: full rollback to previous working images
+    warn "Recovery attempt 1 failed — rolling back to previous version"
+    echo -e "  ${Y}⚠${NC}  Rolling back to previous images..."
+    restore_rollback_images
+    sleep 15
+
+    if curl -sf http://localhost:3000/api/health > /dev/null 2>&1 && verify_all_containers_running; then
+      ok "Rollback succeeded — system restored to previous version"
+      echo -e "  ${G}✔${NC}  Rolled back to v$OLD_VERSION successfully"
+      echo -e "  ${Y}⚠${NC}  Update failed — review logs: $PERSISTENT_LOG"
+      exit 2  # non-zero but distinguishable from fatal
+    else
+      fail "Rollback failed. System may need manual intervention. Logs: $PERSISTENT_LOG  |  Run: cd $INSTALL_DIR && docker compose -f deploy/docker-compose.yml up -d"
+    fi
+  fi
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
