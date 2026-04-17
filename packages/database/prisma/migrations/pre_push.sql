@@ -94,3 +94,5 @@ ALTER TABLE "DealActivity" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMPTZ;
 
 -- Conversation.aiEnabled: change default from true → false (AI should not auto-reply unless enabled)
 ALTER TABLE "Conversation" ALTER COLUMN "aiEnabled" SET DEFAULT false;
+-- Backfill: disable AI on ALL existing conversations so only new ones respect the company toggle.
+UPDATE "Conversation" SET "aiEnabled" = false WHERE "aiEnabled" = true;
