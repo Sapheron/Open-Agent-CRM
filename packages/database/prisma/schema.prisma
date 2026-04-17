@@ -513,7 +513,7 @@ model Conversation {
   whatsappAccountId String
   assignedAgentId   String?
   status            ConversationStatus @default(OPEN)
-  aiEnabled         Boolean            @default(true)
+  aiEnabled         Boolean            @default(false)
   unreadCount       Int                @default(0)
   lastMessageAt     DateTime?
   lastMessageText   String?

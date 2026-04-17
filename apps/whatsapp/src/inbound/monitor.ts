@@ -126,8 +126,8 @@ export class InboundMonitor {
   private async handleMessage(msg: any) {
     try {
     const normalized = normalizeMessage(msg as Parameters<typeof normalizeMessage>[0]);
-    if (!normalized) {
-      logger.info({ accountId: this.accountId }, 'handleMessage: normalizeMessage returned null');
+    if (!normalized || normalized.isGroup) {
+      logger.info({ accountId: this.accountId, isGroup: normalized?.isGroup }, 'handleMessage: skipped (null or group)');
       return;
     }
     logger.info({ accountId: this.accountId, fromPhone: normalized.fromPhone, body: normalized.body?.slice(0, 50) }, 'handleMessage: normalized');
@@ -171,6 +171,12 @@ export class InboundMonitor {
     }
 
     const { companyId } = account;
+
+    // Fetch company AI config to decide whether new conversations get AI replies
+    const aiCompanyConfig = await prisma.aiConfig.findUnique({
+      where: { companyId },
+      select: { autoReplyEnabled: true },
+    });
 
     // Find existing contact — do NOT auto-create contacts from inbound messages
     const contact = await prisma.contact.findFirst({
@@ -230,6 +236,7 @@ export class InboundMonitor {
           contactId: contact.id,
           whatsappAccountId: this.accountId,
           status: 'OPEN',
+          aiEnabled: aiCompanyConfig?.autoReplyEnabled ?? false,
         },
       });
     }

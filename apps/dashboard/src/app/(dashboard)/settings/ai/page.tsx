@@ -44,6 +44,7 @@ export default function AiSettingsPage() {
   const [selectedPreset, setSelectedPreset] = useState('Custom');
   const [temperature, setTemperature] = useState(0.7);
   const [toolCalling, setToolCalling] = useState(true);
+  const [autoReply, setAutoReply] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string; latencyMs?: number; reply?: string } | null>(null);
 
@@ -118,6 +119,7 @@ export default function AiSettingsPage() {
       setSystemPrompt(config.systemPrompt);
       setTemperature(config.temperature);
       setToolCalling(config.toolCallingEnabled);
+      setAutoReply(config.autoReplyEnabled);
       // Detect preset
       const match = PROMPT_PRESETS.find((p) => p.prompt === config.systemPrompt);
       setSelectedPreset(match?.label ?? 'Custom');
@@ -137,7 +139,7 @@ export default function AiSettingsPage() {
       ...(apiKey ? { apiKey } : {}),
       ...(baseUrl ? { baseUrl } : {}),
       systemPrompt, temperature,
-      autoReplyEnabled: false, toolCallingEnabled: toolCalling,
+      autoReplyEnabled: autoReply, toolCallingEnabled: toolCalling,
     }),
     onSuccess: () => { toast.success('Settings saved'); setApiKey(''); },
     onError: () => toast.error('Failed to save'),
@@ -280,6 +282,14 @@ export default function AiSettingsPage() {
               <div>
                 <span className="text-xs text-gray-700 block">CRM Tool Calling</span>
                 <span className="text-[9px] text-gray-400">AI can create leads, deals, tasks from chats</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input type="checkbox" checked={autoReply} onChange={(e) => setAutoReply(e.target.checked)} className="rounded text-gray-800 w-3.5 h-3.5" />
+              <div>
+                <span className="text-xs text-gray-700 block">Auto-reply to customers</span>
+                <span className="text-[9px] text-gray-400">AI automatically replies to all inbound WhatsApp messages from contacts</span>
               </div>
             </label>
           </div>

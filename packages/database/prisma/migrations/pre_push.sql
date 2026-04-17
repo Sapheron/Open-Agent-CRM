@@ -91,3 +91,6 @@ DO $$ BEGIN
   END IF;
 END $$;
 ALTER TABLE "DealActivity" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMPTZ;
+
+-- Conversation.aiEnabled: change default from true → false (AI should not auto-reply unless enabled)
+ALTER TABLE "Conversation" ALTER COLUMN "aiEnabled" SET DEFAULT false;
