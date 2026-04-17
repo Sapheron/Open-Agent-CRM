@@ -155,14 +155,14 @@ export class InboundMonitor {
         return allowed === senderDigits || senderDigits.endsWith(allowed) || allowed.endsWith(senderDigits);
       });
 
-    // LID senders can't be matched by phone — but if an allowlist exists,
-    // treat ALL inbound as admin-allowed (LID numbers are real people messaging
-    // the connected number, and the allowlist controls who can reach it).
-    // Without an allowlist, everyone is allowed (open mode).
-    const isAllowedNumber = isAllowedByPhone || (isLidSender && account.allowedNumbers.length > 0);
+    // Only treat a sender as "allowed" if their phone explicitly matches the
+    // allowlist. LID senders cannot be phone-matched, so they should NOT be
+    // blanket-allowed — otherwise every random customer gets staff AI replies.
+    const isAllowedNumber = isAllowedByPhone;
 
-    // If allowlist is set and sender is NOT in it (and not LID), skip
-    if (account.allowedNumbers.length > 0 && !isAllowedNumber) {
+    // If allowlist is set and sender is NOT in it, skip — but let LID senders
+    // through so their messages can still be matched to contacts and stored.
+    if (account.allowedNumbers.length > 0 && !isAllowedNumber && !isLidSender) {
       logger.info(
         { accountId: this.accountId, fromPhone: normalized.fromPhone, isLidSender },
         'Number not in allowlist, skipping',
@@ -190,9 +190,10 @@ export class InboundMonitor {
       });
     }
 
-    // If no contact exists, route to AI for allowlisted numbers but skip storage
+    // If no contact exists, route to AI for allowlisted numbers but skip storage.
+    // Respects autoReplyEnabled so the company toggle controls this path too.
     if (!contact) {
-      if (isAllowedNumber && normalized.body?.trim()) {
+      if (isAllowedNumber && normalized.body?.trim() && aiCompanyConfig?.autoReplyEnabled !== false) {
         let staffUserId = account.userId;
         if (!staffUserId) {
           const admin = await prisma.user.findFirst({
@@ -580,13 +581,15 @@ export class InboundMonitor {
       return;
     }
 
-    // Detect self-chat: either phone matches OR JID is @lid (WhatsApp's Linked Identity format
-    // used for self-messaging). fromMe=true + @lid = self-chat.
+    // Detect self-chat: phone digits must match the connected number.
+    // @lid JIDs are NOT necessarily self-chat — WhatsApp uses LID for ALL
+    // contacts, so fromMe=true + @lid just means "I sent a message to someone".
+    // Only the phone-match path is reliable for self-chat detection.
     const remoteJid = msg.key.remoteJid as string;
     const isLidJid = remoteJid.endsWith('@lid');
     const ownPhone = (account.phoneNumber ?? '').replace(/\D/g, '');
     const remotePhone = remoteJid.split('@')[0].split(':')[0].replace(/\D/g, '');
-    const isSelfChat = isLidJid || (ownPhone && remotePhone === ownPhone);
+    const isSelfChat = !!(ownPhone && remotePhone === ownPhone);
     logger.info({ accountId: this.accountId, ownPhone, remotePhone, isLidJid, isSelfChat }, 'staffChat: self-chat check');
     if (!isSelfChat) {
       logger.info({ accountId: this.accountId }, 'staffChat: not self-chat, skipping');
