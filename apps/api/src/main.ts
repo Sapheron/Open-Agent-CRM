@@ -1,3 +1,9 @@
+// Load environment variables before any other imports
+import path from 'path';
+import dotenv from 'dotenv';
+// Load .env from project root (2 levels up from apps/api/src)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

@@ -3,7 +3,10 @@
  * Connects to Redis, resumes all existing WhatsApp sessions,
  * and listens for management commands from the API via Redis pub/sub.
  */
-import 'dotenv/config';
+// CRITICAL: Load env BEFORE any other imports, especially @wacrm/database
+import dotenv from 'dotenv';
+dotenv.config();
+
 import pino from 'pino';
 import Redis from 'ioredis';
 import { publisher } from './events/redis-pubsub';

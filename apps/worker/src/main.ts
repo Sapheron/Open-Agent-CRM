@@ -9,7 +9,9 @@
  * - Payment-check processor
  * - Warmup-reset processor
  */
-import 'dotenv/config';
+// CRITICAL: Load env BEFORE any other imports, especially @wacrm/database
+import dotenv from 'dotenv';
+dotenv.config();
 import pino from 'pino';
 import Redis from 'ioredis';
 import { Queue } from 'bullmq';
